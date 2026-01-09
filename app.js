@@ -13,7 +13,7 @@ let activeOrders = [];
 
 /* ========= INIT ========= */
 document.addEventListener("DOMContentLoaded", async () => {
-  applyLang(); // ✅ هذا مكانها الصحيح
+  applyLang();
 
   await loadItems("food");
   await loadActiveOrders();
@@ -22,7 +22,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const paid = document.getElementById("paid");
   if (paid) paid.addEventListener("input", calculateChange);
 });
-
 
 /* ========= CATEGORIES ========= */
 window.filterCategory = function (category, btn) {
@@ -65,10 +64,17 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
+
     div.innerHTML = `
+      ${
+        item.image_url
+          ? `<img src="${item.image_url}" class="cashier-item-img">`
+          : ""
+      }
       <strong>${item.name}</strong>
       <span>${item.price.toFixed(3)} د.ب</span>
     `;
+
     div.onclick = () => addToCart(item);
     container.appendChild(div);
   });
@@ -232,7 +238,6 @@ window.closeDay = async function () {
 
   if (!confirm("هل أنت متأكد من إقفال اليوم؟")) return;
 
-  /* ===== جلب الطلبات المكتملة ===== */
   const { data: orders, error } = await supabase
     .from("orders")
     .select(`
@@ -251,7 +256,6 @@ window.closeDay = async function () {
     return;
   }
 
-  /* ===== حساب الإحصائيات ===== */
   let totalSales = 0;
   const itemsMap = {};
 
@@ -268,7 +272,6 @@ window.closeDay = async function () {
     });
   });
 
-  /* ===== أكثر صنف مبيعًا ===== */
   let topItem = "—";
   let topQty = 0;
   Object.keys(itemsMap).forEach(name => {
@@ -278,7 +281,6 @@ window.closeDay = async function () {
     }
   });
 
-  /* ===== حفظ التقرير ===== */
   const { error: insertError } = await supabase
     .from("daily_reports")
     .insert({
@@ -296,16 +298,14 @@ window.closeDay = async function () {
   }
 
   alert("✅ تم إقفال اليوم بنجاح");
-
   window.location.href = "report.html";
 };
+
 window.goToReports = function () {
   const pass = prompt("🔒 أدخل كلمة المرور للدخول إلى الأرشيف:");
-
   if (pass !== "1234") {
     alert("❌ كلمة المرور غير صحيحة");
     return;
   }
-
   window.location.href = "reports.html";
 };
