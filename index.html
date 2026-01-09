@@ -4,20 +4,18 @@
   <meta charset="UTF-8" />
   <title data-i18n="app_title">نظام الكاشير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- زر اللغة -->
-  <div class="lang-switch">
-    <button onclick="setLang('ar')">AR</button>
-    <button onclick="setLang('en')">EN</button>
-  </div>
-
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 
-<header class="topbar" data-i18n="app_title">
-  نظام الكاشير
+<header class="topbar">
+  <span data-i18n="app_title">نظام الكاشير</span>
+
+  <div class="lang-switch">
+    <button onclick="setLang('ar')">AR</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
 </header>
 
 <main class="cashier-layout">
@@ -32,9 +30,7 @@
       <button class="cat" onclick="filterCategory('sides', this)" data-i18n="sides">🍟 جانبية</button>
     </div>
 
-    <div id="items" class="items-grid">
-      <!-- الأصناف تظهر هنا -->
-    </div>
+    <div id="items" class="items-grid"></div>
   </section>
 
   <!-- الفاتورة -->
@@ -47,6 +43,7 @@
           <th data-i18n="item">الصنف</th>
           <th data-i18n="qty">الكمية</th>
           <th data-i18n="total">المجموع</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="cart"></tbody>
@@ -62,7 +59,6 @@
       type="number"
       data-i18n-placeholder="paid_amount"
       placeholder="المبلغ المدفوع"
-      oninput="calculateChange()"
     />
 
     <div class="change-box">
@@ -71,30 +67,17 @@
     </div>
 
     <div class="actions">
-      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">
-        إتمام الطلب
-      </button>
-
-      <button class="secondary" onclick="goToReports()" data-i18n="reports">
-        📁 أرشيف التقارير
-      </button>
-
-      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">
-        إقفال اليوم
-      </button>
-
-      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">
-        إدارة الأصناف
-      </button>
+      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">إتمام الطلب</button>
+      <button class="btn secondary" onclick="goToReports()" data-i18n="reports">📁 أرشيف التقارير</button>
+      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">إقفال اليوم</button>
+      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">إدارة الأصناف</button>
     </div>
   </section>
 
   <!-- الطلبات الجارية -->
   <section class="card orders">
     <h2 data-i18n="active_orders">الطلبات الجارية</h2>
-    <div id="activeOrders" class="orders-list">
-      <!-- الطلبات -->
-    </div>
+    <div id="activeOrders" class="orders-list"></div>
   </section>
 
 </main>
