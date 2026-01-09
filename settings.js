@@ -24,21 +24,58 @@ window.login = async function () {
   loadItems();
 };
 
+/* ===== رفع صورة الصنف ===== */
+async function uploadItemImage(file) {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2)}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from("products")
+    .upload(fileName, file);
+
+  if (error) {
+    console.error("Image upload error:", error);
+    return null;
+  }
+
+  const { data } = supabase.storage
+    .from("products")
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
+}
+
 /* ===== إضافة صنف ===== */
 window.addItem = async function () {
   const name = document.getElementById("itemName").value.trim();
   const price = parseFloat(document.getElementById("itemPrice").value);
   const category = document.getElementById("itemCategory").value;
+  const imageInput = document.getElementById("itemImage");
+  const imageFile = imageInput?.files[0];
 
   if (!name || isNaN(price)) {
     alert(t("enter_name_price"));
     return;
   }
 
+  let image_url = null;
+
+  if (imageFile) {
+    image_url = await uploadItemImage(imageFile);
+
+    if (!image_url) {
+      alert("فشل رفع الصورة");
+      return;
+    }
+  }
+
   const { error } = await supabase.from("products").insert({
     name,
     price,
     category,
+    image_url,
     active: true
   });
 
@@ -48,8 +85,11 @@ window.addItem = async function () {
     return;
   }
 
+  // تنظيف الحقول
   document.getElementById("itemName").value = "";
   document.getElementById("itemPrice").value = "";
+  document.getElementById("itemImage").value = "";
+
   loadItems();
 };
 
@@ -78,6 +118,11 @@ async function loadItems() {
     div.className = "order-box";
 
     div.innerHTML = `
+      ${
+        item.image_url
+          ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
+          : ""
+      }
       <strong>${item.name}</strong><br>
       ${item.price.toFixed(3)} د.ب — ${item.category}<br>
       ${t("status")}: ${
