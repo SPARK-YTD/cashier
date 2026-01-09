@@ -3,16 +3,17 @@ import { applyLang, setLang, t } from "./i18n.js";
 
 window.setLang = setLang;
 
+/* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
   applyLang();
   loadReports();
 });
 
-
-document.addEventListener("DOMContentLoaded", loadReports);
-
+/* ===== تحميل التقارير ===== */
 async function loadReports() {
   const tbody = document.getElementById("reportsList");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
   const { data, error } = await supabase
@@ -38,7 +39,9 @@ async function loadReports() {
         <button onclick="printReport('${report.id}')">🖨 PDF</button>
       </td>
       <td>
-        <button class="danger" onclick="deleteReport('${report.id}')">🗑 حذف</button>
+        <button class="danger" onclick="deleteReport('${report.id}')">
+          🗑 حذف
+        </button>
       </td>
     `;
 
@@ -83,7 +86,7 @@ window.deleteReport = async function (id) {
   }
 
   alert("✅ تم حذف التقرير بنجاح");
-  loadReports(); // إعادة تحميل بدون refresh كامل
+  loadReports(); // إعادة تحميل بدون Refresh
 };
 
 /* ===== رجوع ===== */
