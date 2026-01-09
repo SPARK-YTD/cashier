@@ -24,19 +24,26 @@ window.login = async function () {
   loadItems();
 };
 
-/* ===== رفع صورة الصنف ===== */
+/* ===== رفع صورة الصنف (معدّلة) ===== */
 async function uploadItemImage(file) {
   const fileExt = file.name.split(".").pop();
-  const fileName = `${Date.now()}-${Math.random()
+
+  // نخزن الصور داخل مجلد داخل الباكِت
+  const fileName = `products/${Date.now()}-${Math.random()
     .toString(36)
     .substring(2)}.${fileExt}`;
 
   const { error } = await supabase.storage
-    .from("products")
-    .upload(fileName, file);
+    .from("products") // ⚠️ لازم اسم الباكِت يكون products
+    .upload(fileName, file, {
+      contentType: file.type,   // مهم جدًا خصوصًا للآيفون
+      cacheControl: "3600",
+      upsert: false
+    });
 
   if (error) {
-    console.error("Image upload error:", error);
+    console.error("UPLOAD ERROR:", error);
+    alert(error.message); // يطلع الخطأ الحقيقي
     return null;
   }
 
