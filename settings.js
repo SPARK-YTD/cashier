@@ -21,29 +21,28 @@ window.login = async function () {
 
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("adminPanel").style.display = "block";
-  loadItems();
+  await loadItems();
 };
 
-/* ===== رفع صورة الصنف (معدّلة) ===== */
+/* ===== رفع صورة الصنف ===== */
 async function uploadItemImage(file) {
   const fileExt = file.name.split(".").pop();
 
-  // نخزن الصور داخل مجلد داخل الباكِت
   const fileName = `products/${Date.now()}-${Math.random()
     .toString(36)
     .substring(2)}.${fileExt}`;
 
   const { error } = await supabase.storage
-    .from("products") // ⚠️ لازم اسم الباكِت يكون products
+    .from("products")
     .upload(fileName, file, {
-      contentType: file.type,   // مهم جدًا خصوصًا للآيفون
+      contentType: file.type,
       cacheControl: "3600",
       upsert: false
     });
 
   if (error) {
     console.error("UPLOAD ERROR:", error);
-    alert(error.message); // يطلع الخطأ الحقيقي
+    alert(error.message);
     return null;
   }
 
@@ -71,11 +70,7 @@ window.addItem = async function () {
 
   if (imageFile) {
     image_url = await uploadItemImage(imageFile);
-
-    if (!image_url) {
-      alert("فشل رفع الصورة");
-      return;
-    }
+    if (!image_url) return;
   }
 
   const { error } = await supabase.from("products").insert({
@@ -87,8 +82,8 @@ window.addItem = async function () {
   });
 
   if (error) {
-    alert(t("save_item_error"));
-    console.error(error);
+    console.error("INSERT ERROR:", error);
+    alert(error.message);
     return;
   }
 
@@ -97,20 +92,23 @@ window.addItem = async function () {
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemImage").value = "";
 
-  loadItems();
+  await loadItems();
 };
 
 /* ===== عرض الأصناف ===== */
 async function loadItems() {
   const box = document.getElementById("itemsList");
+  if (!box) return;
+
   box.innerHTML = "";
 
   const { data, error } = await supabase
     .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*"); // ❌ بدون order على created_at
 
   if (error) {
+    console.error("LOAD ITEMS ERROR:", error);
+    alert(error.message);
     box.innerHTML = `<p>${t("load_items_error")}</p>`;
     return;
   }
@@ -131,7 +129,7 @@ async function loadItems() {
           : ""
       }
       <strong>${item.name}</strong><br>
-      ${item.price.toFixed(3)} د.ب — ${item.category}<br>
+      ${Number(item.price).toFixed(3)} د.ب — ${item.category}<br>
       ${t("status")}: ${
         item.active
           ? `<span style="color:green">${t("active")}</span>`
@@ -140,17 +138,11 @@ async function loadItems() {
 
       ${
         item.active
-          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">
-              🚫 ${t("disable")}
-            </button>`
-          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">
-              ✅ ${t("enable")}
-            </button>`
+          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 ${t("disable")}</button>`
+          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ ${t("enable")}</button>`
       }
 
-      <button class="btn danger" onclick="deleteItem('${item.id}')">
-        🗑 ${t("delete_final")}
-      </button>
+      <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 ${t("delete_final")}</button>
     `;
 
     box.appendChild(div);
@@ -165,12 +157,12 @@ window.toggleItem = async function (id, state) {
     .eq("id", id);
 
   if (error) {
-    alert(t("update_status_error"));
-    console.error(error);
+    console.error("UPDATE ERROR:", error);
+    alert(error.message);
     return;
   }
 
-  loadItems();
+  await loadItems();
 };
 
 /* ===== حذف نهائي ===== */
@@ -183,13 +175,13 @@ window.deleteItem = async function (id) {
     .eq("id", id);
 
   if (error) {
-    alert(t("delete_item_used"));
-    console.error(error);
+    console.error("DELETE ERROR:", error);
+    alert(error.message);
     return;
   }
 
   alert(t("item_deleted"));
-  loadItems();
+  await loadItems();
 };
 
 /* ===== رجوع ===== */
