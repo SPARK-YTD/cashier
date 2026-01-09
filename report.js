@@ -3,38 +3,32 @@ import { applyLang, setLang, t } from "./i18n.js";
 
 window.setLang = setLang;
 
-document.addEventListener("DOMContentLoaded", async () => {
-  applyLang();
-  // باقي الكود
-});
-
 /*********************************
  * Get-Break | Daily Close Report (Supabase)
  *********************************/
 
-import { supabase } from "./supabase.js";
-
 document.addEventListener("DOMContentLoaded", async () => {
+  applyLang();
+
   const closeTimeEl   = document.getElementById("closeTime");
   const ordersCountEl = document.getElementById("ordersCount");
   const totalSalesEl  = document.getElementById("totalSales");
   const itemsReportEl = document.getElementById("itemsReport");
   const topItemEl     = document.getElementById("topItem");
 
-  /* ===== جلب آخر تقرير محفوظ ===== */
- const params = new URLSearchParams(window.location.search);
-const reportId = params.get("id");
+  /* ===== جلب التقرير ===== */
+  const params = new URLSearchParams(window.location.search);
+  const reportId = params.get("id");
 
-let query = supabase.from("daily_reports").select("*");
+  let query = supabase.from("daily_reports").select("*");
 
-if (reportId) {
-  query = query.eq("id", reportId).limit(1);
-} else {
-  query = query.order("created_at", { ascending: false }).limit(1);
-}
+  if (reportId) {
+    query = query.eq("id", reportId).limit(1);
+  } else {
+    query = query.order("created_at", { ascending: false }).limit(1);
+  }
 
-const { data: reports, error } = await query;
-
+  const { data: reports, error } = await query;
 
   if (error || !reports || reports.length === 0) {
     ordersCountEl.textContent = "0";
@@ -48,17 +42,15 @@ const { data: reports, error } = await query;
   const report = reports[0];
 
   /* ===== وقت الإقفال ===== */
-  if (closeTimeEl) {
-    closeTimeEl.textContent =
-      "🕒 وقت الإقفال: " +
-      new Date(report.created_at).toLocaleString("ar-BH");
-  }
+  closeTimeEl.textContent =
+    "🕒 وقت الإقفال: " +
+    new Date(report.created_at).toLocaleString("ar-BH");
 
   /* ===== الملخص ===== */
   ordersCountEl.textContent = report.orders_count;
-  totalSalesEl.textContent  =
+  totalSalesEl.textContent =
     Number(report.total_sales).toFixed(3) + " د.ب";
-  topItemEl.textContent     = report.top_item || "—";
+  topItemEl.textContent = report.top_item || "—";
 
   /* ===== جدول الأصناف ===== */
   itemsReportEl.innerHTML = "";
@@ -78,14 +70,13 @@ const { data: reports, error } = await query;
       <td>${items[name].qty}</td>
       <td>${items[name].total.toFixed(3)} د.ب</td>
     `;
-    
     itemsReportEl.appendChild(tr);
-    const params = new URLSearchParams(window.location.search);
-if (params.get("print") === "1") {
-  setTimeout(() => window.print(), 500);
-}
-
   });
+
+  /* ===== طباعة تلقائية ===== */
+  if (params.get("print") === "1") {
+    setTimeout(() => window.print(), 500);
+  }
 });
 
 /* ===== بدء يوم جديد ===== */
