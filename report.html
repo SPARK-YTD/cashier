@@ -1,68 +1,115 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <title>تقرير إقفال اليوم</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-</head>
+import { supabase } from "./supabase.js";
+import { applyLang, setLang, t } from "./i18n.js";
 
-<body class="report-page">
+window.setLang = setLang;
 
-<header class="report-header">
-  <div class="brand">
-    <h1>📊 تقرير إقفال اليوم</h1>
-    <span class="store-name">Get-Break</span>
-  </div>
-  <p id="closeTime" class="close-time"></p>
-</header>
+/*********************************
+ * Get-Break | Daily Close Report (Supabase)
+ *********************************/
 
-<main class="report-container">
+document.addEventListener("DOMContentLoaded", async () => {
+  applyLang();
 
-  <!-- ملخص -->
-  <section class="summary-cards">
-    <div class="card">
-      <span>🧾 عدد الطلبات</span>
-      <strong id="ordersCount">0</strong>
-    </div>
-    <div class="card">
-      <span>💰 إجمالي المبيعات</span>
-      <strong id="totalSales">0.000 د.ب</strong>
-    </div>
-    <div class="card">
-      <span>🥇 الأكثر مبيعًا</span>
-      <strong id="topItem">—</strong>
-    </div>
-  </section>
+  const closeTimeEl   = document.getElementById("closeTime");
+  const ordersCountEl = document.getElementById("ordersCount");
+  const totalSalesEl  = document.getElementById("totalSales");
+  const itemsReportEl = document.getElementById("itemsReport");
+  const topItemEl     = document.getElementById("topItem");
 
-  <!-- جدول -->
-  <section class="table-box">
-    <h2>تفاصيل الأصناف</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>الصنف</th>
-          <th>الكمية</th>
-          <th>الإجمالي</th>
-        </tr>
-      </thead>
-      <tbody id="itemsReport"></tbody>
-    </table>
-  </section>
+  /* ===== جلب التقرير ===== */
+  const params = new URLSearchParams(window.location.search);
+  const reportId = params.get("id");
 
-  <!-- أزرار -->
-  <section class="actions no-print">
-    <button onclick="goBack()">⬅️ رجوع للكاشير</button>
-    <button class="warn" onclick="newDay()">🔄 بدء يوم جديد</button>
-    <button class="print" onclick="downloadPDF()">🖨 تحميل PDF</button>
-  </section>
+  let query = supabase.from("daily_reports").select("*");
 
-</main>
+  if (reportId) {
+    query = query.eq("id", reportId).limit(1);
+  } else {
+    query = query.order("created_at", { ascending: false }).limit(1);
+  }
 
-<footer class="report-footer">
-  <p>تم إنشاء التقرير تلقائيًا بواسطة نظام الكاشير</p>
-</footer>
+  const { data: reports, error } = await query;
 
-<script type="module" src="report.js"></script>
-</body>
-</html>
+  if (error || !reports || reports.length === 0) {
+    ordersCountEl.textContent = "0";
+    totalSalesEl.textContent  = "0.000 د.ب";
+    topItemEl.textContent     = "—";
+    itemsReportEl.innerHTML =
+      "<tr><td colspan='3'>لا يوجد تقرير محفوظ</td></tr>";
+    return;
+  }
+
+  const report = reports[0];
+
+  /* ===== وقت الإقفال ===== */
+  closeTimeEl.textContent =
+    "🕒 وقت الإقفال: " +
+    new Date(report.created_at).toLocaleString("ar-BH");
+
+  /* ===== الملخص ===== */
+  ordersCountEl.textContent = report.orders_count;
+  totalSalesEl.textContent =
+    Number(report.total_sales).toFixed(3) + " د.ب";
+  topItemEl.textContent = report.top_item || "—";
+
+  /* ===== جدول الأصناف ===== */
+  itemsReportEl.innerHTML = "";
+
+  const items = report.items || {};
+
+  if (Object.keys(items).length === 0) {
+    itemsReportEl.innerHTML =
+      "<tr><td colspan='3'>لا توجد أصناف</td></tr>";
+    return;
+  }
+
+  Object.keys(items).forEach(name => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td>${items[name].qty}</td>
+      <td>${items[name].total.toFixed(3)} د.ب</td>
+    `;
+    itemsReportEl.appendChild(tr);
+  });
+
+  /* ===== طباعة تلقائية ===== */
+  if (params.get("print") === "1") {
+    setTimeout(() => window.print(), 500);
+  }
+});
+
+/* ===== بدء يوم جديد ===== */
+window.newDay = async function () {
+  const pass = prompt("🔒 أدخل كلمة المرور لبدء يوم جديد:");
+
+  if (pass !== "1234") {
+    alert("❌ كلمة المرور غير صحيحة");
+    return;
+  }
+
+  if (!confirm("هل أنت متأكد من بدء يوم جديد؟")) return;
+
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "closed" })
+    .eq("status", "completed");
+
+  if (error) {
+    alert("❌ حصل خطأ أثناء بدء يوم جديد");
+    console.error(error);
+    return;
+  }
+
+  alert("✅ تم بدء يوم جديد بنجاح");
+  window.location.href = "index.html";
+};
+
+/* ===== NAV ===== */
+window.goBack = function () {
+  window.location.href = "index.html";
+};
+
+window.downloadPDF = function () {
+  window.print();
+};
