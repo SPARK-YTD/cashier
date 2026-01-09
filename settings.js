@@ -1,0 +1,146 @@
+import { supabase } from "./supabase.js";
+import { applyLang, setLang, t } from "./i18n.js";
+
+window.setLang = setLang;
+
+/* ===== تفعيل اللغة ===== */
+document.addEventListener("DOMContentLoaded", () => {
+  applyLang();
+});
+
+const PASSWORD = "1234";
+
+/* ===== تسجيل الدخول ===== */
+window.login = async function () {
+  const pass = document.getElementById("adminPass").value;
+
+  if (pass !== PASSWORD) {
+    alert(t("wrong_password"));
+    return;
+  }
+
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("adminPanel").style.display = "block";
+  loadItems();
+};
+
+/* ===== إضافة صنف ===== */
+window.addItem = async function () {
+  const name = document.getElementById("itemName").value.trim();
+  const price = parseFloat(document.getElementById("itemPrice").value);
+  const category = document.getElementById("itemCategory").value;
+
+  if (!name || isNaN(price)) {
+    alert(t("enter_name_price"));
+    return;
+  }
+
+  const { error } = await supabase.from("products").insert({
+    name,
+    price,
+    category,
+    active: true
+  });
+
+  if (error) {
+    alert(t("save_item_error"));
+    console.error(error);
+    return;
+  }
+
+  document.getElementById("itemName").value = "";
+  document.getElementById("itemPrice").value = "";
+  loadItems();
+};
+
+/* ===== عرض الأصناف ===== */
+async function loadItems() {
+  const box = document.getElementById("itemsList");
+  box.innerHTML = "";
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    box.innerHTML = `<p>${t("load_items_error")}</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    box.innerHTML = `<p>${t("no_items")}</p>`;
+    return;
+  }
+
+  data.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "order-box";
+
+    div.innerHTML = `
+      <strong>${item.name}</strong><br>
+      ${item.price.toFixed(3)} د.ب — ${item.category}<br>
+      ${t("status")}: ${
+        item.active
+          ? `<span style="color:green">${t("active")}</span>`
+          : `<span style="color:red">${t("disabled")}</span>`
+      }<br><br>
+
+      ${
+        item.active
+          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">
+              🚫 ${t("disable")}
+            </button>`
+          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">
+              ✅ ${t("enable")}
+            </button>`
+      }
+
+      <button class="btn danger" onclick="deleteItem('${item.id}')">
+        🗑 ${t("delete_final")}
+      </button>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+/* ===== تعطيل / تفعيل ===== */
+window.toggleItem = async function (id, state) {
+  const { error } = await supabase
+    .from("products")
+    .update({ active: state })
+    .eq("id", id);
+
+  if (error) {
+    alert(t("update_status_error"));
+    console.error(error);
+    return;
+  }
+
+  loadItems();
+};
+
+/* ===== حذف نهائي ===== */
+window.deleteItem = async function (id) {
+  if (!confirm(t("confirm_delete_item"))) return;
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert(t("delete_item_used"));
+    console.error(error);
+    return;
+  }
+
+  alert(t("item_deleted"));
+  loadItems();
+};
+
+/* ===== رجوع ===== */
+window.goBack = function () {
+  window.location.href = "index.html";
+};

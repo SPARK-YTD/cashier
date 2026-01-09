@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title data-i18n="reports_archive">أرشيف التقارير</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="report-page">
+
+<header class="report-header">
+  <h1 data-i18n="reports_archive">📁 أرشيف التقارير</h1>
+
+  <!-- زر اللغة -->
+  <div class="lang-switch">
+    <button onclick="setLang('ar')">AR</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
+</header>
+
+<main class="report-container">
+
+  <section class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="date">التاريخ</th>
+          <th data-i18n="orders_count">عدد الطلبات</th>
+          <th data-i18n="total_sales">إجمالي المبيعات</th>
+          <th data-i18n="actions">عرض</th>
+        </tr>
+      </thead>
+      <tbody id="reportsList"></tbody>
+    </table>
+  </section>
+
+  <section class="actions">
+    <button onclick="goBack()" data-i18n="back">⬅️ رجوع</button>
+  </section>
+
+</main>
+
+<script type="module" src="reports.js"></script>
+</body>
+</html>

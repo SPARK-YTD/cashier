@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدارة الأصناف</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  ⚙️ إدارة الأصناف
+</header>
+
+<main class="card">
+
+  <!-- تسجيل الدخول -->
+  <div id="loginBox">
+    <h3>تسجيل الدخول</h3>
+    <input type="password" id="adminPass" placeholder="كلمة المرور">
+    <button class="btn success" onclick="login()">دخول</button>
+  </div>
+
+  <!-- لوحة الإدارة -->
+  <div id="adminPanel" style="display:none">
+
+    <h3>➕ إضافة صنف</h3>
+
+    <input id="itemName" placeholder="اسم الصنف">
+    <input id="itemPrice" type="number" step="0.001" placeholder="السعر">
+
+    <select id="itemCategory">
+      <option value="food">🍔 طعام</option>
+      <option value="drinks">🥤 مشروبات</option>
+      <option value="sides">🍟 أطباق جانبية</option>
+    </select>
+
+    <button class="btn success" onclick="addItem()">حفظ الصنف</button>
+
+    <hr>
+
+    <h3>📋 الأصناف الحالية</h3>
+    <div id="itemsList"></div>
+
+    <hr>
+
+    <button class="btn secondary" onclick="goBack()">⬅️ رجوع للكاشير</button>
+
+  </div>
+
+</main>
+
+<script type="module" src="settings.js"></script>
+
+
+</body>
+</html>

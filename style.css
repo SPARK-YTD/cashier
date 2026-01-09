@@ -1,0 +1,328 @@
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f4f6f8;
+  color: #333;
+}
+
+/* ===== Top Bar ===== */
+.topbar {
+  background: #0d47a1;
+  color: white;
+  padding: 18px;
+  font-size: 22px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* ===== Layout ===== */
+.cashier-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* ===== Cards ===== */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+
+/* ===== Categories ===== */
+.categories {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cat {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #e0e0e0;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.cat.active {
+  background: #0d47a1;
+  color: white;
+}
+
+/* ===== Items ===== */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.item {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.item:hover {
+  background: #f0f7ff;
+}
+
+.item strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ===== Invoice ===== */
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.invoice-table th,
+.invoice-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 6px;
+  font-size: 14px;
+}
+
+.total-box,
+.change-box {
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#paid {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+/* ===== Buttons ===== */
+.actions {
+  display: grid;
+  gap: 8px;
+}
+
+.btn {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn.success {
+  background: #2e7d32;
+  color: white;
+}
+
+.btn.danger {
+  background: #c62828;
+  color: white;
+}
+
+.btn.secondary {
+  background: #455a64;
+  color: white;
+}
+
+/* ===== Orders ===== */
+.orders-list {
+  display: grid;
+  gap: 10px;
+}
+
+.order-box {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.order-box button {
+  margin-top: 6px;
+  margin-left: 4px;
+}
+/* ===== PDF / PRINT ===== */
+@media print {
+
+  body {
+    background: #fff;
+  }
+
+  header {
+    background: none !important;
+    color: #000 !important;
+  }
+
+  .actions {
+    display: none !important;
+  }
+
+  button {
+    display: none !important;
+  }
+
+  .report {
+    padding: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    border: 1px solid #000;
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  h1, h2 {
+    color: #000;
+  }
+}
+
+/* =======================
+   DAILY REPORT STYLE
+======================= */
+
+.report-page {
+  background: #f4f6f8;
+  font-family: system-ui, sans-serif;
+}
+
+.report-header {
+  background: #0d47a1;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.report-header .store-name {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.close-time {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.report-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 0 15px;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.card span {
+  display: block;
+  font-size: 14px;
+  color: #555;
+}
+
+.card strong {
+  font-size: 22px;
+  margin-top: 6px;
+  display: block;
+}
+
+.table-box {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+thead {
+  background: #eeeeee;
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.actions .warn {
+  background: #c62828;
+  color: white;
+}
+
+.actions .print {
+  background: #2e7d32;
+  color: white;
+}
+
+.report-footer {
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  margin: 20px 0;
+}
+
+/* ===== Print ===== */
+@media print {
+  body {
+    background: white;
+  }
+  .no-print {
+    display: none;
+  }
+}

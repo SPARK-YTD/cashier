@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title data-i18n="app_title">نظام الكاشير</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- زر اللغة -->
+  <div class="lang-switch">
+    <button onclick="setLang('ar')">AR</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<header class="topbar" data-i18n="app_title">
+  نظام الكاشير
+</header>
+
+<main class="cashier-layout">
+
+  <!-- الأصناف -->
+  <section class="card products">
+    <h2 data-i18n="products">الأصناف</h2>
+
+    <div class="categories">
+      <button class="cat active" onclick="filterCategory('food', this)" data-i18n="food">🍔 طعام</button>
+      <button class="cat" onclick="filterCategory('drinks', this)" data-i18n="drinks">🥤 مشروبات</button>
+      <button class="cat" onclick="filterCategory('sides', this)" data-i18n="sides">🍟 جانبية</button>
+    </div>
+
+    <div id="items" class="items-grid">
+      <!-- الأصناف تظهر هنا -->
+    </div>
+  </section>
+
+  <!-- الفاتورة -->
+  <section class="card invoice">
+    <h2 data-i18n="invoice">الفاتورة</h2>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th data-i18n="item">الصنف</th>
+          <th data-i18n="qty">الكمية</th>
+          <th data-i18n="total">المجموع</th>
+        </tr>
+      </thead>
+      <tbody id="cart"></tbody>
+    </table>
+
+    <div class="total-box">
+      <span data-i18n="grand_total">الإجمالي:</span>
+      <span id="total">0.000 د.ب</span>
+    </div>
+
+    <input
+      id="paid"
+      type="number"
+      data-i18n-placeholder="paid_amount"
+      placeholder="المبلغ المدفوع"
+      oninput="calculateChange()"
+    />
+
+    <div class="change-box">
+      <span data-i18n="change">الباقي:</span>
+      <span id="change">—</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">
+        إتمام الطلب
+      </button>
+
+      <button class="secondary" onclick="goToReports()" data-i18n="reports">
+        📁 أرشيف التقارير
+      </button>
+
+      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">
+        إقفال اليوم
+      </button>
+
+      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">
+        إدارة الأصناف
+      </button>
+    </div>
+  </section>
+
+  <!-- الطلبات الجارية -->
+  <section class="card orders">
+    <h2 data-i18n="active_orders">الطلبات الجارية</h2>
+    <div id="activeOrders" class="orders-list">
+      <!-- الطلبات -->
+    </div>
+  </section>
+
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
