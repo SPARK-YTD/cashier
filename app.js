@@ -14,6 +14,7 @@ let activeOrders = [];
 /* ========= INIT ========= */
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
+
   await loadItems("food");
   await loadActiveOrders();
   renderCart();
@@ -87,8 +88,7 @@ async function handleItemClick(item) {
   const { data: variants, error } = await supabase
     .from("product_variants")
     .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
+    .eq("product_id", item.id);
 
   if (error || !variants || variants.length === 0) {
     alert("لا توجد أحجام لهذا الصنف");
@@ -107,21 +107,13 @@ function showVariantPopup(item, variants) {
     document.body.appendChild(overlay);
   }
 
-  overlay.classList.remove("hidden");
-
   overlay.innerHTML = `
     <div class="variant-box">
       <h3>${item.name}</h3>
 
       ${variants.map(v => `
         <button class="variant-btn"
-          onclick="selectVariant(
-            '${item.id}',
-            '${item.name}',
-            '${v.id}',
-            '${v.label}',
-            ${v.price}
-          )">
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
@@ -129,6 +121,8 @@ function showVariantPopup(item, variants) {
       <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
     </div>
   `;
+
+  overlay.classList.remove("hidden");
 }
 
 window.selectVariant = function (productId, productName, variantId, label, price) {
@@ -248,10 +242,69 @@ window.completeOrder = async function () {
   loadActiveOrders();
 };
 
+async function loadActiveOrders() {
+  const { data } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  activeOrders = data || [];
+  renderActiveOrders();
+}
+
+function renderActiveOrders() {
+  const box = document.getElementById("activeOrders");
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  activeOrders.forEach(order => {
+    const div = document.createElement("div");
+    div.className = "order-box";
+    div.innerHTML = `
+      <strong>طلب #${order.id.slice(0, 6)}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="markCompleted('${order.id}')">مكتمل</button>
+      <button onclick="cancelOrder('${order.id}')">إلغاء</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+window.markCompleted = async function (id) {
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  loadActiveOrders();
+};
+
+window.cancelOrder = async function (id) {
+  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
+  loadActiveOrders();
+};
+
 /* ========= NAV ========= */
-window.goToSettings = () => window.location.href = "settings.html";
+window.goToSettings = function () {
+  window.location.href = "settings.html";
+};
+
+window.closeDay = async function () {
+  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
+  if (pass !== "1234") {
+    alert("❌ كلمة المرور غير صحيحة");
+    return;
+  }
+
+  if (!confirm("هل أنت متأكد من إقفال اليوم؟")) return;
+
+  alert("✅ تم إقفال اليوم");
+  window.location.href = "report.html";
+};
 
 window.goToReports = function () {
   const pass = prompt("🔒 أدخل كلمة المرور:");
-  if (pass === "1234") window.location.href = "reports.html";
+  if (pass !== "1234") {
+    alert("❌ كلمة المرور غير صحيحة");
+    return;
+  }
+  window.location.href = "reports.html";
 };
