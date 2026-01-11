@@ -21,10 +21,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const paid = document.getElementById("paid");
   if (paid) paid.addEventListener("input", calculateChange);
-
-  // ربط زر إقفال اليوم (حل مشكلة closeDay)
-  const closeBtn = document.getElementById("closeDayBtn");
-  if (closeBtn) closeBtn.addEventListener("click", closeDay);
 });
 
 /* ========= CATEGORIES ========= */
@@ -57,11 +53,13 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
+
     div.innerHTML = `
       ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
+
     div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
@@ -121,7 +119,10 @@ window.closeVariantPopup = () =>
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
+
+  if (found) found.qty++;
+  else cart.push({ ...item, key, qty: 1 });
+
   renderCart();
 }
 
@@ -135,6 +136,7 @@ function renderCart() {
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
+
     tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
@@ -174,18 +176,19 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (NO DUPLICATION) ========= */
+/* ========= COMPLETE ORDER ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    await supabase.from("orders")
+    await supabase
+      .from("orders")
       .update({ total })
-      .eq("id", editingOrderId);
+      .eq("id", editingOrderId)
+      .eq("status", "active");
 
-    // UPSERT يمنع التكرار نهائيًا
     await supabase.from("order_items").upsert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -259,10 +262,6 @@ window.editOrder = async function (orderId) {
   cart = [];
   renderCart();
 
-  // إزالة الطلب من الجارية أثناء التعديل
-  activeOrders = activeOrders.filter(o => o.id !== orderId);
-  renderActiveOrders();
-
   const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products ( id, name )`)
@@ -281,23 +280,27 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase.from("orders")
+  await supabase
+    .from("orders")
     .update({ status: "completed" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("status", "active");
 
   loadActiveOrders();
 };
 
 window.cancelOrder = async id => {
-  await supabase.from("orders")
+  await supabase
+    .from("orders")
     .update({ status: "cancelled" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("status", "active");
 
   loadActiveOrders();
 };
 
 /* ========= CLOSE DAY ========= */
-async function closeDay() {
+window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
@@ -345,7 +348,7 @@ async function closeDay() {
 
   alert("✅ تم إقفال اليوم");
   window.location.href = "report.html";
-}
+};
 
 /* ========= NAV ========= */
 window.goToSettings = () => location.href = "settings.html";
