@@ -53,13 +53,11 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
       ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-
     div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
@@ -119,10 +117,7 @@ window.closeVariantPopup = () =>
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
-
+  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
 }
 
@@ -136,7 +131,6 @@ function renderCart() {
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
-
     tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
@@ -176,54 +170,51 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER ========= */
+/* ========= COMPLETE ORDER (FINAL – CLEAN) ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
+  // 🔁 تعديل طلب
   if (editingOrderId) {
-    await supabase
-      .from("orders")
+    await supabase.from("orders")
       .update({ total })
       .eq("id", editingOrderId)
       .eq("status", "active");
 
-    await supabase.from("order_items").upsert(
-      cart.map(i => ({
+    // ❌ حذف كل القديم
+    await supabase.from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
+
+    // ✅ إدخال الفاتورة النهائية فقط
+    await supabase.from("order_items")
+      .insert(cart.map(i => ({
         order_id: editingOrderId,
         product_id: i.id,
         qty: i.qty,
         price: i.price
-      })),
-      { onConflict: "order_id,product_id" }
-    );
+      })));
 
     editingOrderId = null;
-  } else {
+  }
+
+  // 🆕 طلب جديد
+  else {
     const { data: order } = await supabase
       .from("orders")
       .insert({ total, status: "active" })
       .select()
       .single();
 
-// 1️⃣ حذف كل الأصناف القديمة للطلب
-await supabase
-  .from("order_items")
-  .delete()
-  .eq("order_id", editingOrderId);
-
-// 2️⃣ إدخال الأصناف الحالية فقط (الفاتورة النهائية)
-await supabase.from("order_items").insert(
-  cart.map(i => ({
-    order_id: editingOrderId,
-    product_id: i.id,
-    qty: i.qty,
-    price: i.price
-  }))
-);
-
-
+    await supabase.from("order_items")
+      .insert(cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      })));
   }
 
   cart = [];
@@ -265,8 +256,6 @@ function renderActiveOrders() {
 
 /* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
-  if (editingOrderId === orderId) return;
-
   editingOrderId = orderId;
   cart = [];
   renderCart();
@@ -289,8 +278,7 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ status: "completed" })
     .eq("id", id)
     .eq("status", "active");
@@ -299,8 +287,7 @@ window.markCompleted = async id => {
 };
 
 window.cancelOrder = async id => {
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ status: "cancelled" })
     .eq("id", id)
     .eq("status", "active");
@@ -332,31 +319,16 @@ window.closeDay = async function () {
   let totalSales = 0;
   const itemsMap = {};
 
-orders.forEach(o => {
-  totalSales += o.total;
+  orders.forEach(o => {
+    totalSales += o.total;
 
-  const perOrder = {};
-
-  o.order_items.forEach(i => {
-    const name = i.products.name;
-
-    // 🔒 تجميع داخل الطلب نفسه
-    if (!perOrder[name]) {
-      perOrder[name] = { qty: 0, total: 0 };
-    }
-
-    perOrder[name].qty += i.qty;
-    perOrder[name].total += i.qty * i.price;
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
   });
-
-  // ➕ إضافة ناتج الطلب للتقرير العام
-  Object.entries(perOrder).forEach(([name, data]) => {
-    itemsMap[name] ??= { qty: 0, total: 0 };
-    itemsMap[name].qty += data.qty;
-    itemsMap[name].total += data.total;
-  });
-});
-
 
   const topItem =
     Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
@@ -369,8 +341,7 @@ orders.forEach(o => {
     items: itemsMap
   });
 
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ closed_at: new Date().toISOString() })
     .in("id", orders.map(o => o.id));
 
