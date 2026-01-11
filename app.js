@@ -4,7 +4,7 @@ import { applyLang, setLang } from "./i18n.js";
 window.setLang = setLang;
 
 /*********************************
- * Get-Break | Cashier System (FIXED)
+ * Get-Break | Cashier System
  *********************************/
 
 let items = [];
@@ -23,13 +23,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (paid) paid.addEventListener("input", calculateChange);
 });
 
+/* ========= CATEGORIES ========= */
+window.filterCategory = function (category, btn) {
+  document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  loadItems(category);
+};
+
 /* ========= ITEMS ========= */
 async function loadItems(category) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .eq("category", category)
     .eq("active", true);
+
+  if (error) return alert("خطأ في تحميل الأصناف");
 
   items = data || [];
   renderItems();
@@ -45,6 +54,7 @@ function renderItems() {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
+      ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.price.toFixed(3)} د.ب</span>
     `;
@@ -55,13 +65,20 @@ function renderItems() {
 
 /* ========= CART ========= */
 function addToCart(item) {
-  const key = item.variant_id
-    ? `${item.id}-${item.variant_id}`
-    : item.id;
-
+  const key = item.id; // 🔒 مفتاح ثابت يمنع التكرار
   const found = cart.find(i => i.key === key);
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
+
+  if (found) {
+    found.qty += 1;
+  } else {
+    cart.push({
+      key,
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      qty: 1
+    });
+  }
 
   renderCart();
 }
@@ -108,9 +125,10 @@ window.removeItem = i => {
 
 /* ========= PAYMENT ========= */
 function calculateChange() {
-  const paid = parseFloat(document.getElementById("paid").value) || 0;
-  const total = parseFloat(document.getElementById("total").textContent) || 0;
+  const paid = parseFloat(document.getElementById("paid")?.value) || 0;
+  const total = parseFloat(document.getElementById("total")?.textContent) || 0;
   const change = paid - total;
+
   document.getElementById("change").textContent =
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
@@ -122,39 +140,42 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    await supabase.from("orders")
+    // ✏️ تعديل طلب موجود
+    await supabase
+      .from("orders")
       .update({ total, status: "active" })
       .eq("id", editingOrderId);
 
-    await supabase.from("order_items")
+    await supabase
+      .from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
+    const items = cart.map(i => ({
+      order_id: editingOrderId,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }));
 
+    await supabase.from("order_items").insert(items);
     editingOrderId = null;
   } else {
+    // ➕ طلب جديد
     const { data: order } = await supabase
       .from("orders")
       .insert({ total, status: "active" })
       .select()
       .single();
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
+    const items = cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }));
+
+    await supabase.from("order_items").insert(items);
   }
 
   cart = [];
@@ -188,26 +209,27 @@ function renderActiveOrders() {
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+      <button onclick="cancelOrder('${order.id}')">❌ إلغاء</button>
     `;
     box.appendChild(div);
   });
 }
 
-/* ========= EDIT ORDER (FIXED) ========= */
+/* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
 
   const { data } = await supabase
     .from("order_items")
-    .select("product_id, qty, price, products(name)")
+    .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
 
   cart = data.map(i => ({
-    id: i.product_id,
+    key: i.products.id,
+    id: i.products.id,
     name: i.products.name,
     price: i.price,
-    qty: i.qty,
-    key: i.product_id
+    qty: i.qty
   }));
 
   renderCart();
@@ -215,8 +237,18 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase.from("orders")
+  await supabase
+    .from("orders")
     .update({ status: "completed" })
+    .eq("id", id);
+
+  loadActiveOrders();
+};
+
+window.cancelOrder = async id => {
+  await supabase
+    .from("orders")
+    .update({ status: "cancelled" })
     .eq("id", id);
 
   loadActiveOrders();
@@ -224,39 +256,12 @@ window.markCompleted = async id => {
 
 /* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور:");
-  if (pass !== "1234") return;
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id,total,order_items(qty,price,products(name))")
-    .eq("status", "completed")
-    .is("closed_at", null);
-
-  if (!orders?.length) return alert("لا توجد طلبات");
-
-  let totalSales = 0;
-  const itemsMap = {};
-
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      itemsMap[i.products.name] ??= { qty: 0, total: 0 };
-      itemsMap[i.products.name].qty += i.qty;
-      itemsMap[i.products.name].total += i.qty * i.price;
-    });
-  });
-
-  await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0,10),
-    orders_count: orders.length,
-    total_sales: totalSales,
-    items: itemsMap
-  });
-
-  await supabase.from("orders")
-    .update({ closed_at: new Date().toISOString() })
-    .in("id", orders.map(o => o.id));
+  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
+  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
   window.location.href = "report.html";
 };
+
+/* ========= NAV ========= */
+window.goToSettings = () => location.href = "settings.html";
+window.goToReports  = () => location.href = "reports.html";
