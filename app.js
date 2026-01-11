@@ -38,10 +38,7 @@ async function loadItems(category) {
     .eq("category", category)
     .eq("active", true);
 
-  if (error) {
-    alert("خطأ في تحميل الأصناف");
-    return;
-  }
+  if (error) return alert("خطأ في تحميل الأصناف");
 
   items = data || [];
   renderItems();
@@ -56,13 +53,11 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
       ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-
     div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
@@ -70,10 +65,7 @@ function renderItems() {
 
 /* ========= VARIANTS ========= */
 async function handleItemClick(item) {
-  if (!item.has_variants) {
-    addToCart(item);
-    return;
-  }
+  if (!item.has_variants) return addToCart(item);
 
   const { data: variants } = await supabase
     .from("product_variants")
@@ -81,10 +73,7 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants || variants.length === 0) {
-    alert("لا توجد أحجام");
-    return;
-  }
+  if (!variants?.length) return alert("لا توجد أحجام");
 
   showVariantPopup(item, variants);
 }
@@ -121,18 +110,14 @@ window.selectVariant = function (productId, name, variantId, label, price) {
   closeVariantPopup();
 };
 
-window.closeVariantPopup = () => {
+window.closeVariantPopup = () =>
   document.querySelector(".variant-overlay")?.remove();
-};
 
 /* ========= CART ========= */
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
-
+  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
 }
 
@@ -146,7 +131,6 @@ function renderCart() {
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
-
     tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
@@ -188,22 +172,18 @@ function calculateChange() {
 
 /* ========= COMPLETE ORDER ========= */
 window.completeOrder = async function () {
-  if (!cart.length) {
-    alert("الفاتورة فارغة");
-    return;
-  }
+  if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تحديث الطلب المعدل
-    await supabase
-      .from("orders")
-      .update({ total, status: "active" })
-      .eq("id", editingOrderId);
+    // تحديث طلب نشط فقط
+    await supabase.from("orders")
+      .update({ total })
+      .eq("id", editingOrderId)
+      .eq("status", "active");
 
-    await supabase
-      .from("order_items")
+    await supabase.from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
@@ -217,6 +197,7 @@ window.completeOrder = async function () {
     );
 
     editingOrderId = null;
+
   } else {
     // طلب جديد
     const { data: order } = await supabase
@@ -272,28 +253,28 @@ function renderActiveOrders() {
   });
 }
 
-/* ========= EDIT ORDER (NO DUPLICATION) ========= */
+/* ========= EDIT ORDER (FINAL SAFE LOGIC) ========= */
 window.editOrder = async function (orderId) {
+  // تحقق أن الطلب نشط فقط
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .single();
+
+  if (order.status !== "active") {
+    alert("❌ لا يمكن تعديل طلب مكتمل");
+    return;
+  }
+
+  editingOrderId = orderId;
   cart = [];
   renderCart();
-  editingOrderId = orderId;
 
-  // إخراج الطلب من الجارية
-  await supabase
-    .from("orders")
-    .update({ status: "editing" })
-    .eq("id", orderId);
-
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
-
-  if (error || !data?.length) {
-    alert("لا يمكن تحميل الطلب");
-    editingOrderId = null;
-    return;
-  }
 
   cart = data.map(i => ({
     id: i.products.id,
@@ -304,17 +285,24 @@ window.editOrder = async function (orderId) {
   }));
 
   renderCart();
-  loadActiveOrders();
 };
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  await supabase.from("orders")
+    .update({ status: "completed" })
+    .eq("id", id)
+    .eq("status", "active");
+
   loadActiveOrders();
 };
 
 window.cancelOrder = async id => {
-  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
+  await supabase.from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", id)
+    .eq("status", "active");
+
   loadActiveOrders();
 };
 
@@ -337,10 +325,7 @@ window.closeDay = async function () {
     .eq("status", "completed")
     .is("closed_at", null);
 
-  if (!orders || orders.length === 0) {
-    alert("لا توجد طلبات مكتملة");
-    return;
-  }
+  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
 
   let totalSales = 0;
   const itemsMap = {};
@@ -356,18 +341,17 @@ window.closeDay = async function () {
   });
 
   const topItem =
-    Object.entries(itemsMap).sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
   await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0, 10),
+    report_date: new Date().toISOString().slice(0,10),
     orders_count: orders.length,
     total_sales: totalSales,
     top_item: topItem,
     items: itemsMap
   });
 
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ closed_at: new Date().toISOString() })
     .in("id", orders.map(o => o.id));
 
