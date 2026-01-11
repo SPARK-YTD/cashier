@@ -3,41 +3,151 @@
 <head>
   <meta charset="UTF-8" />
   <title>تقرير إقفال اليوم</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      background: #f4f6f8;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .header {
+      background: #0d47a1;
+      color: #fff;
+      padding: 30px 15px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    .header small {
+      opacity: 0.9;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-weight: normal;
+      color: #555;
+    }
+
+    .card strong {
+      font-size: 26px;
+      color: #000;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    thead {
+      background: #eee;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      font-weight: 600;
+    }
+
+    .actions {
+      margin: 25px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .btn.green { background: #2e7d32; }
+    .btn.red   { background: #c62828; }
+    .btn.blue  { background: #1565c0; }
+
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 
-<body class="report-page">
+<body>
 
-<header class="report-header">
-  <div class="brand">
+  <div class="header">
     <h1>📊 تقرير إقفال اليوم</h1>
-    <span class="store-name">Get-Break</span>
+    <div>Get-Break</div>
+    <small id="closeTime">—</small>
   </div>
-  <p id="closeTime" class="close-time"></p>
-</header>
 
-<main class="report-container">
+  <div class="container">
 
-  <!-- ملخص -->
-  <section class="summary-cards">
-    <div class="card">
-      <span>🧾 عدد الطلبات</span>
-      <strong id="ordersCount">0</strong>
-    </div>
-    <div class="card">
-      <span>💰 إجمالي المبيعات</span>
-      <strong id="totalSales">0.000 د.ب</strong>
-    </div>
-    <div class="card">
-      <span>🥇 الأكثر مبيعًا</span>
-      <strong id="topItem">—</strong>
-    </div>
-  </section>
+    <!-- البطاقات -->
+    <div class="cards">
+      <div class="card">
+        <h3>🧾 عدد الطلبات</h3>
+        <strong id="ordersCount">0</strong>
+      </div>
 
-  <!-- جدول -->
-  <section class="table-box">
-    <h2>تفاصيل الأصناف</h2>
+      <div class="card">
+        <h3>💰 إجمالي المبيعات</h3>
+        <strong id="totalSales">0.000 د.ب</strong>
+      </div>
+
+      <div class="card">
+        <h3>🥇 الأكثر مبيعًا</h3>
+        <strong id="topItem">—</strong>
+      </div>
+    </div>
+
+    <!-- جدول الأصناف -->
+    <h2 style="text-align:center; margin-bottom:10px;">تفاصيل الأصناف</h2>
+
     <table>
       <thead>
         <tr>
@@ -46,23 +156,26 @@
           <th>الإجمالي</th>
         </tr>
       </thead>
-      <tbody id="itemsReport"></tbody>
+      <tbody id="itemsReport">
+        <tr>
+          <td colspan="3">—</td>
+        </tr>
+      </tbody>
     </table>
-  </section>
 
-  <!-- أزرار -->
-  <section class="actions no-print">
-    <button onclick="goBack()">⬅️ رجوع للكاشير</button>
-    <button class="warn" onclick="newDay()">🔄 بدء يوم جديد</button>
-    <button class="print" onclick="downloadPDF()">🖨 تحميل PDF</button>
-  </section>
+    <!-- الأزرار -->
+    <div class="actions">
+      <button class="btn green" onclick="downloadPDF()">🖨 تحميل PDF</button>
+      <button class="btn red" onclick="startNewDayFromReport()">🔄 بدء يوم جديد</button>
+      <button class="btn blue" onclick="backToCashierSameDay()">⬅ رجوع للكاشير</button>
+    </div>
 
-</main>
+  </div>
 
-<footer class="report-footer">
-  <p>تم إنشاء التقرير تلقائيًا بواسطة نظام الكاشير</p>
-</footer>
+  <footer>
+    تم إنشاء التقرير تلقائيًا بواسطة نظام الكاشير
+  </footer>
 
-<script type="module" src="report.js"></script>
+  <script type="module" src="report.js"></script>
 </body>
 </html>
