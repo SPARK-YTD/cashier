@@ -180,9 +180,16 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تحديث الطلب الموجود
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    // تعديل طلب + إرجاعه للجارية
+    await supabase
+      .from("orders")
+      .update({ total, status: "active" })
+      .eq("id", editingOrderId);
+
+    await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
 
     const items = cart.map(i => ({
       order_id: editingOrderId,
@@ -235,7 +242,7 @@ function renderActiveOrders() {
   box.innerHTML = "";
 
   activeOrders.forEach(order => {
-    const div = document.createElement("order-box");
+    const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
       <strong>طلب #${order.id.slice(0,6)}</strong><br>
@@ -252,8 +259,11 @@ function renderActiveOrders() {
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
 
-  // إزالة الطلب من الجارية مؤقتًا
-  await supabase.from("orders").update({ status: "editing" }).eq("id", orderId);
+  // إخراجه من الجارية مؤقتًا
+  await supabase
+    .from("orders")
+    .update({ status: "editing" })
+    .eq("id", orderId);
 
   const { data } = await supabase
     .from("order_items")
@@ -288,7 +298,7 @@ window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  // عرض التقرير الحي بدون حفظ
+  // عرض التقرير فقط بدون حفظ
   window.location.href = "report.html?preview=1";
 };
 
