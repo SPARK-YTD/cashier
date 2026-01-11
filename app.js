@@ -112,9 +112,8 @@ window.selectVariant = function (productId, name, variantId, label, price) {
   closeVariantPopup();
 };
 
-window.closeVariantPopup = function () {
+window.closeVariantPopup = () =>
   document.querySelector(".variant-overlay")?.remove();
-};
 
 /* ========= CART ========= */
 function addToCart(item) {
@@ -278,54 +277,13 @@ window.cancelOrder = async id => {
   loadActiveOrders();
 };
 
-/* ========= CLOSE DAY (FINAL FIX) ========= */
+/* ========= CLOSE DAY (عرض فقط) ========= */
 window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(`
-      id,
-      total,
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed");
-
-  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
-
-  let totalSales = 0;
-  const itemsMap = {};
-
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
-
-  const topItem =
-    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
-
-  await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0,10),
-    orders_count: orders.length,
-    total_sales: totalSales,
-    top_item: topItem,
-    items: itemsMap
-  });
-
-  await supabase.from("orders").update({ status: "closed" }).eq("status", "completed");
-
-  alert("✅ تم إقفال اليوم");
-  window.location.href = "report.html";
+  // ❗ لا حفظ – فقط عرض التقرير
+  window.location.href = "report.html?preview=1";
 };
 
 /* ========= NAV ========= */
