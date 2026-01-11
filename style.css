@@ -333,3 +333,32 @@ th, td {
   border-radius: 8px;
   margin-bottom: 6px;
 }
+.variant-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.variant-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 300px;
+  text-align: center;
+}
+
+.variant-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.variant-cancel {
+  margin-top: 10px;
+}
+
