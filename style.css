@@ -333,10 +333,11 @@ th, td {
   border-radius: 8px;
   margin-bottom: 6px;
 }
+/* ===== Variant Popup ===== */
 .variant-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.6);
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -346,18 +347,34 @@ th, td {
 .variant-box {
   background: #fff;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 14px;
   width: 90%;
-  max-width: 300px;
+  max-width: 320px;
   text-align: center;
 }
 
 .variant-btn {
-  display: block;
   width: 100%;
-  margin: 8px 0;
+  padding: 10px;
+  margin: 6px 0;
+  border: none;
+  border-radius: 10px;
+  background: #0d6efd;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.variant-btn:hover {
+  opacity: 0.9;
 }
 
 .variant-cancel {
   margin-top: 10px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: #ddd;
+  border-radius: 10px;
+  cursor: pointer;
 }
