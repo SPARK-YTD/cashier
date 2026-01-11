@@ -10,6 +10,7 @@ window.setLang = setLang;
 let items = [];
 let cart = [];
 let activeOrders = [];
+let editingOrderId = null;
 
 /* ========= INIT ========= */
 document.addEventListener("DOMContentLoaded", async () => {
@@ -37,7 +38,10 @@ async function loadItems(category) {
     .eq("category", category)
     .eq("active", true);
 
-  if (error) return alert("خطأ في تحميل الأصناف");
+  if (error) {
+    alert("خطأ في تحميل الأصناف");
+    return;
+  }
 
   items = data || [];
   renderItems();
@@ -77,8 +81,8 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants || !variants.length) {
-    alert("لا توجد أحجام");
+  if (!variants || variants.length === 0) {
+    alert("لا توجد أحجام لهذا الصنف");
     return;
   }
 
@@ -98,7 +102,13 @@ function showVariantPopup(item, variants) {
       <h3>${item.name}</h3>
       ${variants.map(v => `
         <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          onclick="selectVariant(
+            '${item.id}',
+            '${item.name}',
+            '${v.id}',
+            '${v.label}',
+            ${v.price}
+          )">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
@@ -126,7 +136,10 @@ window.closeVariantPopup = function () {
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
+
+  if (found) found.qty++;
+  else cart.push({ ...item, key, qty: 1 });
+
   renderCart();
 }
 
@@ -137,7 +150,7 @@ function renderCart() {
   tbody.innerHTML = "";
   let total = 0;
 
-  cart.forEach((item, i) => {
+  cart.forEach((item, index) => {
     const sum = item.qty * item.price;
     total += sum;
 
@@ -145,27 +158,28 @@ function renderCart() {
       <tr>
         <td>${item.name}</td>
         <td>
-          <button onclick="changeQty(${i},-1)">-</button>
+          <button onclick="changeQty(${index},-1)">-</button>
           ${item.qty}
-          <button onclick="changeQty(${i},1)">+</button>
+          <button onclick="changeQty(${index},1)">+</button>
         </td>
         <td>${sum.toFixed(3)} د.ب</td>
-        <td><button onclick="removeItem(${i})">🗑</button></td>
-      </tr>`;
+        <td><button onclick="removeItem(${index})">🗑</button></td>
+      </tr>
+    `;
   });
 
   document.getElementById("total").textContent = total.toFixed(3) + " د.ب";
   calculateChange();
 }
 
-window.changeQty = (i, d) => {
-  cart[i].qty += d;
-  if (cart[i].qty <= 0) cart.splice(i, 1);
+window.changeQty = function (index, delta) {
+  cart[index].qty += delta;
+  if (cart[index].qty <= 0) cart.splice(index, 1);
   renderCart();
 };
 
-window.removeItem = i => {
-  cart.splice(i, 1);
+window.removeItem = function (index) {
+  cart.splice(index, 1);
   renderCart();
 };
 
@@ -176,7 +190,7 @@ function calculateChange() {
   const change = paid - total;
 
   document.getElementById("change").textContent =
-    change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
+    change >= 0 && paid > 0 ? change.toFixed(3) + " د.ب" : "—";
 }
 
 /* ========= COMPLETE ORDER ========= */
@@ -185,20 +199,38 @@ window.completeOrder = async function () {
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const { data: order } = await supabase
-    .from("orders")
-    .insert({ total, status: "active" })
-    .select()
-    .single();
+  if (editingOrderId) {
+    // تعديل طلب موجود
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
 
-  const items = cart.map(i => ({
-    order_id: order.id,
-    product_id: i.id,
-    qty: i.qty,
-    price: i.price
-  }));
+    const items = cart.map(i => ({
+      order_id: editingOrderId,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }));
 
-  await supabase.from("order_items").insert(items);
+    await supabase.from("order_items").insert(items);
+    editingOrderId = null;
+
+  } else {
+    // طلب جديد
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({ total, status: "active" })
+      .select()
+      .single();
+
+    const items = cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }));
+
+    await supabase.from("order_items").insert(items);
+  }
 
   cart = [];
   renderCart();
@@ -229,48 +261,47 @@ function renderActiveOrders() {
     div.innerHTML = `
       <strong>طلب #${order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
-      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="cancelOrder('${order.id}')">❌ إلغاء</button>
     `;
     box.appendChild(div);
   });
 }
 
-window.markCompleted = async id => {
-  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
-  loadActiveOrders();
-};
-
-window.cancelOrder = async id => {
-  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
-  loadActiveOrders();
-};
-
 /* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
-  const { data: items } = await supabase
+  editingOrderId = orderId;
+
+  const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
 
-  if (!items?.length) return alert("لا يمكن تعديل الطلب");
+  if (!data || !data.length) {
+    alert("لا يمكن تعديل الطلب");
+    editingOrderId = null;
+    return;
+  }
 
-  cart = [];
-  items.forEach(i => {
-    cart.push({
-      id: i.products.id,
-      name: i.products.name,
-      price: i.price,
-      qty: i.qty,
-      key: `${i.products.id}-${Math.random()}`
-    });
-  });
-
-  await supabase.from("order_items").delete().eq("order_id", orderId);
-  await supabase.from("orders").delete().eq("id", orderId);
+  cart = data.map(i => ({
+    id: i.products.id,
+    name: i.products.name,
+    price: i.price,
+    qty: i.qty,
+    key: `${i.products.id}-${Math.random()}`
+  }));
 
   renderCart();
+};
+
+window.markCompleted = async function (id) {
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  loadActiveOrders();
+};
+
+window.cancelOrder = async function (id) {
+  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
   loadActiveOrders();
 };
 
@@ -279,19 +310,21 @@ window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  const today = new Date().toISOString().slice(0, 10);
-
   const { data: orders } = await supabase
     .from("orders")
     .select(`
+      id,
       total,
-      order_items ( qty, price, products ( name ) )
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
     `)
-    .eq("status", "completed")
-    .gte("created_at", today + "T00:00:00")
-    .lte("created_at", today + "T23:59:59");
+    .eq("status", "completed");
 
-  if (!orders?.length) return alert("لا توجد طلبات مكتملة اليوم");
+  if (!orders || orders.length === 0)
+    return alert("لا توجد طلبات مكتملة");
 
   let totalSales = 0;
   const itemsMap = {};
@@ -306,11 +339,11 @@ window.closeDay = async function () {
     });
   });
 
-  const topItem = Object.entries(itemsMap)
-    .sort((a,b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+  const topItem =
+    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
   await supabase.from("daily_reports").insert({
-    report_date: today,
+    report_date: new Date().toISOString().slice(0,10),
     orders_count: orders.length,
     total_sales: totalSales,
     top_item: topItem,
@@ -322,5 +355,5 @@ window.closeDay = async function () {
 };
 
 /* ========= NAV ========= */
-window.goToSettings = () => location.href = "settings.html";
-window.goToReports  = () => location.href = "reports.html";
+window.goToSettings = () => window.location.href = "settings.html";
+window.goToReports  = () => window.location.href = "reports.html";
