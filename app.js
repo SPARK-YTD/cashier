@@ -207,15 +207,22 @@ window.completeOrder = async function () {
       .select()
       .single();
 
-await supabase.from("order_items").upsert(
+// 1️⃣ حذف كل الأصناف القديمة للطلب
+await supabase
+  .from("order_items")
+  .delete()
+  .eq("order_id", editingOrderId);
+
+// 2️⃣ إدخال الأصناف الحالية فقط (الفاتورة النهائية)
+await supabase.from("order_items").insert(
   cart.map(i => ({
     order_id: editingOrderId,
     product_id: i.id,
     qty: i.qty,
     price: i.price
-  })),
-  { onConflict: "order_id,product_id" }
+  }))
 );
+
 
   }
 
