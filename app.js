@@ -177,7 +177,6 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تحديث طلب نشط فقط
     await supabase.from("orders")
       .update({ total })
       .eq("id", editingOrderId)
@@ -197,9 +196,7 @@ window.completeOrder = async function () {
     );
 
     editingOrderId = null;
-
   } else {
-    // طلب جديد
     const { data: order } = await supabase
       .from("orders")
       .insert({ total, status: "active" })
@@ -253,9 +250,11 @@ function renderActiveOrders() {
   });
 }
 
-/* ========= EDIT ORDER (FINAL SAFE LOGIC) ========= */
+/* ========= EDIT ORDER (FIX النهائي) ========= */
 window.editOrder = async function (orderId) {
-  // تحقق أن الطلب نشط فقط
+  // 🛑 لا تعيد تحميل نفس الطلب
+  if (editingOrderId === orderId) return;
+
   const { data: order } = await supabase
     .from("orders")
     .select("status")
@@ -281,7 +280,7 @@ window.editOrder = async function (orderId) {
     name: i.products.name,
     price: i.price,
     qty: i.qty,
-    key: i.products.id
+    key: `${i.products.id}`
   }));
 
   renderCart();
