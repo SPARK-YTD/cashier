@@ -11,10 +11,29 @@ let items = [];
 let cart = [];
 let activeOrders = [];
 let editingOrderId = null;
+let currentBusinessDay = null;
+
+/* ========= LOAD CURRENT DAY ========= */
+async function loadCurrentDay() {
+  const { data } = await supabase
+    .from("business_days")
+    .select("*")
+    .eq("is_open", true)
+    .single();
+
+  currentBusinessDay = data || null;
+}
 
 /* ========= INIT ========= */
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
+  await loadCurrentDay();
+
+  if (!currentBusinessDay) {
+    alert("⚠️ لا يوجد يوم مفتوح، الرجاء بدء يوم جديد");
+    return;
+  }
+
   await loadItems("food");
   await loadActiveOrders();
   renderCart();
@@ -170,35 +189,22 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (نهائي وآمن) ========= */
+/* ========= COMPLETE ORDER ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  /* ✏️ تعديل طلب */
   if (editingOrderId) {
-    const { data: order } = await supabase
-      .from("orders")
-      .select("status")
-      .eq("id", editingOrderId)
-      .single();
-
-    if (order.status !== "active") {
-      alert("لا يمكن تعديل هذا الطلب");
-      return;
-    }
-
     await supabase.from("orders")
       .update({ total })
-      .eq("id", editingOrderId);
+      .eq("id", editingOrderId)
+      .eq("status", "active");
 
-    // حذف كل الأصناف القديمة
     await supabase.from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
-    // إدخال الفاتورة النهائية فقط
     await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -209,13 +215,14 @@ window.completeOrder = async function () {
     );
 
     editingOrderId = null;
-  }
-
-  /* 🆕 طلب جديد */
-  else {
+  } else {
     const { data: order } = await supabase
       .from("orders")
-      .insert({ total, status: "active" })
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
       .select("id, invoice_no")
       .single();
 
@@ -240,6 +247,7 @@ async function loadActiveOrders() {
     .from("orders")
     .select("*")
     .eq("status", "active")
+    .eq("business_day_id", currentBusinessDay.id)
     .order("created_at", { ascending: false });
 
   activeOrders = data || [];
@@ -307,22 +315,24 @@ window.cancelOrder = async id => {
   loadActiveOrders();
 };
 
-/* ========= CLOSE DAY (نهائي) ========= */
+/* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  const today = new Date().toISOString().slice(0,10);
+  if (!currentBusinessDay) {
+    alert("❌ لا يوجد يوم مفتوح");
+    return;
+  }
 
-  // منع تكرار التقرير
   const { data: existing } = await supabase
     .from("daily_reports")
     .select("id")
-    .eq("report_date", today)
+    .eq("business_day_id", currentBusinessDay.id)
     .single();
 
   if (existing) {
-    alert("⚠️ تم إقفال اليوم مسبقًا");
+    alert("⚠️ تم إقفال هذا اليوم مسبقًا");
     return;
   }
 
@@ -338,7 +348,7 @@ window.closeDay = async function () {
       )
     `)
     .eq("status", "completed")
-    .is("closed_at", null);
+    .eq("business_day_id", currentBusinessDay.id);
 
   if (!orders?.length) return alert("لا توجد طلبات مكتملة");
 
@@ -347,7 +357,6 @@ window.closeDay = async function () {
 
   orders.forEach(o => {
     totalSales += o.total;
-
     o.order_items.forEach(i => {
       const name = i.products.name;
       itemsMap[name] ??= { qty: 0, total: 0 };
@@ -360,16 +369,20 @@ window.closeDay = async function () {
     Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
   await supabase.from("daily_reports").insert({
-    report_date: today,
+    business_day_id: currentBusinessDay.id,
+    report_date: currentBusinessDay.day_date,
     orders_count: orders.length,
     total_sales: totalSales,
     top_item: topItem,
     items: itemsMap
   });
 
-  await supabase.from("orders")
-    .update({ closed_at: new Date().toISOString() })
-    .in("id", orders.map(o => o.id));
+  await supabase.from("business_days")
+    .update({
+      is_open: false,
+      closed_at: new Date().toISOString()
+    })
+    .eq("id", currentBusinessDay.id);
 
   alert("✅ تم إقفال اليوم");
   window.location.href = "report.html";
