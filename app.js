@@ -203,11 +203,14 @@ window.completeOrder = async function () {
 
   // 🆕 طلب جديد
   else {
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({ total, status: "active" })
-      .select()
-      .single();
+const { data: order } = await supabase
+  .from("orders")
+  .insert({
+    total,
+    status: "active"
+  })
+  .select("id, invoice_no")
+  .single();
 
     await supabase.from("order_items").insert(
       cart.map(i => ({
@@ -246,7 +249,7 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>طلب #${order.id.slice(0,6)}</strong><br>
+      <strong>فاتورة رقم ${order.invoice_no}</strong>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
