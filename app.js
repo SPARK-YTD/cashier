@@ -207,14 +207,16 @@ window.completeOrder = async function () {
       .select()
       .single();
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
+await supabase.from("order_items").upsert(
+  cart.map(i => ({
+    order_id: editingOrderId,
+    product_id: i.id,
+    qty: i.qty,
+    price: i.price
+  })),
+  { onConflict: "order_id,product_id" }
+);
+
   }
 
   cart = [];
