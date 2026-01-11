@@ -333,11 +333,14 @@ window.closeDay = async function () {
     });
   });
 
+  const topItem =
+    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+
   await supabase.from("daily_reports").insert({
     report_date: new Date().toISOString().slice(0,10),
     orders_count: orders.length,
     total_sales: totalSales,
-    top_item: Object.keys(itemsMap)[0] || "—",
+    top_item: topItem,
     items: itemsMap
   });
 
