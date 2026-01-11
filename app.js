@@ -66,25 +66,71 @@ function renderItems() {
     div.className = "item";
 
     div.innerHTML = `
-      ${
-        item.image_url
-          ? `<img src="${item.image_url}" class="cashier-item-img">`
-          : ""
-      }
+      ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
-      <span>${item.price.toFixed(3)} د.ب</span>
+      <span>
+        ${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}
+      </span>
     `;
 
-    div.onclick = () => addToCart(item);
+    // ⭐️ التعديل الوحيد هنا
+    div.onclick = () => handleItemClick(item);
+
     container.appendChild(div);
+  });
+}
+
+/* ========= VARIANTS (NEW) ========= */
+async function handleItemClick(item) {
+  // منتج عادي
+  if (!item.has_variants) {
+    addToCart(item);
+    return;
+  }
+
+  // منتج متعدد الأحجام
+  const { data: variants, error } = await supabase
+    .from("product_variants")
+    .select("*")
+    .eq("product_id", item.id)
+    .eq("active", true);
+
+  if (error || !variants || variants.length === 0) {
+    alert("لا توجد أحجام لهذا الصنف");
+    return;
+  }
+
+  let options = variants
+    .map(
+      (v, i) => `${i + 1}) ${v.label} - ${v.price.toFixed(3)} د.ب`
+    )
+    .join("\n");
+
+  const choice = prompt(`اختر الحجم:\n${options}`);
+  const index = parseInt(choice) - 1;
+
+  if (isNaN(index) || !variants[index]) return;
+
+  addToCart({
+    ...item,
+    variant_id: variants[index].id,
+    variant_label: variants[index].label,
+    price: variants[index].price
   });
 }
 
 /* ========= CART ========= */
 function addToCart(item) {
-  const found = cart.find(i => i.id === item.id);
-  if (found) found.qty++;
-  else cart.push({ ...item, qty: 1 });
+  // ⭐️ دعم التفريق بين الأحجام
+  const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
+  const found = cart.find(i => i.key === key);
+
+  if (found) {
+    found.qty++;
+  } else {
+    cart.push({ ...item, key, qty: 1 });
+  }
+
   renderCart();
 }
 
@@ -101,7 +147,10 @@ function renderCart() {
 
     tbody.innerHTML += `
       <tr>
-        <td>${item.name}</td>
+        <td>
+          ${item.name}
+          ${item.variant_label ? `<br><small>(${item.variant_label})</small>` : ""}
+        </td>
         <td>
           <button onclick="changeQty(${index},-1)">-</button>
           ${item.qty}
@@ -165,6 +214,7 @@ window.completeOrder = async function () {
   const orderItems = cart.map(i => ({
     order_id: order.id,
     product_id: i.id,
+    variant_id: i.variant_id || null,
     qty: i.qty,
     price: i.price
   }));
