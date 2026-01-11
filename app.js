@@ -53,13 +53,11 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
       ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-
     div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
@@ -119,10 +117,7 @@ window.closeVariantPopup = () =>
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
-
+  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
 }
 
@@ -136,7 +131,6 @@ function renderCart() {
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
-
     tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
@@ -176,32 +170,36 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (FINAL FIX) ========= */
+/* ========= COMPLETE ORDER (FINAL – NO DUPLICATION) ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تحديث الطلب فقط
+    // 🧹 حذف كل الأصناف القديمة (حل التكرار النهائي)
     await supabase
-      .from("orders")
-      .update({ total })
-      .eq("id", editingOrderId)
-      .eq("status", "active");
+      .from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
 
-    // ✅ UPSERT يمنع التكرار نهائيًا
-    await supabase.from("order_items").upsert(
+    // ➕ إدخال الفاتورة الحالية فقط
+    await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
         product_id: i.id,
         qty: i.qty,
         price: i.price
-      })),
-      { onConflict: "order_id,product_id" }
+      }))
     );
 
+    await supabase
+      .from("orders")
+      .update({ total, status: "active" })
+      .eq("id", editingOrderId);
+
     editingOrderId = null;
+
   } else {
     const { data: order } = await supabase
       .from("orders")
@@ -258,8 +256,6 @@ function renderActiveOrders() {
 
 /* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
-  if (editingOrderId === orderId) return;
-
   editingOrderId = orderId;
   cart = [];
   renderCart();
@@ -299,60 +295,6 @@ window.cancelOrder = async id => {
     .eq("status", "active");
 
   loadActiveOrders();
-};
-
-/* ========= CLOSE DAY ========= */
-window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
-  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(`
-      id,
-      total,
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed")
-    .is("closed_at", null);
-
-  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
-
-  let totalSales = 0;
-  const itemsMap = {};
-
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
-
-  const topItem =
-    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
-
-  await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0,10),
-    orders_count: orders.length,
-    total_sales: totalSales,
-    top_item: topItem,
-    items: itemsMap
-  });
-
-  await supabase
-    .from("orders")
-    .update({ closed_at: new Date().toISOString() })
-    .in("id", orders.map(o => o.id));
-
-  alert("✅ تم إقفال اليوم");
-  window.location.href = "report.html";
 };
 
 /* ========= NAV ========= */
