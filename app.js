@@ -170,13 +170,13 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (FINAL – CLEAN) ========= */
+/* ========= COMPLETE ORDER (FINAL & SAFE) ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  // 🔁 تعديل طلب
+  // ✏️ تعديل طلب
   if (editingOrderId) {
     await supabase.from("orders")
       .update({ total })
@@ -189,13 +189,14 @@ window.completeOrder = async function () {
       .eq("order_id", editingOrderId);
 
     // ✅ إدخال الفاتورة النهائية فقط
-    await supabase.from("order_items")
-      .insert(cart.map(i => ({
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
         order_id: editingOrderId,
         product_id: i.id,
         qty: i.qty,
         price: i.price
-      })));
+      }))
+    );
 
     editingOrderId = null;
   }
@@ -208,13 +209,14 @@ window.completeOrder = async function () {
       .select()
       .single();
 
-    await supabase.from("order_items")
-      .insert(cart.map(i => ({
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
         order_id: order.id,
         product_id: i.id,
         qty: i.qty,
         price: i.price
-      })));
+      }))
+    );
   }
 
   cart = [];
