@@ -182,18 +182,18 @@ window.completeOrder = async function () {
       .eq("id", editingOrderId)
       .eq("status", "active");
 
-    await supabase.from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
+await supabase.from("order_items").upsert(
+  cart.map(i => ({
+    order_id: editingOrderId,
+    product_id: i.id,
+    qty: i.qty,
+    price: i.price
+  })),
+  {
+    onConflict: "order_id,product_id"
+  }
+);
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
 
     editingOrderId = null;
   } else {
