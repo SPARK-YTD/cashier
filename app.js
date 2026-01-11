@@ -21,6 +21,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const paid = document.getElementById("paid");
   if (paid) paid.addEventListener("input", calculateChange);
+
+  // ربط زر إقفال اليوم (حل مشكلة closeDay)
+  const closeBtn = document.getElementById("closeDayBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closeDay);
 });
 
 /* ========= CATEGORIES ========= */
@@ -170,36 +174,29 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (FINAL – NO DUPLICATION) ========= */
+/* ========= COMPLETE ORDER (NO DUPLICATION) ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // 🧹 حذف كل الأصناف القديمة (حل التكرار النهائي)
-    await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
+    await supabase.from("orders")
+      .update({ total })
+      .eq("id", editingOrderId);
 
-    // ➕ إدخال الفاتورة الحالية فقط
-    await supabase.from("order_items").insert(
+    // UPSERT يمنع التكرار نهائيًا
+    await supabase.from("order_items").upsert(
       cart.map(i => ({
         order_id: editingOrderId,
         product_id: i.id,
         qty: i.qty,
         price: i.price
-      }))
+      })),
+      { onConflict: "order_id,product_id" }
     );
 
-    await supabase
-      .from("orders")
-      .update({ total, status: "active" })
-      .eq("id", editingOrderId);
-
     editingOrderId = null;
-
   } else {
     const { data: order } = await supabase
       .from("orders")
@@ -256,9 +253,15 @@ function renderActiveOrders() {
 
 /* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
+  if (editingOrderId === orderId) return;
+
   editingOrderId = orderId;
   cart = [];
   renderCart();
+
+  // إزالة الطلب من الجارية أثناء التعديل
+  activeOrders = activeOrders.filter(o => o.id !== orderId);
+  renderActiveOrders();
 
   const { data } = await supabase
     .from("order_items")
@@ -278,24 +281,71 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ status: "completed" })
-    .eq("id", id)
-    .eq("status", "active");
+    .eq("id", id);
 
   loadActiveOrders();
 };
 
 window.cancelOrder = async id => {
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ status: "cancelled" })
-    .eq("id", id)
-    .eq("status", "active");
+    .eq("id", id);
 
   loadActiveOrders();
 };
+
+/* ========= CLOSE DAY ========= */
+async function closeDay() {
+  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
+  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      total,
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
+    `)
+    .eq("status", "completed")
+    .is("closed_at", null);
+
+  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
+
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
+  });
+
+  await supabase.from("daily_reports").insert({
+    report_date: new Date().toISOString().slice(0,10),
+    orders_count: orders.length,
+    total_sales: totalSales,
+    top_item: Object.keys(itemsMap)[0] || "—",
+    items: itemsMap
+  });
+
+  await supabase
+    .from("orders")
+    .update({ closed_at: new Date().toISOString() })
+    .in("id", orders.map(o => o.id));
+
+  alert("✅ تم إقفال اليوم");
+  window.location.href = "report.html";
+}
 
 /* ========= NAV ========= */
 window.goToSettings = () => location.href = "settings.html";
