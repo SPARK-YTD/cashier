@@ -27,7 +27,9 @@
     <h3>➕ إضافة صنف</h3>
 
     <input id="itemName" placeholder="اسم الصنف">
-    <input id="itemPrice" type="number" step="0.001" placeholder="السعر">
+
+    <!-- السعر العادي (يستخدم إذا ما فيه أحجام) -->
+    <input id="itemPrice" type="number" step="0.001" placeholder="السعر (بدون أحجام)">
 
     <select id="itemCategory">
       <option value="food">🍔 طعام</option>
@@ -35,8 +37,36 @@
       <option value="sides">🍟 أطباق جانبية</option>
     </select>
 
-    <!-- 🔽 حقل رفع صورة الصنف -->
+    <!-- 🔽 رفع صورة -->
     <input type="file" id="itemImage" accept="image/*">
+
+    <!-- ===== دعم الأحجام ===== -->
+    <div style="margin-top:15px; padding:10px; border:1px dashed #ccc; border-radius:8px">
+
+      <label style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="hasVariants">
+        <strong>الصنف له عدة أحجام</strong>
+      </label>
+
+      <div id="variantsBox" style="display:none; margin-top:10px">
+
+        <div class="variant-row">
+          <label>Small</label>
+          <input type="number" step="0.001" id="priceSmall" placeholder="سعر Small">
+        </div>
+
+        <div class="variant-row">
+          <label>Medium</label>
+          <input type="number" step="0.001" id="priceMedium" placeholder="سعر Medium">
+        </div>
+
+        <div class="variant-row">
+          <label>Large</label>
+          <input type="number" step="0.001" id="priceLarge" placeholder="سعر Large">
+        </div>
+
+      </div>
+    </div>
 
     <button class="btn success" onclick="addItem()">حفظ الصنف</button>
 
@@ -54,6 +84,16 @@
 </main>
 
 <script type="module" src="settings.js"></script>
+
+<!-- تحكم إظهار الأحجام -->
+<script>
+  const hasVariantsCheckbox = document.getElementById("hasVariants");
+  const variantsBox = document.getElementById("variantsBox");
+
+  hasVariantsCheckbox.addEventListener("change", () => {
+    variantsBox.style.display = hasVariantsCheckbox.checked ? "block" : "none";
+  });
+</script>
 
 </body>
 </html>
