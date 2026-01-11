@@ -337,44 +337,44 @@ th, td {
 .variant-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  transition: opacity 0.2s ease;
+}
+
+.variant-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .variant-box {
   background: #fff;
   padding: 20px;
-  border-radius: 14px;
+  border-radius: 10px;
   width: 90%;
-  max-width: 320px;
+  max-width: 300px;
   text-align: center;
 }
 
 .variant-btn {
+  display: block;
   width: 100%;
+  margin: 8px 0;
   padding: 10px;
-  margin: 6px 0;
+  border-radius: 8px;
   border: none;
-  border-radius: 10px;
-  background: #0d6efd;
-  color: #fff;
-  font-size: 15px;
+  background: #e3f2fd;
   cursor: pointer;
 }
 
 .variant-btn:hover {
-  opacity: 0.9;
+  background: #bbdefb;
 }
 
 .variant-cancel {
   margin-top: 10px;
-  width: 100%;
   padding: 8px;
-  border: none;
-  background: #ddd;
-  border-radius: 10px;
-  cursor: pointer;
 }
