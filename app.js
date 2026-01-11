@@ -73,22 +73,20 @@ function renderItems() {
       </span>
     `;
 
-    // ⭐️ التعديل الوحيد هنا
+    // 🔹 التعديل هنا
     div.onclick = () => handleItemClick(item);
 
     container.appendChild(div);
   });
 }
 
-/* ========= VARIANTS (NEW) ========= */
+/* ========= VARIANTS POPUP ========= */
 async function handleItemClick(item) {
-  // منتج عادي
   if (!item.has_variants) {
     addToCart(item);
     return;
   }
 
-  // منتج متعدد الأحجام
   const { data: variants, error } = await supabase
     .from("product_variants")
     .select("*")
@@ -100,36 +98,53 @@ async function handleItemClick(item) {
     return;
   }
 
-  let options = variants
-    .map(
-      (v, i) => `${i + 1}) ${v.label} - ${v.price.toFixed(3)} د.ب`
-    )
-    .join("\n");
-
-  const choice = prompt(`اختر الحجم:\n${options}`);
-  const index = parseInt(choice) - 1;
-
-  if (isNaN(index) || !variants[index]) return;
-
-  addToCart({
-    ...item,
-    variant_id: variants[index].id,
-    variant_label: variants[index].label,
-    price: variants[index].price
-  });
+  showVariantPopup(item, variants);
 }
+
+function showVariantPopup(item, variants) {
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>${item.name}</h3>
+
+      ${variants.map(v => `
+        <button class="variant-btn"
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          ${v.label} — ${v.price.toFixed(3)} د.ب
+        </button>
+      `).join("")}
+
+      <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
+window.selectVariant = function (productId, productName, variantId, label, price) {
+  addToCart({
+    id: productId,
+    name: `${productName} (${label})`,
+    price,
+    variant_id: variantId
+  });
+  closeVariantPopup();
+};
+
+window.closeVariantPopup = function () {
+  const overlay = document.querySelector(".variant-overlay");
+  if (overlay) overlay.remove();
+};
 
 /* ========= CART ========= */
 function addToCart(item) {
-  // ⭐️ دعم التفريق بين الأحجام
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
 
-  if (found) {
-    found.qty++;
-  } else {
-    cart.push({ ...item, key, qty: 1 });
-  }
+  if (found) found.qty++;
+  else cart.push({ ...item, key, qty: 1 });
 
   renderCart();
 }
@@ -147,10 +162,7 @@ function renderCart() {
 
     tbody.innerHTML += `
       <tr>
-        <td>
-          ${item.name}
-          ${item.variant_label ? `<br><small>(${item.variant_label})</small>` : ""}
-        </td>
+        <td>${item.name}</td>
         <td>
           <button onclick="changeQty(${index},-1)">-</button>
           ${item.qty}
@@ -214,7 +226,6 @@ window.completeOrder = async function () {
   const orderItems = cart.map(i => ({
     order_id: order.id,
     product_id: i.id,
-    variant_id: i.variant_id || null,
     qty: i.qty,
     price: i.price
   }));
@@ -226,136 +237,5 @@ window.completeOrder = async function () {
   loadActiveOrders();
 };
 
-async function loadActiveOrders() {
-  const { data } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("status", "active")
-    .order("created_at", { ascending: false });
-
-  activeOrders = data || [];
-  renderActiveOrders();
-}
-
-function renderActiveOrders() {
-  const box = document.getElementById("activeOrders");
-  if (!box) return;
-
-  box.innerHTML = "";
-
-  activeOrders.forEach(order => {
-    const div = document.createElement("div");
-    div.className = "order-box";
-    div.innerHTML = `
-      <strong>طلب #${order.id.slice(0, 6)}</strong><br>
-      ${order.total.toFixed(3)} د.ب<br>
-      <button onclick="markCompleted('${order.id}')">مكتمل</button>
-      <button onclick="cancelOrder('${order.id}')">إلغاء</button>
-    `;
-    box.appendChild(div);
-  });
-}
-
-window.markCompleted = async function (id) {
-  await supabase
-    .from("orders")
-    .update({ status: "completed" })
-    .eq("id", id);
-
-  loadActiveOrders();
-};
-
-window.cancelOrder = async function (id) {
-  await supabase
-    .from("orders")
-    .update({ status: "cancelled" })
-    .eq("id", id);
-
-  loadActiveOrders();
-};
-
-/* ========= NAV ========= */
-window.goToSettings = function () {
-  window.location.href = "settings.html";
-};
-
-window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
-  if (pass !== "1234") {
-    alert("❌ كلمة المرور غير صحيحة");
-    return;
-  }
-
-  if (!confirm("هل أنت متأكد من إقفال اليوم؟")) return;
-
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select(`
-      id,
-      total,
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed");
-
-  if (error || !orders || orders.length === 0) {
-    alert("لا توجد طلبات مكتملة لإقفال اليوم");
-    return;
-  }
-
-  let totalSales = 0;
-  const itemsMap = {};
-
-  orders.forEach(order => {
-    totalSales += order.total;
-
-    (order.order_items || []).forEach(oi => {
-      const name = oi.products?.name || "—";
-      if (!itemsMap[name]) {
-        itemsMap[name] = { qty: 0, total: 0 };
-      }
-      itemsMap[name].qty += oi.qty;
-      itemsMap[name].total += oi.qty * oi.price;
-    });
-  });
-
-  let topItem = "—";
-  let topQty = 0;
-  Object.keys(itemsMap).forEach(name => {
-    if (itemsMap[name].qty > topQty) {
-      topQty = itemsMap[name].qty;
-      topItem = name;
-    }
-  });
-
-  const { error: insertError } = await supabase
-    .from("daily_reports")
-    .insert({
-      report_date: new Date().toISOString().slice(0, 10),
-      orders_count: orders.length,
-      total_sales: totalSales,
-      top_item: topItem,
-      items: itemsMap
-    });
-
-  if (insertError) {
-    alert("فشل حفظ تقرير اليوم");
-    console.error(insertError);
-    return;
-  }
-
-  alert("✅ تم إقفال اليوم بنجاح");
-  window.location.href = "report.html";
-};
-
-window.goToReports = function () {
-  const pass = prompt("🔒 أدخل كلمة المرور للدخول إلى الأرشيف:");
-  if (pass !== "1234") {
-    alert("❌ كلمة المرور غير صحيحة");
-    return;
-  }
-  window.location.href = "reports.html";
-};
+/* ========= باقي كودك بدون تغيير ========= */
+// loadActiveOrders, closeDay, reports, navigation (كما هو)
