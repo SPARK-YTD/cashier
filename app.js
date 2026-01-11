@@ -11,39 +11,10 @@ let items = [];
 let cart = [];
 let activeOrders = [];
 let editingOrderId = null;
-let currentBusinessDay = null;
-
-/* ========= LOAD CURRENT BUSINESS DAY ========= */
-async function loadCurrentDay() {
-  const { data } = await supabase
-    .from("business_days")
-    .select("*")
-    .eq("is_open", true)
-    .order("opened_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  currentBusinessDay = data || null;
-
-  const statusEl = document.getElementById("dayStatus");
-  if (statusEl) {
-    if (currentBusinessDay) {
-      statusEl.textContent = "🟢 اليوم مفتوح";
-      statusEl.style.color = "green";
-    } else {
-      statusEl.textContent = "🔴 اليوم مقفل";
-      statusEl.style.color = "red";
-    }
-  }
-}
 
 /* ========= INIT ========= */
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
-  await loadCurrentDay();
-
-  if (!currentBusinessDay) return;
-
   await loadItems("food");
   await loadActiveOrders();
   renderCart();
@@ -54,7 +25,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /* ========= CATEGORIES ========= */
 window.filterCategory = function (category, btn) {
-  if (!currentBusinessDay) return;
   document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   loadItems(category);
@@ -62,11 +32,13 @@ window.filterCategory = function (category, btn) {
 
 /* ========= ITEMS ========= */
 async function loadItems(category) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .eq("category", category)
     .eq("active", true);
+
+  if (error) return alert("خطأ في تحميل الأصناف");
 
   items = data || [];
   renderItems();
@@ -75,6 +47,7 @@ async function loadItems(category) {
 function renderItems() {
   const container = document.getElementById("items");
   if (!container) return;
+
   container.innerHTML = "";
 
   items.forEach(item => {
@@ -85,7 +58,7 @@ function renderItems() {
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-    div.onclick = () => currentBusinessDay && handleItemClick(item);
+    div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
 }
@@ -100,7 +73,8 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants?.length) return;
+  if (!variants?.length) return alert("لا توجد أحجام");
+
   showVariantPopup(item, variants);
 }
 
@@ -116,11 +90,12 @@ function showVariantPopup(item, variants) {
     <div class="variant-box">
       <h3>${item.name}</h3>
       ${variants.map(v => `
-        <button onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+        <button class="variant-btn"
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
-      <button onclick="closeVariantPopup()">إلغاء</button>
+      <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
     </div>
   `;
 }
@@ -149,16 +124,21 @@ function addToCart(item) {
 function renderCart() {
   const tbody = document.getElementById("cart");
   if (!tbody) return;
-  tbody.innerHTML = "";
 
+  tbody.innerHTML = "";
   let total = 0;
+
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
     tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
-        <td>${item.qty}</td>
+        <td>
+          <button onclick="changeQty(${i},-1)">-</button>
+          ${item.qty}
+          <button onclick="changeQty(${i},1)">+</button>
+        </td>
         <td>${sum.toFixed(3)} د.ب</td>
         <td><button onclick="removeItem(${i})">🗑</button></td>
       </tr>
@@ -169,6 +149,12 @@ function renderCart() {
   calculateChange();
 }
 
+window.changeQty = (i, d) => {
+  cart[i].qty += d;
+  if (cart[i].qty <= 0) cart.splice(i, 1);
+  renderCart();
+};
+
 window.removeItem = i => {
   cart.splice(i, 1);
   renderCart();
@@ -178,20 +164,41 @@ window.removeItem = i => {
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
   const total = parseFloat(document.getElementById("total").textContent) || 0;
+  const change = paid - total;
+
   document.getElementById("change").textContent =
-    paid >= total && paid ? (paid - total).toFixed(3) + " د.ب" : "—";
+    change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER ========= */
+/* ========= COMPLETE ORDER (نهائي وآمن) ========= */
 window.completeOrder = async function () {
-  if (!currentBusinessDay) return;
-  if (!cart.length) return;
+  if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
+  /* ✏️ تعديل طلب */
   if (editingOrderId) {
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    const { data: order } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("id", editingOrderId)
+      .single();
+
+    if (order.status !== "active") {
+      alert("لا يمكن تعديل هذا الطلب");
+      return;
+    }
+
+    await supabase.from("orders")
+      .update({ total })
+      .eq("id", editingOrderId);
+
+    // حذف كل الأصناف القديمة
+    await supabase.from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
+
+    // إدخال الفاتورة النهائية فقط
     await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -200,16 +207,16 @@ window.completeOrder = async function () {
         price: i.price
       }))
     );
+
     editingOrderId = null;
-  } else {
+  }
+
+  /* 🆕 طلب جديد */
+  else {
     const { data: order } = await supabase
       .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id
-      })
-      .select("id")
+      .insert({ total, status: "active" })
+      .select("id, invoice_no")
       .single();
 
     await supabase.from("order_items").insert(
@@ -229,13 +236,10 @@ window.completeOrder = async function () {
 
 /* ========= ACTIVE ORDERS ========= */
 async function loadActiveOrders() {
-  if (!currentBusinessDay) return;
-
   const { data } = await supabase
     .from("orders")
     .select("*")
     .eq("status", "active")
-    .eq("business_day_id", currentBusinessDay.id)
     .order("created_at", { ascending: false });
 
   activeOrders = data || [];
@@ -245,19 +249,132 @@ async function loadActiveOrders() {
 function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
   if (!box) return;
+
   box.innerHTML = "";
 
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>فاتورة #${order.invoice_no}</strong><br>
-      ${order.total.toFixed(3)} د.ب
+      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+      <button onclick="cancelOrder('${order.id}')">❌ إلغاء</button>
     `;
     box.appendChild(div);
   });
 }
 
+/* ========= EDIT ORDER ========= */
+window.editOrder = async function (orderId) {
+  editingOrderId = orderId;
+  cart = [];
+  renderCart();
+
+  const { data } = await supabase
+    .from("order_items")
+    .select(`qty, price, products ( id, name )`)
+    .eq("order_id", orderId);
+
+  cart = data.map(i => ({
+    id: i.products.id,
+    name: i.products.name,
+    price: i.price,
+    qty: i.qty,
+    key: i.products.id
+  }));
+
+  renderCart();
+};
+
+/* ========= STATUS ========= */
+window.markCompleted = async id => {
+  await supabase.from("orders")
+    .update({ status: "completed" })
+    .eq("id", id)
+    .eq("status", "active");
+
+  loadActiveOrders();
+};
+
+window.cancelOrder = async id => {
+  await supabase.from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", id)
+    .eq("status", "active");
+
+  loadActiveOrders();
+};
+
+/* ========= CLOSE DAY (نهائي) ========= */
+window.closeDay = async function () {
+  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
+  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+
+  const today = new Date().toISOString().slice(0,10);
+
+  // منع تكرار التقرير
+  const { data: existing } = await supabase
+    .from("daily_reports")
+    .select("id")
+    .eq("report_date", today)
+    .single();
+
+  if (existing) {
+    alert("⚠️ تم إقفال اليوم مسبقًا");
+    return;
+  }
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      total,
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
+    `)
+    .eq("status", "completed")
+    .is("closed_at", null);
+
+  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
+
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
+  });
+
+  const topItem =
+    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+
+  await supabase.from("daily_reports").insert({
+    report_date: today,
+    orders_count: orders.length,
+    total_sales: totalSales,
+    top_item: topItem,
+    items: itemsMap
+  });
+
+  await supabase.from("orders")
+    .update({ closed_at: new Date().toISOString() })
+    .in("id", orders.map(o => o.id));
+
+  alert("✅ تم إقفال اليوم");
+  window.location.href = "report.html";
+};
+
 /* ========= NAV ========= */
-window.goToReports  = () => window.location.href = "report.html";
-window.goToSettings = () => window.location.href = "settings.html";
+window.goToSettings = () => location.href = "settings.html";
+window.goToReports  = () => location.href = "reports.html";
