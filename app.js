@@ -4,7 +4,7 @@ import { applyLang, setLang } from "./i18n.js";
 window.setLang = setLang;
 
 /*********************************
- * Get-Break | Cashier System
+ * Get-Break | Cashier System (FIXED)
  *********************************/
 
 let items = [];
@@ -23,22 +23,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (paid) paid.addEventListener("input", calculateChange);
 });
 
-/* ========= CATEGORIES ========= */
-window.filterCategory = function (category, btn) {
-  document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  loadItems(category);
-};
-
 /* ========= ITEMS ========= */
 async function loadItems(category) {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("products")
     .select("*")
     .eq("category", category)
     .eq("active", true);
-
-  if (error) return alert("خطأ في تحميل الأصناف");
 
   items = data || [];
   renderItems();
@@ -53,81 +44,24 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
-      ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
-      <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
+      <span>${item.price.toFixed(3)} د.ب</span>
     `;
-
-    div.onclick = () => handleItemClick(item);
+    div.onclick = () => addToCart(item);
     container.appendChild(div);
   });
 }
-
-/* ========= VARIANTS ========= */
-async function handleItemClick(item) {
-  if (!item.has_variants) return addToCart(item);
-
-  const { data: variants } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
-
-  if (!variants?.length) return alert("لا توجد أحجام");
-
-  showVariantPopup(item, variants);
-}
-
-function showVariantPopup(item, variants) {
-  let overlay = document.querySelector(".variant-overlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.className = "variant-overlay";
-    document.body.appendChild(overlay);
-  }
-
-  overlay.innerHTML = `
-    <div class="variant-box">
-      <h3>${item.name}</h3>
-      ${variants.map(v => `
-        <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
-          ${v.label} — ${v.price.toFixed(3)} د.ب
-        </button>
-      `).join("")}
-      <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
-    </div>
-  `;
-}
-
-window.selectVariant = function (productId, name, variantId, label, price) {
-  addToCart({
-    id: productId,
-    name: `${name} (${label})`,
-    price,
-    variant_id: variantId
-  });
-  closeVariantPopup();
-};
-
-window.closeVariantPopup = () =>
-  document.querySelector(".variant-overlay")?.remove();
 
 /* ========= CART ========= */
 function addToCart(item) {
   const key = item.variant_id
     ? `${item.id}-${item.variant_id}`
-    : `${item.id}`;
+    : item.id;
 
   const found = cart.find(i => i.key === key);
-
-  if (found) {
-    found.qty++;
-  } else {
-    cart.push({ ...item, key, qty: 1 });
-  }
+  if (found) found.qty++;
+  else cart.push({ ...item, key, qty: 1 });
 
   renderCart();
 }
@@ -177,7 +111,6 @@ function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
   const total = parseFloat(document.getElementById("total").textContent) || 0;
   const change = paid - total;
-
   document.getElementById("change").textContent =
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
@@ -189,13 +122,11 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    await supabase
-      .from("orders")
+    await supabase.from("orders")
       .update({ total, status: "active" })
       .eq("id", editingOrderId);
 
-    await supabase
-      .from("order_items")
+    await supabase.from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
@@ -257,28 +188,26 @@ function renderActiveOrders() {
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-      <button onclick="cancelOrder('${order.id}')">❌ إلغاء</button>
     `;
     box.appendChild(div);
   });
 }
 
-/* ========= EDIT ORDER ========= */
+/* ========= EDIT ORDER (FIXED) ========= */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
 
   const { data } = await supabase
     .from("order_items")
-    .select(`qty, price, products ( id, name )`)
+    .select("product_id, qty, price, products(name)")
     .eq("order_id", orderId);
 
   cart = data.map(i => ({
-    id: i.products.id,
+    id: i.product_id,
     name: i.products.name,
     price: i.price,
     qty: i.qty,
-    variant_id: null,
-    key: `${i.products.id}`
+    key: i.product_id
   }));
 
   renderCart();
@@ -286,18 +215,8 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase
-    .from("orders")
+  await supabase.from("orders")
     .update({ status: "completed" })
-    .eq("id", id);
-
-  loadActiveOrders();
-};
-
-window.cancelOrder = async id => {
-  await supabase
-    .from("orders")
-    .update({ status: "cancelled" })
     .eq("id", id);
 
   loadActiveOrders();
@@ -305,12 +224,39 @@ window.cancelOrder = async id => {
 
 /* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
-  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+  const pass = prompt("🔒 أدخل كلمة المرور:");
+  if (pass !== "1234") return;
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("id,total,order_items(qty,price,products(name))")
+    .eq("status", "completed")
+    .is("closed_at", null);
+
+  if (!orders?.length) return alert("لا توجد طلبات");
+
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+    o.order_items.forEach(i => {
+      itemsMap[i.products.name] ??= { qty: 0, total: 0 };
+      itemsMap[i.products.name].qty += i.qty;
+      itemsMap[i.products.name].total += i.qty * i.price;
+    });
+  });
+
+  await supabase.from("daily_reports").insert({
+    report_date: new Date().toISOString().slice(0,10),
+    orders_count: orders.length,
+    total_sales: totalSales,
+    items: itemsMap
+  });
+
+  await supabase.from("orders")
+    .update({ closed_at: new Date().toISOString() })
+    .in("id", orders.map(o => o.id));
 
   window.location.href = "report.html";
 };
-
-/* ========= NAV ========= */
-window.goToSettings = () => location.href = "settings.html";
-window.goToReports  = () => location.href = "reports.html";
