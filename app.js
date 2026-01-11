@@ -388,6 +388,33 @@ window.closeDay = async function () {
   window.location.href = "report.html";
 };
 
+window.openNewDay = async function () {
+  const today = new Date().toISOString().slice(0,10);
+
+  // هل فيه يوم مفتوح؟
+  const { data: openDay } = await supabase
+    .from("business_days")
+    .select("id")
+    .eq("is_open", true)
+    .single();
+
+  if (openDay) {
+    alert("⚠️ يوجد يوم مفتوح بالفعل");
+    return;
+  }
+
+  // إنشاء يوم جديد
+  await supabase.from("business_days").insert({
+    day_date: today,
+    is_open: true,
+    opened_at: new Date().toISOString()
+  });
+
+  alert("✅ تم بدء يوم جديد");
+  location.reload();
+};
+
+
 /* ========= NAV ========= */
 window.goToSettings = () => location.href = "settings.html";
 window.goToReports  = () => location.href = "reports.html";
