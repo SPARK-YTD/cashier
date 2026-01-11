@@ -179,41 +179,64 @@ window.completeOrder = async function () {
 
   const { data: order } = await supabase
     .from("orders")
-    .insert({ total, status: "completed" })
+    .insert({ total, status: "active" })
     .select()
     .single();
 
-  const items = cart.map(i => ({
+  const orderItems = cart.map(i => ({
     order_id: order.id,
     product_id: i.id,
     qty: i.qty,
     price: i.price
   }));
 
-  await supabase.from("order_items").insert(items);
+  await supabase.from("order_items").insert(orderItems);
+
   cart = [];
   renderCart();
+  loadActiveOrders();
 };
 
-/* ========= CLOSE DAY (FIXED) ========= */
+/* ========= ACTIVE ORDERS ========= */
+async function loadActiveOrders() {
+  const { data } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  activeOrders = data || [];
+}
+
+window.markCompleted = async function (id) {
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  loadActiveOrders();
+};
+
+/* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+
+  const today = new Date().toISOString().slice(0, 10);
 
   const { data: orders } = await supabase
     .from("orders")
     .select(`
       id,
       total,
+      created_at,
       order_items (
         qty,
         price,
         products ( name )
       )
     `)
-    .eq("status", "completed");
+    .eq("status", "completed")
+    .gte("created_at", today + "T00:00:00")
+    .lte("created_at", today + "T23:59:59");
 
-  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
+  if (!orders?.length) return alert("لا توجد طلبات مكتملة اليوم");
 
   let totalSales = 0;
   const itemsMap = {};
@@ -232,7 +255,7 @@ window.closeDay = async function () {
     .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
 
   await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0, 10),
+    report_date: today,
     orders_count: orders.length,
     total_sales: totalSales,
     top_item: topItem,
