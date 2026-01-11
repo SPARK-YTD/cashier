@@ -170,25 +170,35 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (FINAL & SAFE) ========= */
+/* ========= COMPLETE ORDER (نهائي وآمن) ========= */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  // ✏️ تعديل طلب
+  /* ✏️ تعديل طلب */
   if (editingOrderId) {
+    const { data: order } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("id", editingOrderId)
+      .single();
+
+    if (order.status !== "active") {
+      alert("لا يمكن تعديل هذا الطلب");
+      return;
+    }
+
     await supabase.from("orders")
       .update({ total })
-      .eq("id", editingOrderId)
-      .eq("status", "active");
+      .eq("id", editingOrderId);
 
-    // ❌ حذف كل القديم
+    // حذف كل الأصناف القديمة
     await supabase.from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
-    // ✅ إدخال الفاتورة النهائية فقط
+    // إدخال الفاتورة النهائية فقط
     await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -201,16 +211,13 @@ window.completeOrder = async function () {
     editingOrderId = null;
   }
 
-  // 🆕 طلب جديد
+  /* 🆕 طلب جديد */
   else {
-const { data: order } = await supabase
-  .from("orders")
-  .insert({
-    total,
-    status: "active"
-  })
-  .select("id, invoice_no")
-  .single();
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({ total, status: "active" })
+      .select("id, invoice_no")
+      .single();
 
     await supabase.from("order_items").insert(
       cart.map(i => ({
@@ -249,7 +256,7 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no}</strong>
+      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
@@ -300,10 +307,24 @@ window.cancelOrder = async id => {
   loadActiveOrders();
 };
 
-/* ========= CLOSE DAY ========= */
+/* ========= CLOSE DAY (نهائي) ========= */
 window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+
+  const today = new Date().toISOString().slice(0,10);
+
+  // منع تكرار التقرير
+  const { data: existing } = await supabase
+    .from("daily_reports")
+    .select("id")
+    .eq("report_date", today)
+    .single();
+
+  if (existing) {
+    alert("⚠️ تم إقفال اليوم مسبقًا");
+    return;
+  }
 
   const { data: orders } = await supabase
     .from("orders")
@@ -339,7 +360,7 @@ window.closeDay = async function () {
     Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
   await supabase.from("daily_reports").insert({
-    report_date: new Date().toISOString().slice(0,10),
+    report_date: today,
     orders_count: orders.length,
     total_sales: totalSales,
     top_item: topItem,
