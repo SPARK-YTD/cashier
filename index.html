@@ -18,6 +18,13 @@
   </div>
 </header>
 
+<!-- 🔹 حالة اليوم -->
+<div style="padding:10px;text-align:center;background:#fff;font-weight:bold">
+  <span id="dayStatus">⏳ التحقق من حالة اليوم...</span>
+  <br><br>
+  <button class="btn success" onclick="openNewDay()">🟢 بدء يوم جديد</button>
+</div>
+
 <main class="cashier-layout">
 
   <!-- الأصناف -->
@@ -67,10 +74,21 @@
     </div>
 
     <div class="actions">
-      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">إتمام الطلب</button>
-      <button class="btn secondary" onclick="goToReports()" data-i18n="reports">📁 أرشيف التقارير</button>
-      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">إقفال اليوم</button>
-      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">إدارة الأصناف</button>
+      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">
+        إتمام الطلب
+      </button>
+
+      <button class="btn secondary" onclick="goToReports()" data-i18n="reports">
+        📁 أرشيف التقارير
+      </button>
+
+      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">
+        🔒 إقفال اليوم
+      </button>
+
+      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">
+        ⚙️ إدارة الأصناف
+      </button>
     </div>
   </section>
 
