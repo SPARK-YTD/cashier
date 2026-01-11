@@ -68,28 +68,28 @@
       placeholder="المبلغ المدفوع"
     />
 
-    <div class="change-box">
-      <span data-i18n="change">الباقي:</span>
-      <span id="change">—</span>
-    </div>
+<div class="actions">
+  <button class="btn success" onclick="completeOrder()">
+    إتمام الطلب
+  </button>
 
-    <div class="actions">
-      <button class="btn success" onclick="completeOrder()" data-i18n="complete_order">
-        إتمام الطلب
-      </button>
+  <button class="btn secondary" onclick="goToReports()">
+    📁 أرشيف التقارير
+  </button>
 
-      <button class="btn secondary" onclick="goToReports()" data-i18n="reports">
-        📁 أرشيف التقارير
-      </button>
+  <button class="btn danger" onclick="closeDay()">
+    🔒 إقفال اليوم
+  </button>
 
-      <button class="btn danger" onclick="closeDay()" data-i18n="close_day">
-        🔒 إقفال اليوم
-      </button>
+  <!-- ✅ هذا الزر الجديد -->
+  <button class="btn success" onclick="openNewDay()">
+    🟢 بدء يوم جديد
+  </button>
 
-      <button class="btn secondary" onclick="goToSettings()" data-i18n="manage_items">
-        ⚙️ إدارة الأصناف
-      </button>
-    </div>
+  <button class="btn secondary" onclick="goToSettings()">
+    ⚙️ إدارة الأصناف
+  </button>
+  </div>
   </section>
 
   <!-- الطلبات الجارية -->
@@ -103,3 +103,4 @@
 <script type="module" src="app.js"></script>
 </body>
 </html>
+
