@@ -93,7 +93,13 @@ function showVariantPopup(item, variants) {
       <h3>${item.name}</h3>
       ${variants.map(v => `
         <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          onclick="selectVariant(
+            '${item.id}',
+            '${item.name}',
+            '${v.id}',
+            '${v.label}',
+            ${v.price}
+          )">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
@@ -119,10 +125,7 @@ window.closeVariantPopup = () =>
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
-
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
-
+  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
 }
 
@@ -183,7 +186,6 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تحديث طلب معدل
     await supabase.from("orders")
       .update({ total, status: "active" })
       .eq("id", editingOrderId);
@@ -202,9 +204,7 @@ window.completeOrder = async function () {
     );
 
     editingOrderId = null;
-
   } else {
-    // طلب جديد
     const { data: order } = await supabase
       .from("orders")
       .insert({ total, status: "active" })
@@ -258,34 +258,27 @@ function renderActiveOrders() {
   });
 }
 
-/* ========= EDIT ORDER (FIXED) ========= */
+/* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
-  // تنظيف كامل
   cart = [];
   editingOrderId = orderId;
   renderCart();
 
-  // إخراج الطلب من الجارية مؤقتًا
   await supabase.from("orders")
     .update({ status: "editing" })
     .eq("id", orderId);
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
-
-  if (error || !data?.length) {
-    alert("لا يمكن تحميل الطلب");
-    return;
-  }
 
   cart = data.map(i => ({
     id: i.products.id,
     name: i.products.name,
     price: i.price,
     qty: i.qty,
-    key: `${i.products.id}`
+    key: i.products.id
   }));
 
   renderCart();
