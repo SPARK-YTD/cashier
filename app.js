@@ -180,16 +180,8 @@ window.completeOrder = async function () {
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    // تعديل طلب + إرجاعه للجارية
-    await supabase
-      .from("orders")
-      .update({ total, status: "active" })
-      .eq("id", editingOrderId);
-
-    await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
+    await supabase.from("orders").update({ total, status: "active" }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
 
     const items = cart.map(i => ({
       order_id: editingOrderId,
@@ -201,7 +193,6 @@ window.completeOrder = async function () {
     await supabase.from("order_items").insert(items);
     editingOrderId = null;
   } else {
-    // طلب جديد
     const { data: order } = await supabase
       .from("orders")
       .insert({ total, status: "active" })
@@ -259,12 +250,6 @@ function renderActiveOrders() {
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
 
-  // إخراجه من الجارية مؤقتًا
-  await supabase
-    .from("orders")
-    .update({ status: "editing" })
-    .eq("id", orderId);
-
   const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products ( id, name )`)
@@ -279,7 +264,6 @@ window.editOrder = async function (orderId) {
   }));
 
   renderCart();
-  loadActiveOrders();
 };
 
 /* ========= STATUS ========= */
@@ -293,13 +277,58 @@ window.cancelOrder = async id => {
   loadActiveOrders();
 };
 
-/* ========= CLOSE DAY (عرض فقط) ========= */
+/* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  // عرض التقرير فقط بدون حفظ
-  window.location.href = "report.html?preview=1";
+  const { data: orders } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      total,
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
+    `)
+    .eq("status", "completed")
+    .is("closed_at", null);
+
+  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
+
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
+  });
+
+  const topItem =
+    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+
+  await supabase.from("daily_reports").insert({
+    report_date: new Date().toISOString().slice(0,10),
+    orders_count: orders.length,
+    total_sales: totalSales,
+    top_item: topItem,
+    items: itemsMap
+  });
+
+  await supabase
+    .from("orders")
+    .update({ closed_at: new Date().toISOString() })
+    .in("id", orders.map(o => o.id));
+
+  alert("✅ تم إقفال اليوم");
+  window.location.href = "report.html";
 };
 
 /* ========= NAV ========= */
