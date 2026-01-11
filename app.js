@@ -323,15 +323,31 @@ window.closeDay = async function () {
   let totalSales = 0;
   const itemsMap = {};
 
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
+orders.forEach(o => {
+  totalSales += o.total;
+
+  const perOrder = {};
+
+  o.order_items.forEach(i => {
+    const name = i.products.name;
+
+    // 🔒 تجميع داخل الطلب نفسه
+    if (!perOrder[name]) {
+      perOrder[name] = { qty: 0, total: 0 };
+    }
+
+    perOrder[name].qty += i.qty;
+    perOrder[name].total += i.qty * i.price;
   });
+
+  // ➕ إضافة ناتج الطلب للتقرير العام
+  Object.entries(perOrder).forEach(([name, data]) => {
+    itemsMap[name] ??= { qty: 0, total: 0 };
+    itemsMap[name].qty += data.qty;
+    itemsMap[name].total += data.total;
+  });
+});
+
 
   const topItem =
     Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
