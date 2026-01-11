@@ -19,9 +19,18 @@ async function loadCurrentDay() {
     .from("business_days")
     .select("*")
     .eq("is_open", true)
+    .order("opened_at", { ascending: false })
+    .limit(1)
     .single();
 
   currentBusinessDay = data || null;
+
+  const statusEl = document.getElementById("dayStatus");
+  if (statusEl) {
+    statusEl.textContent = currentBusinessDay
+      ? `🟢 اليوم مفتوح: ${currentBusinessDay.day_date}`
+      : "🔴 لا يوجد يوم مفتوح";
+  }
 }
 
 /* ========= INIT ========= */
@@ -30,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCurrentDay();
 
   if (!currentBusinessDay) {
-    alert("⚠️ لا يوجد يوم مفتوح، الرجاء بدء يوم جديد");
+    alert("⚠️ لا يوجد يوم مفتوح، الرجاء الضغط على (بدء يوم جديد)");
     return;
   }
 
@@ -191,15 +200,17 @@ function calculateChange() {
 
 /* ========= COMPLETE ORDER ========= */
 window.completeOrder = async function () {
+  if (!currentBusinessDay) {
+    alert("❌ يجب بدء يوم جديد أولًا");
+    return;
+  }
+
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
-    await supabase.from("orders")
-      .update({ total })
-      .eq("id", editingOrderId)
-      .eq("status", "active");
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
 
     await supabase.from("order_items")
       .delete()
@@ -243,6 +254,8 @@ window.completeOrder = async function () {
 
 /* ========= ACTIVE ORDERS ========= */
 async function loadActiveOrders() {
+  if (!currentBusinessDay) return;
+
   const { data } = await supabase
     .from("orders")
     .select("*")
@@ -298,32 +311,24 @@ window.editOrder = async function (orderId) {
 
 /* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase.from("orders")
-    .update({ status: "completed" })
-    .eq("id", id)
-    .eq("status", "active");
-
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
   loadActiveOrders();
 };
 
 window.cancelOrder = async id => {
-  await supabase.from("orders")
-    .update({ status: "cancelled" })
-    .eq("id", id)
-    .eq("status", "active");
-
+  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
   loadActiveOrders();
 };
 
 /* ========= CLOSE DAY ========= */
 window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
-  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
-
   if (!currentBusinessDay) {
     alert("❌ لا يوجد يوم مفتوح");
     return;
   }
+
+  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
+  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
   const { data: existing } = await supabase
     .from("daily_reports")
@@ -385,13 +390,11 @@ window.closeDay = async function () {
     .eq("id", currentBusinessDay.id);
 
   alert("✅ تم إقفال اليوم");
-  window.location.href = "report.html";
+  location.reload();
 };
 
+/* ========= OPEN NEW DAY ========= */
 window.openNewDay = async function () {
-  const today = new Date().toISOString().slice(0,10);
-
-  // هل فيه يوم مفتوح؟
   const { data: openDay } = await supabase
     .from("business_days")
     .select("id")
@@ -403,9 +406,8 @@ window.openNewDay = async function () {
     return;
   }
 
-  // إنشاء يوم جديد
   await supabase.from("business_days").insert({
-    day_date: today,
+    day_date: new Date().toISOString().slice(0,10),
     is_open: true,
     opened_at: new Date().toISOString()
   });
@@ -413,7 +415,6 @@ window.openNewDay = async function () {
   alert("✅ تم بدء يوم جديد");
   location.reload();
 };
-
 
 /* ========= NAV ========= */
 window.goToSettings = () => location.href = "settings.html";
