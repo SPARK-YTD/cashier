@@ -52,14 +52,8 @@
 
   <!-- أزرار -->
   <section class="actions no-print">
-<button class="btn success" onclick="startNewDayFromReport()">
-  🟢 بدء يوم جديد
-</button>
-
-<button class="btn secondary" onclick="backToCashierSameDay()">
-  🔙 رجوع للكاشير
-</button>
-
+    <button onclick="goBack()">⬅️ رجوع للكاشير</button>
+    <button class="warn" onclick="newDay()">🔄 بدء يوم جديد</button>
     <button class="print" onclick="downloadPDF()">🖨 تحميل PDF</button>
   </section>
 
@@ -72,4 +66,3 @@
 <script type="module" src="report.js"></script>
 </body>
 </html>
-
