@@ -56,41 +56,89 @@ async function uploadItemImage(file) {
 /* ===== إضافة صنف ===== */
 window.addItem = async function () {
   const name = document.getElementById("itemName").value.trim();
-  const price = parseFloat(document.getElementById("itemPrice").value);
   const category = document.getElementById("itemCategory").value;
-  const imageInput = document.getElementById("itemImage");
-  const imageFile = imageInput?.files[0];
+  const imageFile = document.getElementById("itemImage")?.files[0];
 
-  if (!name || isNaN(price)) {
-    alert(t("enter_name_price"));
+  const hasVariants = document.getElementById("hasVariants")?.checked;
+
+  const priceNormal = parseFloat(document.getElementById("itemPrice").value);
+  const priceSmall = parseFloat(document.getElementById("priceSmall")?.value);
+  const priceMedium = parseFloat(document.getElementById("priceMedium")?.value);
+  const priceLarge = parseFloat(document.getElementById("priceLarge")?.value);
+
+  if (!name) {
+    alert("أدخل اسم الصنف");
+    return;
+  }
+
+  if (!hasVariants && isNaN(priceNormal)) {
+    alert("أدخل السعر");
+    return;
+  }
+
+  if (hasVariants && isNaN(priceSmall) && isNaN(priceMedium) && isNaN(priceLarge)) {
+    alert("أدخل سعر واحد على الأقل للأحجام");
     return;
   }
 
   let image_url = null;
-
   if (imageFile) {
     image_url = await uploadItemImage(imageFile);
     if (!image_url) return;
   }
 
-  const { error } = await supabase.from("products").insert({
-    name,
-    price,
-    category,
-    image_url,
-    active: true
-  });
+  /* === إدخال الصنف === */
+  const { data: product, error } = await supabase
+    .from("products")
+    .insert({
+      name,
+      category,
+      price: hasVariants ? null : priceNormal,
+      image_url,
+      has_variants: hasVariants,
+      active: true
+    })
+    .select()
+    .single();
 
   if (error) {
-    console.error("INSERT ERROR:", error);
+    console.error("INSERT PRODUCT ERROR:", error);
     alert(error.message);
     return;
   }
 
-  // تنظيف الحقول
+  /* === إدخال الأحجام === */
+  if (hasVariants) {
+    const variants = [];
+
+    if (!isNaN(priceSmall))
+      variants.push({ product_id: product.id, label: "Small", price: priceSmall });
+
+    if (!isNaN(priceMedium))
+      variants.push({ product_id: product.id, label: "Medium", price: priceMedium });
+
+    if (!isNaN(priceLarge))
+      variants.push({ product_id: product.id, label: "Large", price: priceLarge });
+
+    const { error: variantError } = await supabase
+      .from("product_variants")
+      .insert(variants);
+
+    if (variantError) {
+      console.error("INSERT VARIANTS ERROR:", variantError);
+      alert("تم حفظ الصنف لكن حدث خطأ في الأحجام");
+    }
+  }
+
+  /* === تنظيف الحقول === */
   document.getElementById("itemName").value = "";
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemImage").value = "";
+  document.getElementById("hasVariants").checked = false;
+  document.getElementById("priceSmall").value = "";
+  document.getElementById("priceMedium").value = "";
+  document.getElementById("priceLarge").value = "";
+  document.getElementById("variantsBox").style.display = "none";
 
   await loadItems();
 };
@@ -104,11 +152,11 @@ async function loadItems() {
 
   const { data, error } = await supabase
     .from("products")
-    .select("*"); // ❌ بدون order على created_at
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("LOAD ITEMS ERROR:", error);
-    alert(error.message);
     box.innerHTML = `<p>${t("load_items_error")}</p>`;
     return;
   }
@@ -123,26 +171,18 @@ async function loadItems() {
     div.className = "order-box";
 
     div.innerHTML = `
-      ${
-        item.image_url
-          ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
-          : ""
-      }
+      ${item.image_url ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">` : ""}
       <strong>${item.name}</strong><br>
-      ${Number(item.price).toFixed(3)} د.ب — ${item.category}<br>
-      ${t("status")}: ${
-        item.active
-          ? `<span style="color:green">${t("active")}</span>`
-          : `<span style="color:red">${t("disabled")}</span>`
-      }<br><br>
+      ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
+      الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
 
       ${
         item.active
-          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 ${t("disable")}</button>`
-          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ ${t("enable")}</button>`
+          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 تعطيل</button>`
+          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
       }
 
-      <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 ${t("delete_final")}</button>
+      <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
     `;
 
     box.appendChild(div);
@@ -151,36 +191,17 @@ async function loadItems() {
 
 /* ===== تعطيل / تفعيل ===== */
 window.toggleItem = async function (id, state) {
-  const { error } = await supabase
-    .from("products")
-    .update({ active: state })
-    .eq("id", id);
-
-  if (error) {
-    console.error("UPDATE ERROR:", error);
-    alert(error.message);
-    return;
-  }
-
+  await supabase.from("products").update({ active: state }).eq("id", id);
   await loadItems();
 };
 
-/* ===== حذف نهائي ===== */
+/* ===== حذف ===== */
 window.deleteItem = async function (id) {
-  if (!confirm(t("confirm_delete_item"))) return;
+  if (!confirm("هل أنت متأكد؟")) return;
 
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", id);
+  await supabase.from("product_variants").delete().eq("product_id", id);
+  await supabase.from("products").delete().eq("id", id);
 
-  if (error) {
-    console.error("DELETE ERROR:", error);
-    alert(error.message);
-    return;
-  }
-
-  alert(t("item_deleted"));
   await loadItems();
 };
 
