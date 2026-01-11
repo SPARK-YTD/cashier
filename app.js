@@ -73,25 +73,26 @@ function renderItems() {
       </span>
     `;
 
-    // 🔹 التعديل هنا
     div.onclick = () => handleItemClick(item);
-
     container.appendChild(div);
   });
 }
 
-/* ========= VARIANTS POPUP ========= */
+/* ========= ITEM CLICK ========= */
 async function handleItemClick(item) {
   if (!item.has_variants) {
-    addToCart(item);
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price
+    });
     return;
   }
 
   const { data: variants, error } = await supabase
     .from("product_variants")
     .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
+    .eq("product_id", item.id);
 
   if (error || !variants || variants.length === 0) {
     alert("لا توجد أحجام لهذا الصنف");
@@ -101,7 +102,10 @@ async function handleItemClick(item) {
   showVariantPopup(item, variants);
 }
 
+/* ========= VARIANTS POPUP ========= */
 function showVariantPopup(item, variants) {
+  closeVariantPopup();
+
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
 
@@ -111,7 +115,13 @@ function showVariantPopup(item, variants) {
 
       ${variants.map(v => `
         <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          onclick="selectVariant(
+            '${item.id}',
+            '${item.name}',
+            '${v.id}',
+            '${v.label}',
+            ${v.price}
+          )">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
@@ -143,8 +153,11 @@ function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
 
-  if (found) found.qty++;
-  else cart.push({ ...item, key, qty: 1 });
+  if (found) {
+    found.qty++;
+  } else {
+    cart.push({ ...item, key, qty: 1 });
+  }
 
   renderCart();
 }
@@ -237,5 +250,48 @@ window.completeOrder = async function () {
   loadActiveOrders();
 };
 
-/* ========= باقي كودك بدون تغيير ========= */
-// loadActiveOrders, closeDay, reports, navigation (كما هو)
+/* ========= ACTIVE ORDERS ========= */
+async function loadActiveOrders() {
+  const { data } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  activeOrders = data || [];
+  renderActiveOrders();
+}
+
+function renderActiveOrders() {
+  const box = document.getElementById("activeOrders");
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  activeOrders.forEach(order => {
+    const div = document.createElement("div");
+    div.className = "order-box";
+    div.innerHTML = `
+      <strong>طلب #${order.id.slice(0, 6)}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="markCompleted('${order.id}')">مكتمل</button>
+      <button onclick="cancelOrder('${order.id}')">إلغاء</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+window.markCompleted = async function (id) {
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  loadActiveOrders();
+};
+
+window.cancelOrder = async function (id) {
+  await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
+  loadActiveOrders();
+};
+
+/* ========= NAV ========= */
+window.goToSettings = function () {
+  window.location.href = "settings.html";
+};
