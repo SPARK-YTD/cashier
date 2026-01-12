@@ -42,7 +42,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
   await loadCurrentDay();
 
-  if (!currentBusinessDay) return;
+  if (!currentBusinessDay) {
+    alert("⚠️ اليوم مقفل، لا يمكن تسجيل طلبات");
+    return;
+  }
 
   await loadItems("food");
   await loadActiveOrders();
@@ -77,6 +80,7 @@ function renderItems() {
   if (!container) return;
 
   container.innerHTML = "";
+
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
@@ -89,6 +93,61 @@ function renderItems() {
     container.appendChild(div);
   });
 }
+
+/* ===============================
+   الأحجام
+================================ */
+async function handleItemClick(item) {
+  if (!item.has_variants) return addToCart(item);
+
+  const { data: variants } = await supabase
+    .from("product_variants")
+    .select("*")
+    .eq("product_id", item.id)
+    .eq("active", true);
+
+  if (!variants?.length) {
+    alert("لا توجد أحجام");
+    return;
+  }
+
+  showVariantPopup(item, variants);
+}
+
+function showVariantPopup(item, variants) {
+  let overlay = document.querySelector(".variant-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "variant-overlay";
+    document.body.appendChild(overlay);
+  }
+
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>${item.name}</h3>
+      ${variants.map(v => `
+        <button class="variant-btn"
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          ${v.label} — ${v.price.toFixed(3)} د.ب
+        </button>
+      `).join("")}
+      <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
+    </div>
+  `;
+}
+
+window.selectVariant = function (productId, name, variantId, label, price) {
+  addToCart({
+    id: productId,
+    name: `${name} (${label})`,
+    price,
+    variant_id: variantId
+  });
+  closeVariantPopup();
+};
+
+window.closeVariantPopup = () =>
+  document.querySelector(".variant-overlay")?.remove();
 
 /* ===============================
    السلة
@@ -160,14 +219,19 @@ window.completeOrder = async function () {
     return;
   }
 
-  if (!cart.length) return alert("الفاتورة فارغة");
+  if (!cart.length) {
+    alert("الفاتورة فارغة");
+    return;
+  }
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   if (editingOrderId) {
     await supabase.from("orders").update({ total }).eq("id", editingOrderId);
 
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    await supabase.from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
 
     await supabase.from("order_items").insert(
       cart.map(i => ({
@@ -227,6 +291,7 @@ function renderActiveOrders() {
   if (!box) return;
 
   box.innerHTML = "";
+
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
@@ -261,12 +326,15 @@ window.editOrder = async function (orderId) {
 };
 
 window.markCompleted = async id => {
-  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  await supabase.from("orders")
+    .update({ status: "completed" })
+    .eq("id", id);
+
   loadActiveOrders();
 };
 
 /* ===============================
-   إقفال اليوم (الحفظ الحقيقي)
+   إقفال اليوم (نهائي)
 ================================ */
 window.closeDay = async function () {
   if (!currentBusinessDay) return;
@@ -320,3 +388,9 @@ window.closeDay = async function () {
 
   window.location.href = "report.html";
 };
+
+/* ===============================
+   NAV
+================================ */
+window.goToSettings = () => location.href = "settings.html";
+window.goToReports  = () => location.href = "report.html";
