@@ -3,9 +3,10 @@ import { applyLang, setLang } from "./i18n.js";
 
 window.setLang = setLang;
 
-/* ===============================
-   الحالة العامة
-================================ */
+/*********************************
+ * Get-Break | Cashier System
+ *********************************/
+
 let items = [];
 let cart = [];
 let activeOrders = [];
@@ -42,8 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCurrentDay();
 
   if (!currentBusinessDay) {
-    alert("❌ اليوم مقفل — اذهب للتقرير وابدأ يوم جديد");
-    disableCashier();
+    alert("❌ اليوم مقفل – يجب بدء يوم جديد من التقارير");
     return;
   }
 
@@ -54,13 +54,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const paid = document.getElementById("paid");
   if (paid) paid.addEventListener("input", calculateChange);
 });
-
-/* ===============================
-   تعطيل الكاشير إذا اليوم مقفل
-================================ */
-function disableCashier() {
-  document.querySelectorAll("button").forEach(b => b.disabled = true);
-}
 
 /* ===============================
    الأصناف
@@ -83,9 +76,10 @@ async function loadItems(category) {
 }
 
 function renderItems() {
-  const box = document.getElementById("items");
-  box.innerHTML = "";
+  const container = document.getElementById("items");
+  if (!container) return;
 
+  container.innerHTML = "";
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
@@ -94,68 +88,16 @@ function renderItems() {
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-    div.onclick = () => handleItemClick(item);
-    box.appendChild(div);
+    div.onclick = () => addToCart(item);
+    container.appendChild(div);
   });
 }
-
-/* ===============================
-   الأحجام
-================================ */
-async function handleItemClick(item) {
-  if (!item.has_variants) {
-    addToCart(item);
-    return;
-  }
-
-  const { data: variants } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
-
-  showVariantPopup(item, variants);
-}
-
-function showVariantPopup(item, variants) {
-  let overlay = document.createElement("div");
-  overlay.className = "variant-overlay";
-
-  overlay.innerHTML = `
-    <div class="variant-box">
-      <h3>${item.name}</h3>
-      ${variants.map(v => `
-        <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.label}',${v.price})">
-          ${v.label} — ${v.price.toFixed(3)} د.ب
-        </button>
-      `).join("")}
-      <button class="variant-cancel" onclick="closeVariant()">إلغاء</button>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-}
-
-window.selectVariant = (id, name, label, price) => {
-  addToCart({
-    id,
-    name: `${name} (${label})`,
-    price,
-    key: `${id}-${label}`
-  });
-  closeVariant();
-};
-
-window.closeVariant = () => {
-  document.querySelector(".variant-overlay")?.remove();
-};
 
 /* ===============================
    السلة
 ================================ */
 function addToCart(item) {
-  const key = item.key || item.id;
+  const key = item.id;
   const found = cart.find(i => i.key === key);
   found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
@@ -163,22 +105,24 @@ function addToCart(item) {
 
 function renderCart() {
   const tbody = document.getElementById("cart");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
   let total = 0;
 
-  cart.forEach((i, idx) => {
-    const sum = i.qty * i.price;
+  cart.forEach((item, i) => {
+    const sum = item.qty * item.price;
     total += sum;
     tbody.innerHTML += `
       <tr>
-        <td>${i.name}</td>
+        <td>${item.name}</td>
         <td>
-          <button onclick="changeQty(${idx},-1)">-</button>
-          ${i.qty}
-          <button onclick="changeQty(${idx},1)">+</button>
+          <button onclick="changeQty(${i},-1)">-</button>
+          ${item.qty}
+          <button onclick="changeQty(${i},1)">+</button>
         </td>
         <td>${sum.toFixed(3)} د.ب</td>
-        <td><button onclick="removeItem(${idx})">🗑</button></td>
+        <td><button onclick="removeItem(${i})">🗑</button></td>
       </tr>
     `;
   });
@@ -202,47 +146,42 @@ window.removeItem = i => {
    الدفع
 ================================ */
 function calculateChange() {
-  const paid = parseFloat(paidInput.value) || 0;
-  const total = parseFloat(totalEl.textContent) || 0;
-  change.textContent =
-    paid >= total ? (paid - total).toFixed(3) + " د.ب" : "—";
+  const paid = parseFloat(document.getElementById("paid").value) || 0;
+  const total = parseFloat(document.getElementById("total").textContent) || 0;
+  const change = paid - total;
+
+  document.getElementById("change").textContent =
+    change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
 /* ===============================
    إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
+  if (!currentBusinessDay) return;
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  if (editingOrderId) {
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
-  } else {
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id
-      })
-      .select("id")
-      .single();
-
-    editingOrderId = order.id;
-  }
+  const { data: order } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "active",
+      business_day_id: currentBusinessDay.id
+    })
+    .select("id, invoice_no")
+    .single();
 
   await supabase.from("order_items").insert(
     cart.map(i => ({
-      order_id: editingOrderId,
+      order_id: order.id,
       product_id: i.id,
       qty: i.qty,
       price: i.price
     }))
   );
 
-  editingOrderId = null;
   cart = [];
   renderCart();
   loadActiveOrders();
@@ -252,6 +191,8 @@ window.completeOrder = async function () {
    الطلبات الجارية
 ================================ */
 async function loadActiveOrders() {
+  if (!currentBusinessDay) return;
+
   const { data } = await supabase
     .from("orders")
     .select("*")
@@ -265,37 +206,25 @@ async function loadActiveOrders() {
 
 function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
-  box.innerHTML = "";
+  if (!box) return;
 
-  activeOrders.forEach(o => {
+  box.innerHTML = "";
+  activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>فاتورة ${o.invoice_no}</strong><br>
-      ${o.total.toFixed(3)} د.ب<br>
-      <button onclick="editOrder('${o.id}')">✏️ تعديل</button>
-      <button onclick="deleteOrder('${o.id}')">🗑 حذف</button>
-      <button onclick="markCompleted('${o.id}')">✅ مكتمل</button>
+      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
     `;
     box.appendChild(div);
   });
 }
 
-window.editOrder = async id => {
-  editingOrderId = id;
-  const { data } = await supabase
-    .from("order_items")
-    .select(`qty, price, products (id,name)`)
-    .eq("order_id", id);
-
-  cart = data.map(i => ({
-    id: i.products.id,
-    name: i.products.name,
-    price: i.price,
-    qty: i.qty,
-    key: i.products.id
-  }));
-  renderCart();
+window.markCompleted = async id => {
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  loadActiveOrders();
 };
 
 window.deleteOrder = async id => {
@@ -305,28 +234,15 @@ window.deleteOrder = async id => {
   loadActiveOrders();
 };
 
-window.markCompleted = async id => {
-  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
-  loadActiveOrders();
+/* ===============================
+   إقفال اليوم (معاينة فقط)
+================================ */
+window.closeDay = function () {
+  window.location.href = "report.html?preview=1";
 };
 
 /* ===============================
-   إقفال اليوم
+   NAV
 ================================ */
-window.closeDay = async function () {
-  const pass = prompt("🔒 كلمة المرور:");
-  if (pass !== "1234") return;
-
-  await supabase
-    .from("business_days")
-    .update({ is_open: false, closed_at: new Date().toISOString() })
-    .eq("id", currentBusinessDay.id);
-
-  window.location.href = "report.html";
-};
-
-/* ===============================
-   تنقل
-================================ */
+window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
-window.goToReports  = () => location.href = "report.html";
