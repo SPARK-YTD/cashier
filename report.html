@@ -4,55 +4,71 @@
   <meta charset="UTF-8" />
   <title>تقرير إقفال اليوم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
+<body class="report-page">
 
-<div class="report-header">
-  <h1>📊 تقرير إقفال اليوم</h1>
-  <div class="store-name">Get-Break</div>
-  <div class="close-time" id="closeTime">—</div>
-</div>
-
-<div class="report-container">
-
-  <div class="summary-cards">
-    <div class="card">
-      <span>عدد الطلبات</span>
-      <strong id="ordersCount">0</strong>
-    </div>
-    <div class="card">
-      <span>إجمالي المبيعات</span>
-      <strong id="totalSales">0.000 د.ب</strong>
-    </div>
-    <div class="card">
-      <span>الأكثر مبيعًا</span>
-      <strong id="topItem">—</strong>
-    </div>
+  <!-- ===== Header ===== -->
+  <div class="report-header">
+    <h1>📊 تقرير إقفال اليوم</h1>
+    <div class="store-name">Get-Break</div>
+    <div class="close-time" id="closeTime">—</div>
   </div>
 
-  <div class="table-box">
-    <table>
-      <thead>
-        <tr>
-          <th>الصنف</th>
-          <th>الكمية</th>
-          <th>الإجمالي</th>
-        </tr>
-      </thead>
-      <tbody id="itemsReport"></tbody>
-    </table>
+  <!-- ===== Content ===== -->
+  <div class="report-container">
+
+    <!-- Summary -->
+    <div class="summary-cards">
+      <div class="card">
+        <span>🧾 عدد الطلبات</span>
+        <strong id="ordersCount">0</strong>
+      </div>
+
+      <div class="card">
+        <span>💰 إجمالي المبيعات</span>
+        <strong id="totalSales">0.000 د.ب</strong>
+      </div>
+
+      <div class="card">
+        <span>🥇 الأكثر مبيعًا</span>
+        <strong id="topItem">—</strong>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>الكمية</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody id="itemsReport">
+          <tr>
+            <td colspan="3">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions no-print">
+      <button class="btn success" onclick="downloadPDF()">🖨 تحميل PDF</button>
+      <button class="btn danger" onclick="startNewDay()">🔄 بدء يوم جديد</button>
+      <button class="btn secondary" onclick="backToCashier()">⬅ رجوع للكاشير</button>
+    </div>
+
   </div>
 
-  <div class="actions">
-    <button class="btn success" onclick="downloadPDF()">🖨 PDF</button>
-    <button class="btn danger" onclick="startNewDayFromReport()">🔄 بدء يوم جديد</button>
-    <button class="btn secondary" onclick="backToCashierSameDay()">⬅ رجوع</button>
-  </div>
+  <footer class="report-footer">
+    تقرير معاينة — لن يتم الحفظ إلا بعد بدء يوم جديد
+  </footer>
 
-</div>
-
-<script type="module" src="report.js"></script>
+  <script type="module" src="report.js"></script>
 </body>
 </html>
