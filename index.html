@@ -12,28 +12,27 @@
 <header class="topbar">
   <span>نظام الكاشير</span>
 
-  <div class="menu-wrapper">
-    <button class="menu-btn" onclick="toggleMenu()">☰</button>
-    <div id="menuDropdown" class="menu-dropdown">
+  <!-- ☰ -->
+  <div class="menu">
+    <button id="menuBtn">☰</button>
+    <div id="menuBox" class="menu-box hidden">
+      <button onclick="closeDay()">📊 إقفال اليوم</button>
       <button onclick="goToReports()">📁 أرشيف التقارير</button>
-      <button onclick="closeDay()">🔒 إقفال اليوم</button>
       <button onclick="goToSettings()">⚙️ إدارة الأصناف</button>
     </div>
   </div>
 </header>
 
-<main class="cashier-layout" onclick="closeMenuOutside(event)">
+<main class="cashier-layout">
 
   <!-- الأصناف -->
   <section class="card products">
     <h2>الأصناف</h2>
-
     <div class="categories">
-      <button class="cat active" onclick="filterCategory('food', this)">🍔 طعام</button>
-      <button class="cat" onclick="filterCategory('drinks', this)">🥤 مشروبات</button>
-      <button class="cat" onclick="filterCategory('sides', this)">🍟 جانبية</button>
+      <button class="cat active" onclick="filterCategory('food',this)">🍔 طعام</button>
+      <button class="cat" onclick="filterCategory('drinks',this)">🥤 مشروبات</button>
+      <button class="cat" onclick="filterCategory('sides',this)">🍟 جانبية</button>
     </div>
-
     <div id="items" class="items-grid"></div>
   </section>
 
@@ -54,10 +53,10 @@
     </table>
 
     <div class="total-box">
-      الإجمالي: <span id="total">0.000 د.ب</span>
+      الإجمالي: <span id="total">0.000</span> د.ب
     </div>
 
-    <input id="paid" type="number" placeholder="المبلغ المدفوع" />
+    <input id="paid" type="number" placeholder="المبلغ المدفوع">
 
     <div class="change-box">
       الباقي: <span id="change">—</span>
@@ -69,23 +68,11 @@
   <!-- الطلبات الجارية -->
   <section class="card orders">
     <h2>الطلبات الجارية</h2>
-    <div id="activeOrders" class="orders-list"></div>
+    <div id="activeOrders"></div>
   </section>
 
 </main>
 
 <script type="module" src="app.js"></script>
-
-<script>
-function toggleMenu() {
-  document.getElementById("menuDropdown").classList.toggle("show");
-}
-function closeMenuOutside(e) {
-  if (!e.target.closest(".menu-wrapper")) {
-    document.getElementById("menuDropdown").classList.remove("show");
-  }
-}
-</script>
-
 </body>
 </html>
