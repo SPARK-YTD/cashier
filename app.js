@@ -11,10 +11,39 @@ let items = [];
 let cart = [];
 let activeOrders = [];
 let editingOrderId = null;
+let currentBusinessDay = null;
 
-/* ========= INIT ========= */
+/* ===============================
+   تحميل اليوم الحالي
+================================ */
+async function loadCurrentDay() {
+  const { data } = await supabase
+    .from("business_days")
+    .select("*")
+    .eq("is_open", true)
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  currentBusinessDay = data || null;
+
+  const statusEl = document.getElementById("dayStatus");
+  if (statusEl) {
+    statusEl.textContent = currentBusinessDay
+      ? `🟢 اليوم مفتوح: ${currentBusinessDay.day_date}`
+      : "🔴 اليوم مقفل";
+  }
+}
+
+/* ===============================
+   INIT
+================================ */
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
+  await loadCurrentDay();
+
+  if (!currentBusinessDay) return;
+
   await loadItems("food");
   await loadActiveOrders();
   renderCart();
@@ -23,22 +52,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (paid) paid.addEventListener("input", calculateChange);
 });
 
-/* ========= CATEGORIES ========= */
+/* ===============================
+   الأصناف
+================================ */
 window.filterCategory = function (category, btn) {
   document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   loadItems(category);
 };
 
-/* ========= ITEMS ========= */
 async function loadItems(category) {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("products")
     .select("*")
     .eq("category", category)
     .eq("active", true);
-
-  if (error) return alert("خطأ في تحميل الأصناف");
 
   items = data || [];
   renderItems();
@@ -49,7 +77,6 @@ function renderItems() {
   if (!container) return;
 
   container.innerHTML = "";
-
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
@@ -63,57 +90,9 @@ function renderItems() {
   });
 }
 
-/* ========= VARIANTS ========= */
-async function handleItemClick(item) {
-  if (!item.has_variants) return addToCart(item);
-
-  const { data: variants } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
-
-  if (!variants?.length) return alert("لا توجد أحجام");
-
-  showVariantPopup(item, variants);
-}
-
-function showVariantPopup(item, variants) {
-  let overlay = document.querySelector(".variant-overlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.className = "variant-overlay";
-    document.body.appendChild(overlay);
-  }
-
-  overlay.innerHTML = `
-    <div class="variant-box">
-      <h3>${item.name}</h3>
-      ${variants.map(v => `
-        <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
-          ${v.label} — ${v.price.toFixed(3)} د.ب
-        </button>
-      `).join("")}
-      <button class="variant-cancel" onclick="closeVariantPopup()">إلغاء</button>
-    </div>
-  `;
-}
-
-window.selectVariant = function (productId, name, variantId, label, price) {
-  addToCart({
-    id: productId,
-    name: `${name} (${label})`,
-    price,
-    variant_id: variantId
-  });
-  closeVariantPopup();
-};
-
-window.closeVariantPopup = () =>
-  document.querySelector(".variant-overlay")?.remove();
-
-/* ========= CART ========= */
+/* ===============================
+   السلة
+================================ */
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
@@ -160,7 +139,9 @@ window.removeItem = i => {
   renderCart();
 };
 
-/* ========= PAYMENT ========= */
+/* ===============================
+   الدفع
+================================ */
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
   const total = parseFloat(document.getElementById("total").textContent) || 0;
@@ -170,35 +151,24 @@ function calculateChange() {
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
 
-/* ========= COMPLETE ORDER (نهائي وآمن) ========= */
+/* ===============================
+   إتمام الطلب
+================================ */
 window.completeOrder = async function () {
+  if (!currentBusinessDay) {
+    alert("❌ اليوم مقفل");
+    return;
+  }
+
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  /* ✏️ تعديل طلب */
   if (editingOrderId) {
-    const { data: order } = await supabase
-      .from("orders")
-      .select("status")
-      .eq("id", editingOrderId)
-      .single();
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
 
-    if (order.status !== "active") {
-      alert("لا يمكن تعديل هذا الطلب");
-      return;
-    }
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
 
-    await supabase.from("orders")
-      .update({ total })
-      .eq("id", editingOrderId);
-
-    // حذف كل الأصناف القديمة
-    await supabase.from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
-
-    // إدخال الفاتورة النهائية فقط
     await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -209,13 +179,14 @@ window.completeOrder = async function () {
     );
 
     editingOrderId = null;
-  }
-
-  /* 🆕 طلب جديد */
-  else {
+  } else {
     const { data: order } = await supabase
       .from("orders")
-      .insert({ total, status: "active" })
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
       .select("id, invoice_no")
       .single();
 
@@ -234,12 +205,17 @@ window.completeOrder = async function () {
   loadActiveOrders();
 };
 
-/* ========= ACTIVE ORDERS ========= */
+/* ===============================
+   الطلبات الجارية
+================================ */
 async function loadActiveOrders() {
+  if (!currentBusinessDay) return;
+
   const { data } = await supabase
     .from("orders")
     .select("*")
     .eq("status", "active")
+    .eq("business_day_id", currentBusinessDay.id)
     .order("created_at", { ascending: false });
 
   activeOrders = data || [];
@@ -251,7 +227,6 @@ function renderActiveOrders() {
   if (!box) return;
 
   box.innerHTML = "";
-
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
@@ -260,17 +235,14 @@ function renderActiveOrders() {
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-      <button onclick="cancelOrder('${order.id}')">❌ إلغاء</button>
     `;
     box.appendChild(div);
   });
 }
 
-/* ========= EDIT ORDER ========= */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
   cart = [];
-  renderCart();
 
   const { data } = await supabase
     .from("order_items")
@@ -288,43 +260,19 @@ window.editOrder = async function (orderId) {
   renderCart();
 };
 
-/* ========= STATUS ========= */
 window.markCompleted = async id => {
-  await supabase.from("orders")
-    .update({ status: "completed" })
-    .eq("id", id)
-    .eq("status", "active");
-
+  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
   loadActiveOrders();
 };
 
-window.cancelOrder = async id => {
-  await supabase.from("orders")
-    .update({ status: "cancelled" })
-    .eq("id", id)
-    .eq("status", "active");
-
-  loadActiveOrders();
-};
-
-/* ========= CLOSE DAY (نهائي) ========= */
+/* ===============================
+   إقفال اليوم (الحفظ الحقيقي)
+================================ */
 window.closeDay = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لإقفال اليوم:");
-  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+  if (!currentBusinessDay) return;
 
-  const today = new Date().toISOString().slice(0,10);
-
-  // منع تكرار التقرير
-  const { data: existing } = await supabase
-    .from("daily_reports")
-    .select("id")
-    .eq("report_date", today)
-    .single();
-
-  if (existing) {
-    alert("⚠️ تم إقفال اليوم مسبقًا");
-    return;
-  }
+  const pass = prompt("🔒 أدخل كلمة المرور:");
+  if (pass !== "1234") return;
 
   const { data: orders } = await supabase
     .from("orders")
@@ -338,16 +286,18 @@ window.closeDay = async function () {
       )
     `)
     .eq("status", "completed")
-    .is("closed_at", null);
+    .eq("business_day_id", currentBusinessDay.id);
 
-  if (!orders?.length) return alert("لا توجد طلبات مكتملة");
+  if (!orders?.length) {
+    alert("لا توجد طلبات مكتملة");
+    return;
+  }
 
   let totalSales = 0;
   const itemsMap = {};
 
   orders.forEach(o => {
     totalSales += o.total;
-
     o.order_items.forEach(i => {
       const name = i.products.name;
       itemsMap[name] ??= { qty: 0, total: 0 };
@@ -356,25 +306,17 @@ window.closeDay = async function () {
     });
   });
 
-  const topItem =
-    Object.entries(itemsMap).sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
-
   await supabase.from("daily_reports").insert({
-    report_date: today,
+    business_day_id: currentBusinessDay.id,
+    report_date: currentBusinessDay.day_date,
     orders_count: orders.length,
     total_sales: totalSales,
-    top_item: topItem,
     items: itemsMap
   });
 
-  await supabase.from("orders")
-    .update({ closed_at: new Date().toISOString() })
-    .in("id", orders.map(o => o.id));
+  await supabase.from("business_days")
+    .update({ is_open: false, closed_at: new Date().toISOString() })
+    .eq("id", currentBusinessDay.id);
 
-  alert("✅ تم إقفال اليوم");
   window.location.href = "report.html";
 };
-
-/* ========= NAV ========= */
-window.goToSettings = () => location.href = "settings.html";
-window.goToReports  = () => location.href = "reports.html";
