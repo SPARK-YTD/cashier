@@ -4,32 +4,37 @@
   <meta charset="UTF-8">
   <title>إدارة الأصناف</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <header class="topbar">
   ⚙️ إدارة الأصناف
 </header>
 
-<main class="card">
+<main class="card" style="max-width:900px;margin:20px auto">
 
-  <!-- تسجيل الدخول -->
+  <!-- ===== تسجيل الدخول ===== -->
   <div id="loginBox">
     <h3>تسجيل الدخول</h3>
     <input type="password" id="adminPass" placeholder="كلمة المرور">
     <button class="btn success" onclick="login()">دخول</button>
   </div>
 
-  <!-- لوحة الإدارة -->
+  <!-- ===== لوحة الإدارة ===== -->
   <div id="adminPanel" style="display:none">
 
     <h3>➕ إضافة صنف</h3>
 
     <input id="itemName" placeholder="اسم الصنف">
 
-    <input id="itemPrice" type="number" step="0.001" placeholder="السعر (بدون أحجام)">
+    <input
+      id="itemPrice"
+      type="number"
+      step="0.001"
+      placeholder="السعر (بدون أحجام)"
+    >
 
     <select id="itemCategory">
       <option value="food">🍔 طعام</option>
@@ -39,17 +44,31 @@
 
     <input type="file" id="itemImage" accept="image/*">
 
-    <!-- دعم الأحجام -->
-    <div style="margin-top:15px; padding:10px; border:1px dashed #ccc; border-radius:8px">
+    <!-- ===== دعم الأحجام ===== -->
+    <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
+
       <label style="display:flex;gap:8px;align-items:center">
         <input type="checkbox" id="hasVariants">
-        <strong>الصنف له أحجام</strong>
+        <strong>الصنف له عدة أحجام</strong>
       </label>
 
       <div id="variantsBox" style="display:none;margin-top:10px">
-        <input type="number" step="0.001" id="priceSmall" placeholder="Small">
-        <input type="number" step="0.001" id="priceMedium" placeholder="Medium">
-        <input type="number" step="0.001" id="priceLarge" placeholder="Large">
+
+        <div class="variant-row">
+          <label>Small</label>
+          <input type="number" step="0.001" id="priceSmall">
+        </div>
+
+        <div class="variant-row">
+          <label>Medium</label>
+          <input type="number" step="0.001" id="priceMedium">
+        </div>
+
+        <div class="variant-row">
+          <label>Large</label>
+          <input type="number" step="0.001" id="priceLarge">
+        </div>
+
       </div>
     </div>
 
@@ -63,6 +82,7 @@
     <hr>
 
     <button class="btn secondary" onclick="goBack()">⬅ رجوع للكاشير</button>
+
   </div>
 
 </main>
@@ -70,10 +90,11 @@
 <script type="module" src="settings.js"></script>
 
 <script>
-  const chk = document.getElementById("hasVariants");
-  const box = document.getElementById("variantsBox");
-  chk.addEventListener("change", () => {
-    box.style.display = chk.checked ? "block" : "none";
+  const hasVariants = document.getElementById("hasVariants");
+  const variantsBox = document.getElementById("variantsBox");
+
+  hasVariants.addEventListener("change", () => {
+    variantsBox.style.display = hasVariants.checked ? "block" : "none";
   });
 </script>
 
