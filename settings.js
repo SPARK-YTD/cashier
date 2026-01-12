@@ -1,37 +1,37 @@
 import { supabase } from "./supabase.js";
-import { applyLang } from "./i18n.js";
 
 const PASSWORD = "1234";
 
-document.addEventListener("DOMContentLoaded", () => {
-  applyLang();
-});
-
-/* ===== LOGIN ===== */
+/* ===============================
+   LOGIN
+================================ */
 window.login = async function () {
-  const pass = document.getElementById("adminPass").value.trim();
+  const pass = document.getElementById("adminPass").value;
+
   if (pass !== PASSWORD) {
-    alert("❌ كلمة المرور غير صحيحة");
+    alert("كلمة المرور غير صحيحة");
     return;
   }
 
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("adminPanel").style.display = "block";
-
-  await loadItems();
+  loadItems();
 };
 
-/* ===== IMAGE UPLOAD ===== */
+/* ===============================
+   UPLOAD IMAGE
+================================ */
 async function uploadImage(file) {
   const ext = file.name.split(".").pop();
   const name = `products/${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage
     .from("products")
-    .upload(name, file);
+    .upload(name, file, { upsert: false });
 
   if (error) {
-    alert(error.message);
+    alert("خطأ رفع الصورة");
+    console.error(error);
     return null;
   }
 
@@ -42,24 +42,31 @@ async function uploadImage(file) {
   return data.publicUrl;
 }
 
-/* ===== ADD ITEM ===== */
+/* ===============================
+   ADD ITEM
+================================ */
 window.addItem = async function () {
   const name = itemName.value.trim();
   const category = itemCategory.value;
-  const hasVariants = document.getElementById("hasVariants").checked;
+  const hasVariants = hasVariantsCheckbox.checked;
+  const imageFile = itemImage.files[0];
 
   if (!name) return alert("أدخل اسم الصنف");
 
+  let price = null;
+
+  if (!hasVariants) {
+    price = parseFloat(itemPrice.value);
+    if (isNaN(price)) return alert("أدخل السعر");
+  }
+
   let image_url = null;
-  if (itemImage.files[0]) {
-    image_url = await uploadImage(itemImage.files[0]);
+  if (imageFile) {
+    image_url = await uploadImage(imageFile);
     if (!image_url) return;
   }
 
-  const price = hasVariants ? null : Number(itemPrice.value);
-  if (!hasVariants && !price) return alert("أدخل السعر");
-
-  const { data: product } = await supabase
+  const { data: product, error } = await supabase
     .from("products")
     .insert({
       name,
@@ -72,61 +79,87 @@ window.addItem = async function () {
     .select()
     .single();
 
+  if (error) {
+    console.error(error);
+    alert(error.message);
+    return;
+  }
+
+  /* ===== VARIANTS ===== */
   if (hasVariants) {
     const variants = [];
-    if (priceSmall.value) variants.push({ product_id: product.id, label: "Small", price: priceSmall.value });
-    if (priceMedium.value) variants.push({ product_id: product.id, label: "Medium", price: priceMedium.value });
-    if (priceLarge.value) variants.push({ product_id: product.id, label: "Large", price: priceLarge.value });
+
+    if (priceSmall.value)
+      variants.push({ product_id: product.id, label: "Small", price: priceSmall.value });
+
+    if (priceMedium.value)
+      variants.push({ product_id: product.id, label: "Medium", price: priceMedium.value });
+
+    if (priceLarge.value)
+      variants.push({ product_id: product.id, label: "Large", price: priceLarge.value });
+
+    if (!variants.length) {
+      alert("أدخل سعر واحد على الأقل");
+      return;
+    }
 
     await supabase.from("product_variants").insert(variants);
   }
 
-  itemName.value = "";
-  itemPrice.value = "";
-  itemImage.value = "";
-  hasVariants.checked = false;
-  variantsBox.style.display = "none";
-
-  await loadItems();
+  alert("✅ تم حفظ الصنف");
+  clearForm();
+  loadItems();
 };
 
-/* ===== LOAD ITEMS ===== */
+/* ===============================
+   LOAD ITEMS
+================================ */
 async function loadItems() {
-  itemsList.innerHTML = "";
+  const box = document.getElementById("itemsList");
+  box.innerHTML = "";
 
   const { data } = await supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
 
-  data.forEach(item => {
+  data.forEach(i => {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>${item.name}</strong><br>
-      ${item.active ? "🟢 نشط" : "🔴 موقوف"}<br>
-      <button class="btn warn" onclick="toggleItem('${item.id}',${!item.active})">
-        ${item.active ? "تعطيل" : "تفعيل"}
+      <strong>${i.name}</strong><br>
+      ${i.has_variants ? "أحجام متعددة" : i.price.toFixed(3) + " د.ب"}<br>
+      <button onclick="toggleItem('${i.id}', ${!i.active})">
+        ${i.active ? "تعطيل" : "تفعيل"}
       </button>
-      <button class="btn danger" onclick="deleteItem('${item.id}')">حذف</button>
+      <button onclick="deleteItem('${i.id}')">حذف</button>
     `;
-    itemsList.appendChild(div);
+    box.appendChild(div);
   });
 }
 
-/* ===== TOGGLE ===== */
+/* ===============================
+   HELPERS
+================================ */
 window.toggleItem = async (id, state) => {
   await supabase.from("products").update({ active: state }).eq("id", id);
   loadItems();
 };
 
-/* ===== DELETE ===== */
 window.deleteItem = async id => {
-  if (!confirm("متأكد من الحذف؟")) return;
+  if (!confirm("متأكد؟")) return;
   await supabase.from("product_variants").delete().eq("product_id", id);
   await supabase.from("products").delete().eq("id", id);
   loadItems();
 };
 
-/* ===== BACK ===== */
-window.goBack = () => location.href = "index.html";
+function clearForm() {
+  itemName.value = "";
+  itemPrice.value = "";
+  itemImage.value = "";
+  hasVariantsCheckbox.checked = false;
+  variantsBox.style.display = "none";
+  priceSmall.value = "";
+  priceMedium.value = "";
+  priceLarge.value = "";
+}
