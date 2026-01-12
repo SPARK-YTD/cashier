@@ -1,19 +1,70 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>تقرير اليوم</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>تقرير إقفال اليوم</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
 
-<h1>📊 تقرير اليوم</h1>
+<body class="report-page">
 
-<div id="summary"></div>
+  <header class="report-header">
+    <h1>📊 تقرير إقفال اليوم</h1>
+    <div class="store-name">Get-Break</div>
+    <div id="closeTime" class="close-time">—</div>
+  </header>
 
-<button onclick="startNewDay()">🔄 بدء يوم جديد</button>
-<button onclick="back()">⬅ رجوع للكاشير</button>
+  <main class="report-container">
 
-<script type="module" src="report.js"></script>
+    <!-- ملخص -->
+    <div class="summary-cards">
+      <div class="card">
+        <span>عدد الطلبات</span>
+        <strong id="ordersCount">0</strong>
+      </div>
+
+      <div class="card">
+        <span>إجمالي المبيعات</span>
+        <strong id="totalSales">0.000 د.ب</strong>
+      </div>
+
+      <div class="card">
+        <span>الأكثر مبيعًا</span>
+        <strong id="topItem">—</strong>
+      </div>
+    </div>
+
+    <!-- جدول الأصناف -->
+    <div class="table-box">
+      <h3 style="text-align:center">تفاصيل الأصناف</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>الكمية</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody id="itemsReport">
+          <tr><td colspan="3">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- أزرار التحكم -->
+    <div class="actions no-print">
+      <button class="btn success" onclick="downloadPDF()">🖨 تحميل PDF</button>
+      <button class="btn danger" onclick="startNewDay()">🔄 بدء يوم جديد</button>
+      <button class="btn secondary" onclick="backToCashier()">⬅ رجوع للكاشير</button>
+    </div>
+
+  </main>
+
+  <footer class="report-footer">
+    تم إنشاء التقرير تلقائيًا بواسطة نظام الكاشير
+  </footer>
+
+  <script type="module" src="report.js"></script>
 </body>
 </html>
