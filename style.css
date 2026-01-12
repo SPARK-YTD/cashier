@@ -387,3 +387,54 @@ th, td {
   background: #eeeeee;
   cursor: pointer;
 }
+
+/* ===== Header Menu ===== */
+.menu-wrapper {
+  position: absolute;
+  top: 12px;
+  left: 15px;
+}
+
+.menu-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  font-size: 22px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.menu-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 45px;
+  left: 0;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 9999;
+}
+
+.menu-dropdown button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: white;
+  text-align: right;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.menu-dropdown button:hover {
+  background: #f4f6f8;
+}
+
+.menu-dropdown.hidden {
+  display: none;
+}
