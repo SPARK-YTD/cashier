@@ -438,3 +438,56 @@ th, td {
 .menu-dropdown.hidden {
   display: none;
 }
+
+/* ===== Side Menu ===== */
+.menu-btn {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  font-size: 22px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  right: -220px;
+  width: 220px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -4px 0 10px rgba(0,0,0,0.15);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: right 0.25s ease;
+  z-index: 1001;
+}
+
+.side-menu.open {
+  right: 0;
+}
+
+.side-menu button {
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  background: #f1f1f1;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  z-index: 1000;
+}
+
+.overlay.show {
+  display: block;
+}
