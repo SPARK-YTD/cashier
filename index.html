@@ -2,32 +2,63 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>نظام الكاشير</title>
+  <title data-i18n="app_title">نظام الكاشير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 
-<header class="topbar">
-  <span>نظام الكاشير</span>
+<!-- ===== HEADER ===== -->
+<header class="topbar" style="display:flex;align-items:center;justify-content:space-between">
+  <span data-i18n="app_title">نظام الكاشير</span>
 
   <!-- زر القائمة -->
-  <div class="menu-wrapper">
-    <button id="menuBtn">☰</button>
-    <div id="menuDropdown" class="menu hidden">
-      <button onclick="goToReports()">📁 أرشيف التقارير</button>
-      <button onclick="closeDay()">🔒 إقفال اليوم</button>
-      <button onclick="goToSettings()">⚙️ إدارة الأصناف</button>
-    </div>
-  </div>
+  <button id="menuBtn" style="
+    background:none;
+    border:none;
+    color:white;
+    font-size:26px;
+    cursor:pointer
+  ">☰</button>
 </header>
 
+<!-- ===== SIDE MENU ===== -->
+<div id="sideMenu" style="
+  position:fixed;
+  top:0;
+  right:-260px;
+  width:260px;
+  height:100%;
+  background:#0d47a1;
+  color:white;
+  padding:20px;
+  transition:0.3s;
+  z-index:10000
+">
+  <h3 style="margin-top:0">القائمة</h3>
+
+  <button class="menu-link" onclick="location.href='index.html'">🧾 الكاشير</button>
+  <button class="menu-link" onclick="location.href='report.html'">📊 إقفال اليوم</button>
+  <button class="menu-link" onclick="location.href='reports.html'">📁 أرشيف التقارير</button>
+  <button class="menu-link" onclick="location.href='settings.html'">⚙️ إدارة الأصناف</button>
+</div>
+
+<!-- خلفية الإغلاق -->
+<div id="menuOverlay" style="
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  z-index:9999
+"></div>
+
+<!-- ===== MAIN ===== -->
 <main class="cashier-layout">
 
   <!-- الأصناف -->
   <section class="card products">
-    <h2>الأصناف</h2>
+    <h2 data-i18n="products">الأصناف</h2>
 
     <div class="categories">
       <button class="cat active" onclick="filterCategory('food', this)">🍔 طعام</button>
@@ -40,14 +71,14 @@
 
   <!-- الفاتورة -->
   <section class="card invoice">
-    <h2>الفاتورة</h2>
+    <h2 data-i18n="invoice">الفاتورة</h2>
 
     <table class="invoice-table">
       <thead>
         <tr>
           <th>الصنف</th>
           <th>الكمية</th>
-          <th>المجموع</th>
+          <th>الإجمالي</th>
           <th></th>
         </tr>
       </thead>
@@ -58,13 +89,15 @@
       الإجمالي: <span id="total">0.000 د.ب</span>
     </div>
 
-    <input id="paid" type="number" placeholder="المبلغ المدفوع" />
+    <input id="paid" type="number" placeholder="المبلغ المدفوع">
 
     <div class="change-box">
       الباقي: <span id="change">—</span>
     </div>
 
-    <button class="btn success" onclick="completeOrder()">إتمام الطلب</button>
+    <div class="actions">
+      <button class="btn success" onclick="completeOrder()">إتمام الطلب</button>
+    </div>
   </section>
 
   <!-- الطلبات الجارية -->
@@ -76,5 +109,42 @@
 </main>
 
 <script type="module" src="app.js"></script>
+
+<!-- ===== MENU SCRIPT ===== -->
+<script>
+  const menuBtn = document.getElementById("menuBtn");
+  const sideMenu = document.getElementById("sideMenu");
+  const overlay = document.getElementById("menuOverlay");
+
+  menuBtn.onclick = () => {
+    sideMenu.style.right = "0";
+    overlay.style.display = "block";
+  };
+
+  overlay.onclick = () => {
+    sideMenu.style.right = "-260px";
+    overlay.style.display = "none";
+  };
+</script>
+
+<style>
+  .menu-link {
+    display:block;
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    background:#1565c0;
+    border:none;
+    border-radius:8px;
+    color:white;
+    font-size:15px;
+    cursor:pointer;
+    text-align:right;
+  }
+  .menu-link:hover {
+    background:#1e88e5;
+  }
+</style>
+
 </body>
 </html>
