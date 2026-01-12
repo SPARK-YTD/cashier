@@ -12,12 +12,12 @@
 <header class="topbar">
   <span>نظام الكاشير</span>
 
-  <!-- ☰ -->
-  <div class="menu">
+  <!-- زر القائمة -->
+  <div class="menu-wrapper">
     <button id="menuBtn">☰</button>
-    <div id="menuBox" class="menu-box hidden">
-      <button onclick="closeDay()">📊 إقفال اليوم</button>
+    <div id="menuDropdown" class="menu hidden">
       <button onclick="goToReports()">📁 أرشيف التقارير</button>
+      <button onclick="closeDay()">🔒 إقفال اليوم</button>
       <button onclick="goToSettings()">⚙️ إدارة الأصناف</button>
     </div>
   </div>
@@ -28,11 +28,13 @@
   <!-- الأصناف -->
   <section class="card products">
     <h2>الأصناف</h2>
+
     <div class="categories">
-      <button class="cat active" onclick="filterCategory('food',this)">🍔 طعام</button>
-      <button class="cat" onclick="filterCategory('drinks',this)">🥤 مشروبات</button>
-      <button class="cat" onclick="filterCategory('sides',this)">🍟 جانبية</button>
+      <button class="cat active" onclick="filterCategory('food', this)">🍔 طعام</button>
+      <button class="cat" onclick="filterCategory('drinks', this)">🥤 مشروبات</button>
+      <button class="cat" onclick="filterCategory('sides', this)">🍟 جانبية</button>
     </div>
+
     <div id="items" class="items-grid"></div>
   </section>
 
@@ -53,10 +55,10 @@
     </table>
 
     <div class="total-box">
-      الإجمالي: <span id="total">0.000</span> د.ب
+      الإجمالي: <span id="total">0.000 د.ب</span>
     </div>
 
-    <input id="paid" type="number" placeholder="المبلغ المدفوع">
+    <input id="paid" type="number" placeholder="المبلغ المدفوع" />
 
     <div class="change-box">
       الباقي: <span id="change">—</span>
@@ -68,7 +70,7 @@
   <!-- الطلبات الجارية -->
   <section class="card orders">
     <h2>الطلبات الجارية</h2>
-    <div id="activeOrders"></div>
+    <div id="activeOrders" class="orders-list"></div>
   </section>
 
 </main>
