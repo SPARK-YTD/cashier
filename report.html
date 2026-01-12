@@ -1,76 +1,19 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>تقرير إقفال اليوم</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<title>تقرير اليوم</title>
+<link rel="stylesheet" href="style.css">
 </head>
+<body>
 
-<body class="report-page">
+<h1>📊 تقرير اليوم</h1>
 
-  <!-- ===== Header ===== -->
-  <header class="report-header">
-    <h1>📊 تقرير إقفال اليوم</h1>
-    <div class="store-name">Get-Break</div>
-    <div id="closeTime" class="close-time">—</div>
-  </header>
+<div id="summary"></div>
 
-  <!-- ===== Content ===== -->
-  <main class="report-container">
+<button onclick="startNewDay()">🔄 بدء يوم جديد</button>
+<button onclick="back()">⬅ رجوع للكاشير</button>
 
-    <!-- ===== Summary ===== -->
-    <section class="summary-cards">
-      <div class="card">
-        <span>🧾 عدد الطلبات</span>
-        <strong id="ordersCount">0</strong>
-      </div>
-
-      <div class="card">
-        <span>💰 إجمالي المبيعات</span>
-        <strong id="totalSales">0.000 د.ب</strong>
-      </div>
-
-      <div class="card">
-        <span>🥇 الأكثر مبيعًا</span>
-        <strong id="topItem">—</strong>
-      </div>
-    </section>
-
-    <!-- ===== Items Table ===== -->
-    <section class="table-box">
-      <h2 style="text-align:center;margin-bottom:10px">تفاصيل الأصناف</h2>
-
-      <table>
-        <thead>
-          <tr>
-            <th>الصنف</th>
-            <th>الكمية</th>
-            <th>الإجمالي</th>
-          </tr>
-        </thead>
-        <tbody id="itemsReport">
-          <tr>
-            <td colspan="3">—</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- ===== Actions ===== -->
-    <div class="actions no-print">
-      <button class="btn print" onclick="downloadPDF()">🖨 تحميل PDF</button>
-      <button class="btn warn" onclick="startNewDayFromReport()">🔄 بدء يوم جديد</button>
-      <button class="btn secondary" onclick="backToCashierSameDay()">⬅ رجوع للكاشير</button>
-    </div>
-
-  </main>
-
-  <footer class="report-footer">
-    تم إنشاء التقرير تلقائيًا بواسطة نظام الكاشير
-  </footer>
-
-  <script type="module" src="report.js"></script>
+<script type="module" src="report.js"></script>
 </body>
 </html>
