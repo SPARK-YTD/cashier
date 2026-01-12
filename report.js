@@ -5,6 +5,8 @@ import { applyLang } from "./i18n.js";
  * Get-Break | Daily Close Report
  *********************************/
 
+let currentBusinessDay = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
 
@@ -15,49 +17,75 @@ document.addEventListener("DOMContentLoaded", async () => {
   const topItemEl     = document.getElementById("topItem");
 
   /* ===============================
-     جلب آخر تقرير محفوظ (آخر يوم مقفل)
+     جلب اليوم المفتوح الحالي
   ================================ */
-  const { data: report, error } = await supabase
-    .from("daily_reports")
-    .select(`
-      id,
-      report_date,
-      created_at,
-      orders_count,
-      total_sales,
-      top_item,
-      items,
-      business_day_id
-    `)
-    .order("created_at", { ascending: false })
-    .limit(1)
+  const { data: openDay } = await supabase
+    .from("business_days")
+    .select("*")
+    .eq("is_open", true)
     .single();
 
-  if (error || !report) {
-    closeTimeEl.textContent = "—";
-    ordersCountEl.textContent = "0";
-    totalSalesEl.textContent  = "0.000 د.ب";
-    topItemEl.textContent     = "—";
-    itemsReportEl.innerHTML =
-      "<tr><td colspan='3'>لا يوجد تقرير محفوظ</td></tr>";
+  currentBusinessDay = openDay || null;
+
+  if (!currentBusinessDay) {
+    closeTimeEl.textContent = "🔴 لا يوجد يوم مفتوح";
     return;
   }
 
   /* ===============================
-     عرض بيانات التقرير
+     جلب الطلبات المكتملة لليوم
   ================================ */
-  closeTimeEl.textContent =
-    "🕒 وقت الإقفال: " +
-    new Date(report.created_at).toLocaleString("ar-BH");
+  const { data: orders } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      total,
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
+    `)
+    .eq("status", "completed")
+    .eq("business_day_id", currentBusinessDay.id);
 
-  ordersCountEl.textContent = report.orders_count;
-  totalSalesEl.textContent  =
-    Number(report.total_sales).toFixed(3) + " د.ب";
+  if (!orders || orders.length === 0) {
+    closeTimeEl.textContent = "🟡 لا توجد طلبات مكتملة بعد";
+    ordersCountEl.textContent = "0";
+    totalSalesEl.textContent = "0.000 د.ب";
+    topItemEl.textContent = "—";
+    itemsReportEl.innerHTML =
+      "<tr><td colspan='3'>لا توجد بيانات</td></tr>";
+    return;
+  }
 
-  topItemEl.textContent = report.top_item || "—";
+  /* ===============================
+     حساب التقرير (معاينة)
+  ================================ */
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
+  });
+
+  const topItem =
+    Object.entries(itemsMap)
+      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+
+  closeTimeEl.textContent = "🕒 تقرير اليوم (غير محفوظ)";
+  ordersCountEl.textContent = orders.length;
+  totalSalesEl.textContent = totalSales.toFixed(3) + " د.ب";
+  topItemEl.textContent = topItem;
 
   itemsReportEl.innerHTML = "";
-  Object.entries(report.items || {}).forEach(([name, item]) => {
+  Object.entries(itemsMap).forEach(([name, item]) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${name}</td>
@@ -69,45 +97,99 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ===============================
-   🔙 رجوع للكاشير
-   (يكمل نفس اليوم إذا كان مفتوح)
+   🔙 رجوع للكاشير (نفس اليوم)
 ================================ */
 window.backToCashierSameDay = function () {
   window.location.href = "index.html";
 };
 
 /* ===============================
-   🟢 بدء يوم جديد
-   ✔ لا يعيد حفظ التقرير
-   ✔ يفتح يوم جديد فقط
+   🔄 بدء يوم جديد (الحفظ الحقيقي)
 ================================ */
 window.startNewDayFromReport = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور:");
+  const pass = prompt("🔒 أدخل كلمة المرور لبدء يوم جديد:");
   if (pass !== "1234") {
     alert("❌ كلمة المرور غير صحيحة");
     return;
   }
 
-  // تأكد ما فيه يوم مفتوح
-  const { data: openDay } = await supabase
-    .from("business_days")
-    .select("id")
-    .eq("is_open", true)
-    .single();
-
-  if (openDay) {
-    alert("⚠️ يوجد يوم مفتوح بالفعل");
+  if (!currentBusinessDay) {
+    alert("❌ لا يوجد يوم مفتوح");
     return;
   }
 
-  // فتح يوم جديد
+  /* ===============================
+     جلب الطلبات المكتملة لليوم
+  ================================ */
+  const { data: orders } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      total,
+      order_items (
+        qty,
+        price,
+        products ( name )
+      )
+    `)
+    .eq("status", "completed")
+    .eq("business_day_id", currentBusinessDay.id);
+
+  if (!orders || orders.length === 0) {
+    alert("لا توجد طلبات مكتملة لحفظها");
+    return;
+  }
+
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    totalSales += o.total;
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += i.qty * i.price;
+    });
+  });
+
+  const topItem =
+    Object.entries(itemsMap)
+      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+
+  /* ===============================
+     حفظ التقرير (يسمح بالتكرار)
+  ================================ */
+  await supabase.from("daily_reports").insert({
+    business_day_id: currentBusinessDay.id,
+    report_date: currentBusinessDay.day_date,
+    orders_count: orders.length,
+    total_sales: totalSales,
+    top_item: topItem,
+    items: itemsMap
+  });
+
+  /* ===============================
+     إقفال اليوم الحالي
+  ================================ */
+  await supabase
+    .from("business_days")
+    .update({
+      is_open: false,
+      closed_at: new Date().toISOString()
+    })
+    .eq("id", currentBusinessDay.id);
+
+  /* ===============================
+     فتح يوم جديد
+  ================================ */
   await supabase.from("business_days").insert({
-    day_date: new Date().toISOString().slice(0, 10),
+    day_date: new Date().toISOString().slice(0,10),
     is_open: true,
     opened_at: new Date().toISOString()
   });
 
-  alert("✅ تم بدء يوم جديد");
+  alert("✅ تم حفظ التقرير وبدء يوم جديد");
   window.location.href = "index.html";
 };
 
