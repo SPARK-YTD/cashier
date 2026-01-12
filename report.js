@@ -1,199 +1,48 @@
 import { supabase } from "./supabase.js";
-import { applyLang } from "./i18n.js";
 
-/*********************************
- * Get-Break | Daily Close Report
- *********************************/
+let day = null;
 
-let currentBusinessDay = null;
-
-document.addEventListener("DOMContentLoaded", async () => {
-  applyLang();
-
-  const closeTimeEl   = document.getElementById("closeTime");
-  const ordersCountEl = document.getElementById("ordersCount");
-  const totalSalesEl  = document.getElementById("totalSales");
-  const itemsReportEl = document.getElementById("itemsReport");
-  const topItemEl     = document.getElementById("topItem");
-
-  /* ===============================
-     جلب اليوم المفتوح الحالي
-  ================================ */
-  const { data: openDay } = await supabase
+async function load() {
+  const { data } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
     .single();
 
-  currentBusinessDay = openDay || null;
+  day = data;
 
-  if (!currentBusinessDay) {
-    closeTimeEl.textContent = "🔴 لا يوجد يوم مفتوح";
-    return;
-  }
-
-  /* ===============================
-     جلب الطلبات المكتملة لليوم
-  ================================ */
   const { data: orders } = await supabase
     .from("orders")
-    .select(`
-      id,
-      total,
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed")
-    .eq("business_day_id", currentBusinessDay.id);
+    .select("total")
+    .eq("business_day_id", day.id);
 
-  if (!orders || orders.length === 0) {
-    closeTimeEl.textContent = "🟡 لا توجد طلبات مكتملة بعد";
-    ordersCountEl.textContent = "0";
-    totalSalesEl.textContent = "0.000 د.ب";
-    topItemEl.textContent = "—";
-    itemsReportEl.innerHTML =
-      "<tr><td colspan='3'>لا توجد بيانات</td></tr>";
-    return;
-  }
+  const total = orders.reduce((s,o)=>s+o.total,0);
 
-  /* ===============================
-     حساب التقرير (معاينة)
-  ================================ */
-  let totalSales = 0;
-  const itemsMap = {};
+  document.getElementById("summary").textContent =
+    `عدد الطلبات: ${orders.length} | الإجمالي: ${total.toFixed(3)} د.ب`;
+}
 
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
+load();
 
-  const topItem =
-    Object.entries(itemsMap)
-      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+window.startNewDay = async () => {
+  const pass = prompt("كلمة المرور:");
+  if (pass !== "1234") return;
 
-  closeTimeEl.textContent = "🕒 تقرير اليوم (غير محفوظ)";
-  ordersCountEl.textContent = orders.length;
-  totalSalesEl.textContent = totalSales.toFixed(3) + " د.ب";
-  topItemEl.textContent = topItem;
-
-  itemsReportEl.innerHTML = "";
-  Object.entries(itemsMap).forEach(([name, item]) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${name}</td>
-      <td>${item.qty}</td>
-      <td>${item.total.toFixed(3)} د.ب</td>
-    `;
-    itemsReportEl.appendChild(tr);
-  });
-});
-
-/* ===============================
-   🔙 رجوع للكاشير (نفس اليوم)
-================================ */
-window.backToCashierSameDay = function () {
-  window.location.href = "index.html";
-};
-
-/* ===============================
-   🔄 بدء يوم جديد (الحفظ الحقيقي)
-================================ */
-window.startNewDayFromReport = async function () {
-  const pass = prompt("🔒 أدخل كلمة المرور لبدء يوم جديد:");
-  if (pass !== "1234") {
-    alert("❌ كلمة المرور غير صحيحة");
-    return;
-  }
-
-  if (!currentBusinessDay) {
-    alert("❌ لا يوجد يوم مفتوح");
-    return;
-  }
-
-  /* ===============================
-     جلب الطلبات المكتملة لليوم
-  ================================ */
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(`
-      id,
-      total,
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed")
-    .eq("business_day_id", currentBusinessDay.id);
-
-  if (!orders || orders.length === 0) {
-    alert("لا توجد طلبات مكتملة لحفظها");
-    return;
-  }
-
-  let totalSales = 0;
-  const itemsMap = {};
-
-  orders.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
-
-  const topItem =
-    Object.entries(itemsMap)
-      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
-
-  /* ===============================
-     حفظ التقرير (يسمح بالتكرار)
-  ================================ */
   await supabase.from("daily_reports").insert({
-    business_day_id: currentBusinessDay.id,
-    report_date: currentBusinessDay.day_date,
-    orders_count: orders.length,
-    total_sales: totalSales,
-    top_item: topItem,
-    items: itemsMap
+    report_date: new Date().toISOString(),
+    orders_count: 0
   });
 
-  /* ===============================
-     إقفال اليوم الحالي
-  ================================ */
-  await supabase
-    .from("business_days")
-    .update({
-      is_open: false,
-      closed_at: new Date().toISOString()
-    })
-    .eq("id", currentBusinessDay.id);
+  await supabase.from("business_days")
+    .update({ is_open:false })
+    .eq("id", day.id);
 
-  /* ===============================
-     فتح يوم جديد
-  ================================ */
   await supabase.from("business_days").insert({
     day_date: new Date().toISOString().slice(0,10),
-    is_open: true,
-    opened_at: new Date().toISOString()
+    is_open: true
   });
 
-  alert("✅ تم حفظ التقرير وبدء يوم جديد");
-  window.location.href = "index.html";
+  location.href="index.html";
 };
 
-/* ===============================
-   🖨 تحميل PDF
-================================ */
-window.downloadPDF = () => window.print();
+window.back = () => location.href="index.html";
