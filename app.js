@@ -1,51 +1,61 @@
 import { supabase } from "./supabase.js";
 
-/* ===============================
-   MENU
-================================ */
-const menuBtn = document.getElementById("menuBtn");
-const menuBox = document.getElementById("menuBox");
-
-menuBtn.onclick = e => {
-  e.stopPropagation();
-  menuBox.classList.toggle("hidden");
-};
-document.body.onclick = () => menuBox.classList.add("hidden");
-
-/* ===============================
-   GLOBAL
-================================ */
 let items = [];
 let cart = [];
 let activeOrders = [];
-let currentDay = null;
+let editingOrderId = null;
+let currentBusinessDay = null;
 
-/* ===============================
-   LOAD DAY
-================================ */
-async function loadDay() {
+/* ======================
+   تحميل اليوم الحالي
+====================== */
+async function loadCurrentDay() {
   const { data } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
+    .order("opened_at", { ascending: false })
     .limit(1)
     .single();
 
-  currentDay = data || null;
+  currentBusinessDay = data || null;
 }
 
-/* ===============================
+/* ======================
    INIT
-================================ */
+====================== */
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadDay();
+  await loadCurrentDay();
   await loadItems("food");
   await loadActiveOrders();
+  renderCart();
+
+  document.getElementById("paid")
+    .addEventListener("input", calculateChange);
+
+  setupMenu();
 });
 
-/* ===============================
-   ITEMS
-================================ */
+/* ======================
+   القائمة العلوية
+====================== */
+function setupMenu() {
+  const btn = document.getElementById("menuBtn");
+  const menu = document.getElementById("menuDropdown");
+
+  btn.onclick = e => {
+    e.stopPropagation();
+    menu.classList.toggle("hidden");
+  };
+
+  document.addEventListener("click", () => {
+    menu.classList.add("hidden");
+  });
+}
+
+/* ======================
+   الأصناف
+====================== */
 window.filterCategory = (cat, btn) => {
   document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
@@ -67,18 +77,21 @@ function renderItems() {
   const box = document.getElementById("items");
   box.innerHTML = "";
 
-  items.forEach(i => {
-    const d = document.createElement("div");
-    d.className = "item";
-    d.innerHTML = `<strong>${i.name}</strong><span>${i.price?.toFixed(3) ?? "أحجام"}</span>`;
-    d.onclick = () => addToCart(i);
-    box.appendChild(d);
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <strong>${item.name}</strong>
+      <span>${item.price.toFixed(3)} د.ب</span>
+    `;
+    div.onclick = () => addToCart(item);
+    box.appendChild(div);
   });
 }
 
-/* ===============================
-   CART
-================================ */
+/* ======================
+   السلة
+====================== */
 function addToCart(item) {
   const found = cart.find(i => i.id === item.id);
   found ? found.qty++ : cart.push({ ...item, qty: 1 });
@@ -86,44 +99,63 @@ function addToCart(item) {
 }
 
 function renderCart() {
-  const box = document.getElementById("cart");
-  box.innerHTML = "";
+  const tbody = document.getElementById("cart");
+  tbody.innerHTML = "";
   let total = 0;
 
-  cart.forEach((i, idx) => {
-    total += i.qty * i.price;
-    box.innerHTML += `
+  cart.forEach((item, i) => {
+    const sum = item.qty * item.price;
+    total += sum;
+    tbody.innerHTML += `
       <tr>
-        <td>${i.name}</td>
-        <td>${i.qty}</td>
-        <td>${(i.qty*i.price).toFixed(3)}</td>
-        <td><button onclick="removeItem(${idx})">🗑</button></td>
+        <td>${item.name}</td>
+        <td>${item.qty}</td>
+        <td>${sum.toFixed(3)}</td>
+        <td><button onclick="removeItem(${i})">🗑</button></td>
       </tr>
     `;
   });
 
-  document.getElementById("total").textContent = total.toFixed(3);
+  document.getElementById("total").textContent =
+    total.toFixed(3) + " د.ب";
+
+  calculateChange();
 }
 
 window.removeItem = i => {
-  cart.splice(i,1);
+  cart.splice(i, 1);
   renderCart();
 };
 
-/* ===============================
-   COMPLETE ORDER
-================================ */
-window.completeOrder = async () => {
-  if (!cart.length) return alert("الفاتورة فارغة");
+/* ======================
+   الدفع
+====================== */
+function calculateChange() {
+  const paid = parseFloat(document.getElementById("paid").value) || 0;
+  const total = parseFloat(document.getElementById("total").textContent) || 0;
+  const change = paid - total;
+  document.getElementById("change").textContent =
+    change >= 0 ? change.toFixed(3) + " د.ب" : "—";
+}
 
-  const total = cart.reduce((s,i)=>s+i.qty*i.price,0);
+/* ======================
+   إتمام الطلب
+====================== */
+window.completeOrder = async function () {
+  if (!currentBusinessDay) {
+    alert("اليوم مقفل");
+    return;
+  }
+  if (!cart.length) return;
+
+  const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   const { data: order } = await supabase
     .from("orders")
     .insert({
       total,
       status: "completed",
-      business_day_id: currentDay?.id
+      business_day_id: currentBusinessDay.id
     })
     .select("id")
     .single();
@@ -142,33 +174,35 @@ window.completeOrder = async () => {
   loadActiveOrders();
 };
 
-/* ===============================
-   ACTIVE ORDERS
-================================ */
+/* ======================
+   الطلبات الجارية
+====================== */
 async function loadActiveOrders() {
+  if (!currentBusinessDay) return;
+
   const { data } = await supabase
     .from("orders")
     .select("*")
-    .eq("status", "completed")
-    .eq("business_day_id", currentDay?.id);
+    .eq("status", "active")
+    .eq("business_day_id", currentBusinessDay.id);
 
   activeOrders = data || [];
-  renderOrders();
+  renderActiveOrders();
 }
 
-function renderOrders() {
+function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
   box.innerHTML = "";
 
   activeOrders.forEach(o => {
-    const d = document.createElement("div");
-    d.className = "order-box";
-    d.innerHTML = `
+    const div = document.createElement("div");
+    div.className = "order-box";
+    div.innerHTML = `
       فاتورة #${o.id}<br>
       ${o.total.toFixed(3)} د.ب<br>
-      <button onclick="deleteOrder('${o.id}')">🗑 حذف نهائي</button>
+      <button onclick="deleteOrder('${o.id}')">🗑 حذف</button>
     `;
-    box.appendChild(d);
+    box.appendChild(div);
   });
 }
 
@@ -178,12 +212,15 @@ window.deleteOrder = async id => {
   loadActiveOrders();
 };
 
-/* ===============================
-   CLOSE DAY
-================================ */
+/* ======================
+   إقفال اليوم
+====================== */
 window.closeDay = () => {
   window.location.href = "report.html";
 };
 
-window.goToReports = () => location.href="reports.html";
-window.goToSettings = () => location.href="settings.html";
+/* ======================
+   تنقل
+====================== */
+window.goToReports = () => location.href = "reports.html";
+window.goToSettings = () => location.href = "settings.html";
