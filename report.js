@@ -17,9 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const itemsReportEl = document.getElementById("itemsReport");
   const topItemEl     = document.getElementById("topItem");
 
-  /* ===============================
-     جلب اليوم المفتوح
-  ================================ */
+  /* ===== جلب اليوم المفتوح ===== */
   const { data: openDay } = await supabase
     .from("business_days")
     .select("*")
@@ -33,9 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ===============================
-     جلب الطلبات المكتملة لليوم
-  ================================ */
+  /* ===== جلب الطلبات المكتملة ===== */
   const { data: orders } = await supabase
     .from("orders")
     .select(`
@@ -62,15 +58,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ===============================
-     حساب الإحصائيات (معاينة)
-  ================================ */
+  /* ===== حساب الإحصائيات (معاينة فقط) ===== */
   let totalSales = 0;
   const itemsMap = {};
 
   ordersCache.forEach(o => {
     totalSales += o.total;
-
     o.order_items.forEach(i => {
       const name = i.products.name;
       itemsMap[name] ??= { qty: 0, total: 0 };
@@ -81,11 +74,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const topItem =
     Object.entries(itemsMap)
-      .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+      .sort((a,b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
 
-  /* ===============================
-     عرض المعاينة فقط
-  ================================ */
+  /* ===== عرض المعاينة ===== */
   closeTimeEl.textContent =
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
 
@@ -109,17 +100,17 @@ document.addEventListener("DOMContentLoaded", async () => {
    ⬅ رجوع للكاشير (نفس اليوم)
    ❌ لا حفظ
 ================================ */
-window.backToCashierSameDay = function () {
+window.backToCashier = function () {
   window.location.href = "index.html";
 };
 
 /* ===============================
    🔄 بدء يوم جديد (الحفظ الحقيقي)
-   ✅ يحفظ
+   ✅ يحفظ التقرير
    ✅ يؤرشف
    ✅ يفتح يوم جديد
 ================================ */
-window.startNewDayFromReport = async function () {
+window.startNewDay = async function () {
   if (!currentBusinessDay) return;
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
@@ -145,7 +136,7 @@ window.startNewDayFromReport = async function () {
 
   const topItem =
     Object.entries(itemsMap)
-      .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
   /* حفظ التقرير */
   await supabase.from("daily_reports").insert({
@@ -167,7 +158,7 @@ window.startNewDayFromReport = async function () {
 
   /* فتح يوم جديد */
   await supabase.from("business_days").insert({
-    day_date: new Date().toISOString().slice(0, 10),
+    day_date: new Date().toISOString().slice(0,10),
     is_open: true,
     opened_at: new Date().toISOString()
   });
