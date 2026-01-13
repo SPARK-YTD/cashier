@@ -1,10 +1,6 @@
 import { supabase } from "./supabase.js";
 import { applyLang } from "./i18n.js";
 
-/*********************************
- * Get-Break | Daily Close Report
- *********************************/
-
 let currentBusinessDay = null;
 let ordersCache = [];
 
@@ -46,34 +42,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     itemsReportEl.innerHTML = "";
     Object.entries(report.items || {}).forEach(([name, item]) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${name}</td>
-        <td>${item.qty}</td>
-        <td>${item.total.toFixed(3)} د.ب</td>
+      itemsReportEl.innerHTML += `
+        <tr>
+          <td>${name}</td>
+          <td>${item.qty}</td>
+          <td>${item.total.toFixed(3)} د.ب</td>
+        </tr>
       `;
-      itemsReportEl.appendChild(tr);
     });
-
     return;
   }
 
   /* ===============================
-     معاينة اليوم المفتوح
+     جلب آخر يوم مفتوح (تصحيح مهم)
   ================================ */
-  const { data: openDay } = await supabase
+  const { data: days, error: dayError } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
-    .single();
+    .order("opened_at", { ascending: false })
+    .limit(1);
 
-  currentBusinessDay = openDay;
-
-  if (!currentBusinessDay) {
+  if (dayError || !days.length) {
     closeTimeEl.textContent = "❌ لا يوجد يوم مفتوح";
     return;
   }
 
+  currentBusinessDay = days[0];
+
+  /* ===============================
+     الطلبات المكتملة
+  ================================ */
   const { data: orders } = await supabase
     .from("orders")
     .select(`
@@ -94,8 +93,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     ordersCountEl.textContent = "0";
     totalSalesEl.textContent = "0.000 د.ب";
     topItemEl.textContent = "—";
-    itemsReportEl.innerHTML =
-      "<tr><td colspan='3'>لا توجد بيانات</td></tr>";
     return;
   }
 
@@ -125,21 +122,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   itemsReportEl.innerHTML = "";
   Object.entries(itemsMap).forEach(([name, item]) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${name}</td>
-      <td>${item.qty}</td>
-      <td>${item.total.toFixed(3)} د.ب</td>
+    itemsReportEl.innerHTML += `
+      <tr>
+        <td>${name}</td>
+        <td>${item.qty}</td>
+        <td>${item.total.toFixed(3)} د.ب</td>
+      </tr>
     `;
-    itemsReportEl.appendChild(tr);
   });
 });
 
 /* ===============================
-   بدء يوم جديد (حفظ حقيقي)
+   حفظ التقرير وبدء يوم جديد
 ================================ */
-window.startNewDay = async function () {
-  if (!currentBusinessDay) return;
+window.startNewDay = async () => {
+  if (!currentBusinessDay) {
+    alert("❌ لا يوجد يوم مفتوح");
+    return;
+  }
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
@@ -157,21 +157,17 @@ window.startNewDay = async function () {
     });
   });
 
-  const topItem =
-    Object.entries(itemsMap)
-      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
-
   const { error } = await supabase.from("daily_reports").insert({
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
     orders_count: ordersCache.length,
     total_sales: totalSales,
-    top_item: topItem,
+    top_item: Object.keys(itemsMap)[0] || null,
     items: itemsMap
   });
 
   if (error) {
-    alert("❌ فشل حفظ التقرير");
+    alert("❌ فشل حفظ التقرير:\n" + error.message);
     console.error(error);
     return;
   }
@@ -187,15 +183,9 @@ window.startNewDay = async function () {
     opened_at: new Date().toISOString()
   });
 
-  alert("✅ تم حفظ التقرير");
+  alert("✅ تم حفظ التقرير بنجاح");
   window.location.href = "reports.html";
 };
 
-/* ===============================
-   رجوع للكاشير
-================================ */
-window.backToCashier = () => {
-  window.location.href = "index.html";
-};
-
+window.backToCashier = () => location.href = "index.html";
 window.downloadPDF = () => window.print();
