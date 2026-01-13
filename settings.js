@@ -29,123 +29,112 @@ window.login = async function () {
 };
 
 /* ===============================
-   رفع صورة
+   رفع صورة (آمن)
 ================================ */
 async function uploadImage(file) {
-  const ext = file.name.split(".").pop();
-  const path = `products/${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}.${ext}`;
+  try {
+    const ext = file.name.split(".").pop();
+    const path = `products/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from("products")
-    .upload(path, file, {
-      cacheControl: "3600",
-      upsert: false
-    });
+    const { error } = await supabase.storage
+      .from("products")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false
+      });
 
-  if (error) {
-    alert("خطأ في رفع الصورة");
-    console.error(error);
+    if (error) throw error;
+
+    return supabase.storage.from("products").getPublicUrl(path).data.publicUrl;
+  } catch (err) {
+    console.error("UPLOAD IMAGE ERROR:", err);
+    alert("❌ فشل رفع الصورة");
     return null;
   }
-
-  return supabase.storage.from("products").getPublicUrl(path).data.publicUrl;
 }
 
 /* ===============================
-   إضافة صنف (مصححة)
+   إضافة صنف (نهائي + مضمون)
 ================================ */
 window.addItem = async function () {
-  const name = document.getElementById("itemName").value.trim();
-  const category = document.getElementById("itemCategory").value;
-  const imageFile = document.getElementById("itemImage")?.files[0];
-  const hasVariants = document.getElementById("hasVariants").checked;
+  try {
+    const name = document.getElementById("itemName").value.trim();
+    const category = document.getElementById("itemCategory").value;
+    const imageFile = document.getElementById("itemImage")?.files[0];
+    const hasVariants = document.getElementById("hasVariants").checked;
 
-  const priceNormal = parseFloat(document.getElementById("itemPrice").value);
-  const priceSmall  = parseFloat(document.getElementById("priceSmall").value);
-  const priceMedium = parseFloat(document.getElementById("priceMedium").value);
-  const priceLarge  = parseFloat(document.getElementById("priceLarge").value);
+    const priceNormal = parseFloat(document.getElementById("itemPrice").value);
+    const priceSmall  = parseFloat(document.getElementById("priceSmall").value);
+    const priceMedium = parseFloat(document.getElementById("priceMedium").value);
+    const priceLarge  = parseFloat(document.getElementById("priceLarge").value);
 
-  if (!name) return alert("أدخل اسم الصنف");
+    if (!name) return alert("أدخل اسم الصنف");
 
-  if (!hasVariants && isNaN(priceNormal))
-    return alert("أدخل السعر");
+    if (!hasVariants && isNaN(priceNormal))
+      return alert("أدخل السعر");
 
-  if (
-    hasVariants &&
-    isNaN(priceSmall) &&
-    isNaN(priceMedium) &&
-    isNaN(priceLarge)
-  )
-    return alert("أدخل سعر واحد على الأقل للأحجام");
+    if (
+      hasVariants &&
+      isNaN(priceSmall) &&
+      isNaN(priceMedium) &&
+      isNaN(priceLarge)
+    )
+      return alert("أدخل سعر واحد على الأقل للأحجام");
 
-  let image_url = null;
-  if (imageFile) {
-    image_url = await uploadImage(imageFile);
-    if (!image_url) return;
-  }
-
-  /* === إدخال الصنف === */
-  const { data: product, error } = await supabase
-    .from("products")
-    .insert({
-      name,
-      category,
-      price: hasVariants ? null : priceNormal,
-      has_variants: hasVariants,
-      image_url,
-      active: true
-    })
-    .select()
-    .single();
-
-  if (error) {
-    alert("خطأ في حفظ الصنف");
-    console.error(error);
-    return;
-  }
-
-  /* === إدخال الأحجام (مصححة) === */
-  if (hasVariants) {
-    const variants = [];
-
-    if (!isNaN(priceSmall))
-      variants.push({
-        product_id: product.id,
-        label: "Small",
-        price: priceSmall,
-        active: true
-      });
-
-    if (!isNaN(priceMedium))
-      variants.push({
-        product_id: product.id,
-        label: "Medium",
-        price: priceMedium,
-        active: true
-      });
-
-    if (!isNaN(priceLarge))
-      variants.push({
-        product_id: product.id,
-        label: "Large",
-        price: priceLarge,
-        active: true
-      });
-
-    const { error: variantError } = await supabase
-      .from("product_variants")
-      .insert(variants);
-
-    if (variantError) {
-      alert("تم حفظ الصنف لكن حدث خطأ في الأحجام");
-      console.error(variantError);
+    let image_url = null;
+    if (imageFile) {
+      image_url = await uploadImage(imageFile);
+      if (!image_url) return;
     }
-  }
 
-  clearForm();
-  await loadItems();
+    /* === إدخال الصنف === */
+    const { data: product, error } = await supabase
+      .from("products")
+      .insert({
+        name,
+        category,
+        price: hasVariants ? null : priceNormal,
+        has_variants: hasVariants,
+        image_url,
+        active: true
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    /* === إدخال الأحجام === */
+    if (hasVariants) {
+      const variants = [];
+
+      if (!isNaN(priceSmall))
+        variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
+
+      if (!isNaN(priceMedium))
+        variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
+
+      if (!isNaN(priceLarge))
+        variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
+
+      if (variants.length > 0) {
+        const { error: vErr } = await supabase
+          .from("product_variants")
+          .insert(variants);
+
+        if (vErr) throw vErr;
+      }
+    }
+
+    clearForm();
+    await loadItems();
+    alert("✅ تم إضافة الصنف بنجاح");
+
+  } catch (err) {
+    console.error("ADD ITEM ERROR:", err);
+    alert("❌ فشل إضافة الصنف (تحقق من الصلاحيات)");
+  }
 };
 
 /* ===============================
@@ -163,8 +152,8 @@ async function loadItems() {
     .order("created_at", { ascending: false });
 
   if (error) {
+    console.error("LOAD ITEMS ERROR:", error);
     box.innerHTML = "<p>خطأ في تحميل الأصناف</p>";
-    console.error(error);
     return;
   }
 
@@ -184,11 +173,7 @@ async function loadItems() {
           : ""
       }
       <strong>${item.name}</strong><br>
-      ${
-        item.has_variants
-          ? "متعدد الأحجام"
-          : `${Number(item.price).toFixed(3)} د.ب`
-      } — ${item.category}<br>
+      ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
       الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
 
       ${
