@@ -11,6 +11,7 @@ let items = [];
 let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
+let editingOrderId = null;
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -198,31 +199,58 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+   إتمام الطلب (جديد / تعديل)
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const { data: order } = await supabase
-    .from("orders")
-    .insert({
-      total,
-      status: "active",
-      business_day_id: currentBusinessDay.id
-    })
-    .select("id")
-    .single();
+  /* ✏️ تعديل طلب */
+  if (editingOrderId) {
+    await supabase
+      .from("orders")
+      .update({ total })
+      .eq("id", editingOrderId);
 
-  await supabase.from("order_items").insert(
-    cart.map(i => ({
-      order_id: order.id,
-      product_id: i.id,
-      qty: i.qty,
-      price: i.price
-    }))
-  );
+    await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
+
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: editingOrderId,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+
+    editingOrderId = null;
+  }
+
+  /* 🆕 طلب جديد */
+  else {
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
+      .select("id")
+      .single();
+
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+  }
 
   cart = [];
   renderCart();
@@ -254,6 +282,7 @@ function renderActiveOrders() {
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
     `;
@@ -261,7 +290,32 @@ function renderActiveOrders() {
   });
 }
 
-/* ✅ الإغلاق الصحيح */
+/* ✏️ تحميل الفاتورة للتعديل */
+window.editOrder = async function (orderId) {
+  editingOrderId = orderId;
+  cart = [];
+
+  const { data } = await supabase
+    .from("order_items")
+    .select(`
+      qty,
+      price,
+      products ( id, name )
+    `)
+    .eq("order_id", orderId);
+
+  cart = data.map(i => ({
+    id: i.products.id,
+    name: i.products.name,
+    price: i.price,
+    qty: i.qty,
+    key: i.products.id
+  }));
+
+  renderCart();
+};
+
+/* ✅ مكتمل */
 window.markCompleted = async id => {
   await supabase.from("orders").update({
     status: "completed",
@@ -271,6 +325,7 @@ window.markCompleted = async id => {
   loadActiveOrders();
 };
 
+/* 🗑 حذف */
 window.deleteOrder = async id => {
   if (!confirm("حذف الفاتورة نهائيًا؟")) return;
   await supabase.from("order_items").delete().eq("order_id", id);
