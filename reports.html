@@ -2,55 +2,54 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title data-i18n="reports_archive">📁 أرشيف التقارير</title>
+  <title data-i18n="reports_archive">أرشيف التقارير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body class="report-page">
 
-  <!-- ===== Header ===== -->
-  <header class="report-header">
-    <h1 data-i18n="reports_archive">📁 أرشيف التقارير</h1>
+<!-- ===== Header ===== -->
+<header class="report-header">
+  <h1 data-i18n="reports_archive">📁 أرشيف التقارير</h1>
 
-    <!-- زر تغيير اللغة -->
-    <div class="lang-switch">
-      <button onclick="setLang('ar')">AR</button>
-      <button onclick="setLang('en')">EN</button>
-    </div>
-  </header>
+  <!-- زر اللغة -->
+  <div class="lang-switch">
+    <button onclick="setLang('ar')">AR</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
+</header>
 
-  <!-- ===== Content ===== -->
-  <main class="report-container">
+<!-- ===== Content ===== -->
+<main class="report-container">
 
-    <!-- جدول التقارير -->
-    <section class="table-box">
-      <table>
-        <thead>
-          <tr>
-            <th data-i18n="date">التاريخ</th>
-            <th data-i18n="orders_count">عدد الطلبات</th>
-            <th data-i18n="total_sales">إجمالي المبيعات</th>
-            <th data-i18n="actions">عرض</th>
-          </tr>
-        </thead>
+  <section class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="date">التاريخ</th>
+          <th data-i18n="orders_count">عدد الطلبات</th>
+          <th data-i18n="total_sales">إجمالي المبيعات</th>
+          <th data-i18n="actions">عرض</th>
+        </tr>
+      </thead>
 
-        <tbody id="reportsList">
-          <tr>
-            <td colspan="4">—</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+      <tbody id="reportsList">
+        <tr>
+          <td colspan="4">جاري التحميل...</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
-    <!-- أزرار -->
-    <section class="actions">
-      <button onclick="goBack()" data-i18n="back">⬅️ رجوع</button>
-    </section>
+  <section class="actions">
+    <button class="btn secondary" onclick="goBack()" data-i18n="back">
+      ⬅️ رجوع
+    </button>
+  </section>
 
-  </main>
+</main>
 
-  <!-- JS -->
-  <script type="module" src="reports.js"></script>
+<script type="module" src="reports.js"></script>
 </body>
 </html>
