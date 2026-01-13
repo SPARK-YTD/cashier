@@ -170,4 +170,4 @@ window.startNewDay = async function () {
 /* ===============================
    🖨 PDF
 ================================ */
-window.downloadPDF = () => window.print();
+window.downloadPDF = () => window.print(); 
