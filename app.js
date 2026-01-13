@@ -10,7 +10,6 @@ window.setLang = setLang;
 let items = [];
 let cart = [];
 let activeOrders = [];
-let editingOrderId = null;
 let currentBusinessDay = null;
 
 /* ===============================
@@ -86,15 +85,11 @@ function renderItems() {
 }
 
 /* ===============================
-   الأحجام (مهم)
+   الأحجام
 ================================ */
 async function handleItemClick(item) {
   if (!item.has_variants) {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      price: item.price
-    });
+    addToCart({ id: item.id, name: item.name, price: item.price });
     return;
   }
 
@@ -217,7 +212,7 @@ window.completeOrder = async function () {
       status: "active",
       business_day_id: currentBusinessDay.id
     })
-    .select("id, invoice_no")
+    .select("id")
     .single();
 
   await supabase.from("order_items").insert(
@@ -266,8 +261,13 @@ function renderActiveOrders() {
   });
 }
 
+/* ✅ الإغلاق الصحيح */
 window.markCompleted = async id => {
-  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
+  await supabase.from("orders").update({
+    status: "completed",
+    closed_at: new Date().toISOString()
+  }).eq("id", id);
+
   loadActiveOrders();
 };
 
@@ -279,12 +279,8 @@ window.deleteOrder = async id => {
 };
 
 /* ===============================
-   إقفال اليوم (معاينة فقط)
-================================ */
-window.closeDay = () => location.href = "report.html?preview=1";
-
-/* ===============================
    NAV
 ================================ */
+window.closeDay = () => location.href = "report.html";
 window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
