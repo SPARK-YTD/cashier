@@ -20,9 +20,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const reportId = params.get("id");
 
-  /* ======================================================
-     1️⃣ عرض تقرير محفوظ من الأرشيف
-  ====================================================== */
+  /* ===============================
+     عرض تقرير محفوظ
+  ================================ */
   if (reportId) {
     const { data: report, error } = await supabase
       .from("daily_reports")
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       new Date(report.created_at).toLocaleString("ar-BH");
 
     ordersCountEl.textContent = report.orders_count;
-    totalSalesEl.textContent  =
+    totalSalesEl.textContent =
       Number(report.total_sales).toFixed(3) + " د.ب";
     topItemEl.textContent = report.top_item || "—";
 
@@ -58,17 +58,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ======================================================
-     2️⃣ معاينة إقفال اليوم (بدون حفظ)
-  ====================================================== */
-
+  /* ===============================
+     معاينة اليوم المفتوح
+  ================================ */
   const { data: openDay } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
     .single();
 
-  currentBusinessDay = openDay || null;
+  currentBusinessDay = openDay;
 
   if (!currentBusinessDay) {
     closeTimeEl.textContent = "❌ لا يوجد يوم مفتوح";
@@ -78,7 +77,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { data: orders } = await supabase
     .from("orders")
     .select(`
-      id,
       total,
       order_items (
         qty,
@@ -94,8 +92,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!ordersCache.length) {
     closeTimeEl.textContent = "🕒 لا توجد طلبات مكتملة";
     ordersCountEl.textContent = "0";
-    totalSalesEl.textContent  = "0.000 د.ب";
-    topItemEl.textContent     = "—";
+    totalSalesEl.textContent = "0.000 د.ب";
+    topItemEl.textContent = "—";
     itemsReportEl.innerHTML =
       "<tr><td colspan='3'>لا توجد بيانات</td></tr>";
     return;
@@ -122,8 +120,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
 
   ordersCountEl.textContent = ordersCache.length;
-  totalSalesEl.textContent  = totalSales.toFixed(3) + " د.ب";
-  topItemEl.textContent     = topItem;
+  totalSalesEl.textContent = totalSales.toFixed(3) + " د.ب";
+  topItemEl.textContent = topItem;
 
   itemsReportEl.innerHTML = "";
   Object.entries(itemsMap).forEach(([name, item]) => {
@@ -138,22 +136,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ===============================
-   ⬅ رجوع للكاشير (نفس اليوم)
-================================ */
-window.backToCashier = () => {
-  window.location.href = "index.html";
-};
-
-/* ===============================
-   🔄 بدء يوم جديد (الحفظ الحقيقي)
+   بدء يوم جديد (حفظ حقيقي)
 ================================ */
 window.startNewDay = async function () {
   if (!currentBusinessDay) return;
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
-
-  if (!confirm("سيتم حفظ التقرير وبدء يوم جديد، هل أنت متأكد؟")) return;
 
   let totalSales = 0;
   const itemsMap = {};
@@ -172,7 +161,7 @@ window.startNewDay = async function () {
     Object.entries(itemsMap)
       .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
-  await supabase.from("daily_reports").insert({
+  const { error } = await supabase.from("daily_reports").insert({
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
     orders_count: ordersCache.length,
@@ -181,7 +170,14 @@ window.startNewDay = async function () {
     items: itemsMap
   });
 
-  await supabase.from("business_days")
+  if (error) {
+    alert("❌ فشل حفظ التقرير");
+    console.error(error);
+    return;
+  }
+
+  await supabase
+    .from("business_days")
     .update({ is_open: false, closed_at: new Date().toISOString() })
     .eq("id", currentBusinessDay.id);
 
@@ -191,11 +187,15 @@ window.startNewDay = async function () {
     opened_at: new Date().toISOString()
   });
 
-  alert("✅ تم حفظ التقرير وبدء يوم جديد");
+  alert("✅ تم حفظ التقرير");
   window.location.href = "reports.html";
 };
 
 /* ===============================
-   🖨 PDF
+   رجوع للكاشير
 ================================ */
+window.backToCashier = () => {
+  window.location.href = "index.html";
+};
+
 window.downloadPDF = () => window.print();
