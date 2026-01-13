@@ -4,21 +4,20 @@
   <meta charset="UTF-8" />
   <title>تقرير إقفال اليوم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body class="report-page">
 
   <!-- ===== Header ===== -->
-  <div class="report-header">
+  <header class="report-header">
     <h1>📊 تقرير إقفال اليوم</h1>
     <div class="store-name">Get-Break</div>
     <div class="close-time" id="closeTime">—</div>
-  </div>
+  </header>
 
   <!-- ===== Content ===== -->
-  <div class="report-container">
+  <main class="report-container">
 
     <!-- Summary -->
     <div class="summary-cards">
@@ -58,12 +57,20 @@
 
     <!-- Actions -->
     <div class="actions no-print">
-      <button class="btn success" onclick="downloadPDF()">🖨 تحميل PDF</button>
-      <button class="btn danger" onclick="startNewDay()">🔄 بدء يوم جديد</button>
-      <button class="btn secondary" onclick="backToCashier()">⬅ رجوع للكاشير</button>
+      <button class="btn success" onclick="downloadPDF()">
+        🖨 تحميل PDF
+      </button>
+
+      <button class="btn danger" onclick="startNewDay()">
+        🔄 بدء يوم جديد
+      </button>
+
+      <button class="btn secondary" onclick="backToCashier()">
+        ⬅ رجوع للكاشير
+      </button>
     </div>
 
-  </div>
+  </main>
 
   <footer class="report-footer">
     تقرير معاينة — لن يتم الحفظ إلا بعد بدء يوم جديد
