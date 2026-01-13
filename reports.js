@@ -6,54 +6,37 @@ window.setLang = setLang;
 /* ===============================
    INIT
 ================================ */
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   applyLang();
-  await loadReports();
+  loadReports();
 });
 
 /* ===============================
-   تحميل أرشيف التقارير
+   تحميل أرشيف التقارير (مصحح)
 ================================ */
 async function loadReports() {
   const tbody = document.getElementById("reportsList");
   if (!tbody) return;
 
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="4">⏳ جاري تحميل التقارير...</td>
-    </tr>
-  `;
+  tbody.innerHTML = "";
 
   const { data: reports, error } = await supabase
     .from("daily_reports")
-    .select(`
-      id,
-      report_date,
-      orders_count,
-      total_sales
-    `)
+    .select("id, report_date, orders_count, total_sales")
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("LOAD REPORTS ERROR:", error);
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4">❌ خطأ في تحميل التقارير</td>
-      </tr>
-    `;
+    console.error(error);
+    tbody.innerHTML =
+      "<tr><td colspan='4'>❌ خطأ في تحميل التقارير</td></tr>";
     return;
   }
 
   if (!reports || reports.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4">📭 لا توجد تقارير محفوظة</td>
-      </tr>
-    `;
+    tbody.innerHTML =
+      "<tr><td colspan='4'>📭 لا توجد تقارير محفوظة</td></tr>";
     return;
   }
-
-  tbody.innerHTML = "";
 
   reports.forEach(report => {
     const tr = document.createElement("tr");
@@ -72,7 +55,7 @@ async function loadReports() {
 }
 
 /* ===============================
-   عرض تقرير
+   عرض تقرير محفوظ
 ================================ */
 window.viewReport = function (id) {
   window.location.href = `report.html?id=${id}`;
