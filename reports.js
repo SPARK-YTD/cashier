@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ===============================
-   تحميل أرشيف التقارير (مصحح)
+   تحميل أرشيف التقارير
 ================================ */
 async function loadReports() {
   const tbody = document.getElementById("reportsList");
@@ -22,11 +22,17 @@ async function loadReports() {
 
   const { data: reports, error } = await supabase
     .from("daily_reports")
-    .select("id, report_date, orders_count, total_sales")
+    .select(`
+      id,
+      report_date,
+      orders_count,
+      total_sales,
+      created_at
+    `)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error(error);
+    console.error("LOAD REPORTS ERROR:", error);
     tbody.innerHTML =
       "<tr><td colspan='4'>❌ خطأ في تحميل التقارير</td></tr>";
     return;
@@ -46,7 +52,8 @@ async function loadReports() {
       <td>${report.orders_count}</td>
       <td>${Number(report.total_sales).toFixed(3)} د.ب</td>
       <td>
-        <button onclick="viewReport('${report.id}')">عرض</button>
+        <button onclick="viewReport('${report.id}')">📄 عرض</button>
+        <button onclick="printReport('${report.id}')">🖨 PDF</button>
       </td>
     `;
 
@@ -59,6 +66,13 @@ async function loadReports() {
 ================================ */
 window.viewReport = function (id) {
   window.location.href = `report.html?id=${id}`;
+};
+
+/* ===============================
+   طباعة PDF
+================================ */
+window.printReport = function (id) {
+  window.open(`report.html?id=${id}&print=1`, "_blank");
 };
 
 /* ===============================
