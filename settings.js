@@ -1,5 +1,5 @@
 import { supabase } from "./supabase.js";
-import { applyLang, setLang, t } from "./i18n.js";
+import { applyLang, setLang } from "./i18n.js";
 
 window.setLang = setLang;
 
@@ -25,7 +25,7 @@ window.login = async function () {
 
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("adminPanel").style.display = "block";
-  loadItems();
+  await loadItems();
 };
 
 /* ===============================
@@ -33,7 +33,9 @@ window.login = async function () {
 ================================ */
 async function uploadImage(file) {
   const ext = file.name.split(".").pop();
-  const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `products/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}.${ext}`;
 
   const { error } = await supabase.storage
     .from("products")
@@ -43,7 +45,8 @@ async function uploadImage(file) {
     });
 
   if (error) {
-    alert(error.message);
+    alert("خطأ في رفع الصورة");
+    console.error(error);
     return null;
   }
 
@@ -51,12 +54,12 @@ async function uploadImage(file) {
 }
 
 /* ===============================
-   إضافة صنف
+   إضافة صنف (مصححة)
 ================================ */
 window.addItem = async function () {
   const name = document.getElementById("itemName").value.trim();
   const category = document.getElementById("itemCategory").value;
-  const imageFile = document.getElementById("itemImage").files[0];
+  const imageFile = document.getElementById("itemImage")?.files[0];
   const hasVariants = document.getElementById("hasVariants").checked;
 
   const priceNormal = parseFloat(document.getElementById("itemPrice").value);
@@ -69,8 +72,13 @@ window.addItem = async function () {
   if (!hasVariants && isNaN(priceNormal))
     return alert("أدخل السعر");
 
-  if (hasVariants && isNaN(priceSmall) && isNaN(priceMedium) && isNaN(priceLarge))
-    return alert("أدخل سعر واحد على الأقل");
+  if (
+    hasVariants &&
+    isNaN(priceSmall) &&
+    isNaN(priceMedium) &&
+    isNaN(priceLarge)
+  )
+    return alert("أدخل سعر واحد على الأقل للأحجام");
 
   let image_url = null;
   if (imageFile) {
@@ -78,6 +86,7 @@ window.addItem = async function () {
     if (!image_url) return;
   }
 
+  /* === إدخال الصنف === */
   const { data: product, error } = await supabase
     .from("products")
     .insert({
@@ -92,27 +101,51 @@ window.addItem = async function () {
     .single();
 
   if (error) {
-    alert(error.message);
+    alert("خطأ في حفظ الصنف");
+    console.error(error);
     return;
   }
 
+  /* === إدخال الأحجام (مصححة) === */
   if (hasVariants) {
     const variants = [];
 
     if (!isNaN(priceSmall))
-      variants.push({ product_id: product.id, label: "Small", price: priceSmall });
+      variants.push({
+        product_id: product.id,
+        label: "Small",
+        price: priceSmall,
+        active: true
+      });
 
     if (!isNaN(priceMedium))
-      variants.push({ product_id: product.id, label: "Medium", price: priceMedium });
+      variants.push({
+        product_id: product.id,
+        label: "Medium",
+        price: priceMedium,
+        active: true
+      });
 
     if (!isNaN(priceLarge))
-      variants.push({ product_id: product.id, label: "Large", price: priceLarge });
+      variants.push({
+        product_id: product.id,
+        label: "Large",
+        price: priceLarge,
+        active: true
+      });
 
-    await supabase.from("product_variants").insert(variants);
+    const { error: variantError } = await supabase
+      .from("product_variants")
+      .insert(variants);
+
+    if (variantError) {
+      alert("تم حفظ الصنف لكن حدث خطأ في الأحجام");
+      console.error(variantError);
+    }
   }
 
   clearForm();
-  loadItems();
+  await loadItems();
 };
 
 /* ===============================
@@ -120,14 +153,22 @@ window.addItem = async function () {
 ================================ */
 async function loadItems() {
   const box = document.getElementById("itemsList");
+  if (!box) return;
+
   box.innerHTML = "";
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (!data?.length) {
+  if (error) {
+    box.innerHTML = "<p>خطأ في تحميل الأصناف</p>";
+    console.error(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
     box.innerHTML = "<p>لا توجد أصناف</p>";
     return;
   }
@@ -137,9 +178,17 @@ async function loadItems() {
     div.className = "order-box";
 
     div.innerHTML = `
-      ${item.image_url ? `<img src="${item.image_url}" style="width:60px;height:60px;border-radius:8px">` : ""}
+      ${
+        item.image_url
+          ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
+          : ""
+      }
       <strong>${item.name}</strong><br>
-      ${item.has_variants ? "متعدد الأحجام" : item.price?.toFixed(3) + " د.ب"}<br>
+      ${
+        item.has_variants
+          ? "متعدد الأحجام"
+          : `${Number(item.price).toFixed(3)} د.ب`
+      } — ${item.category}<br>
       الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
 
       ${
