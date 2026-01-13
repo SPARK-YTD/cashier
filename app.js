@@ -26,13 +26,6 @@ async function loadCurrentDay() {
     .single();
 
   currentBusinessDay = data || null;
-
-  const statusEl = document.getElementById("dayStatus");
-  if (statusEl) {
-    statusEl.textContent = currentBusinessDay
-      ? `🟢 اليوم مفتوح`
-      : `🔴 اليوم مقفل`;
-  }
 }
 
 /* ===============================
@@ -43,7 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCurrentDay();
 
   if (!currentBusinessDay) {
-    alert("❌ اليوم مقفل – يجب بدء يوم جديد من التقارير");
+    alert("❌ اليوم مقفل – يجب بدء يوم جديد");
     return;
   }
 
@@ -51,8 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadActiveOrders();
   renderCart();
 
-  const paid = document.getElementById("paid");
-  if (paid) paid.addEventListener("input", calculateChange);
+  document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 
 /* ===============================
@@ -88,16 +80,73 @@ function renderItems() {
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
-    div.onclick = () => addToCart(item);
+    div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
 }
 
 /* ===============================
+   الأحجام (مهم)
+================================ */
+async function handleItemClick(item) {
+  if (!item.has_variants) {
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price
+    });
+    return;
+  }
+
+  const { data: variants } = await supabase
+    .from("product_variants")
+    .select("*")
+    .eq("product_id", item.id)
+    .eq("active", true);
+
+  if (!variants?.length) {
+    alert("لا توجد أحجام");
+    return;
+  }
+
+  showVariantsPopup(item, variants);
+}
+
+function showVariantsPopup(item, variants) {
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>${item.name}</h3>
+      ${variants.map(v => `
+        <button class="variant-btn"
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+          ${v.label} — ${v.price.toFixed(3)} د.ب
+        </button>
+      `).join("")}
+      <button class="variant-cancel" onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
+window.selectVariant = function (productId, name, variantId, label, price) {
+  addToCart({
+    id: productId,
+    name: `${name} (${label})`,
+    price,
+    variant_id: variantId
+  });
+  document.querySelector(".variant-overlay")?.remove();
+};
+
+/* ===============================
    السلة
 ================================ */
 function addToCart(item) {
-  const key = item.id;
+  const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
   const found = cart.find(i => i.key === key);
   found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
@@ -149,7 +198,6 @@ function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
   const total = parseFloat(document.getElementById("total").textContent) || 0;
   const change = paid - total;
-
   document.getElementById("change").textContent =
     change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
 }
@@ -158,7 +206,6 @@ function calculateChange() {
    إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
-  if (!currentBusinessDay) return;
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
@@ -191,8 +238,6 @@ window.completeOrder = async function () {
    الطلبات الجارية
 ================================ */
 async function loadActiveOrders() {
-  if (!currentBusinessDay) return;
-
   const { data } = await supabase
     .from("orders")
     .select("*")
@@ -206,9 +251,8 @@ async function loadActiveOrders() {
 
 function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
-  if (!box) return;
-
   box.innerHTML = "";
+
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
@@ -237,9 +281,7 @@ window.deleteOrder = async id => {
 /* ===============================
    إقفال اليوم (معاينة فقط)
 ================================ */
-window.closeDay = function () {
-  window.location.href = "report.html?preview=1";
-};
+window.closeDay = () => location.href = "report.html?preview=1";
 
 /* ===============================
    NAV
