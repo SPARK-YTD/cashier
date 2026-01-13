@@ -1,6 +1,10 @@
 import { supabase } from "./supabase.js";
 import { applyLang } from "./i18n.js";
 
+/*********************************
+ * Get-Break | Daily Close Report
+ *********************************/
+
 let currentBusinessDay = null;
 let ordersCache = [];
 
@@ -28,6 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (error || !report) {
       closeTimeEl.textContent = "❌ التقرير غير موجود";
+      console.error(error);
       return;
     }
 
@@ -42,38 +47,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     itemsReportEl.innerHTML = "";
     Object.entries(report.items || {}).forEach(([name, item]) => {
-      itemsReportEl.innerHTML += `
-        <tr>
-          <td>${name}</td>
-          <td>${item.qty}</td>
-          <td>${item.total.toFixed(3)} د.ب</td>
-        </tr>
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td>${item.qty}</td>
+        <td>${item.total.toFixed(3)} د.ب</td>
       `;
+      itemsReportEl.appendChild(tr);
     });
+
     return;
   }
 
   /* ===============================
-     جلب آخر يوم مفتوح (تصحيح مهم)
+     معاينة اليوم المفتوح
   ================================ */
-  const { data: days, error: dayError } = await supabase
+  const { data: openDay, error: openDayError } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
-    .order("opened_at", { ascending: false })
-    .limit(1);
+    .single();
 
-  if (dayError || !days.length) {
+  if (openDayError) {
+    console.error("❌ خطأ جلب اليوم المفتوح:", openDayError);
+  }
+
+  currentBusinessDay = openDay;
+
+  if (!currentBusinessDay) {
     closeTimeEl.textContent = "❌ لا يوجد يوم مفتوح";
     return;
   }
 
-  currentBusinessDay = days[0];
-
-  /* ===============================
-     الطلبات المكتملة
-  ================================ */
-  const { data: orders } = await supabase
+  const { data: orders, error: ordersError } = await supabase
     .from("orders")
     .select(`
       total,
@@ -86,6 +92,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     .eq("status", "completed")
     .eq("business_day_id", currentBusinessDay.id);
 
+  if (ordersError) {
+    console.error("❌ خطأ جلب الطلبات:", ordersError);
+  }
+
   ordersCache = orders || [];
 
   if (!ordersCache.length) {
@@ -93,6 +103,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     ordersCountEl.textContent = "0";
     totalSalesEl.textContent = "0.000 د.ب";
     topItemEl.textContent = "—";
+    itemsReportEl.innerHTML =
+      "<tr><td colspan='3'>لا توجد بيانات</td></tr>";
     return;
   }
 
@@ -122,20 +134,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   itemsReportEl.innerHTML = "";
   Object.entries(itemsMap).forEach(([name, item]) => {
-    itemsReportEl.innerHTML += `
-      <tr>
-        <td>${name}</td>
-        <td>${item.qty}</td>
-        <td>${item.total.toFixed(3)} د.ب</td>
-      </tr>
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td>${item.qty}</td>
+      <td>${item.total.toFixed(3)} د.ب</td>
     `;
+    itemsReportEl.appendChild(tr);
   });
 });
 
 /* ===============================
-   حفظ التقرير وبدء يوم جديد
+   بدء يوم جديد (تشخيص مفصل)
 ================================ */
-window.startNewDay = async () => {
+window.startNewDay = async function () {
   if (!currentBusinessDay) {
     alert("❌ لا يوجد يوم مفتوح");
     return;
@@ -157,18 +169,29 @@ window.startNewDay = async () => {
     });
   });
 
-  const { error } = await supabase.from("daily_reports").insert({
+  const insertPayload = {
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
     orders_count: ordersCache.length,
     total_sales: totalSales,
     top_item: Object.keys(itemsMap)[0] || null,
     items: itemsMap
-  });
+  };
+
+  console.log("📦 INSERT daily_reports payload:", insertPayload);
+
+  const { error } = await supabase
+    .from("daily_reports")
+    .insert(insertPayload);
 
   if (error) {
-    alert("❌ فشل حفظ التقرير:\n" + error.message);
-    console.error(error);
+    alert(
+      "❌ فشل حفظ التقرير\n\n" +
+      "Message: " + error.message + "\n\n" +
+      "Code: " + error.code + "\n\n" +
+      "Details: " + JSON.stringify(error.details)
+    );
+    console.error("❌ Supabase error:", error);
     return;
   }
 
@@ -183,9 +206,15 @@ window.startNewDay = async () => {
     opened_at: new Date().toISOString()
   });
 
-  alert("✅ تم حفظ التقرير بنجاح");
+  alert("✅ تم حفظ التقرير وبدء يوم جديد");
   window.location.href = "reports.html";
 };
 
-window.backToCashier = () => location.href = "index.html";
+/* ===============================
+   رجوع
+================================ */
+window.backToCashier = () => {
+  window.location.href = "index.html";
+};
+
 window.downloadPDF = () => window.print();
