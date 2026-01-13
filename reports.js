@@ -102,4 +102,4 @@ window.deleteReport = async function (id) {
 /* ===============================
    رجوع
 ================================ */
-window.goBack = () => history.back();
+window.goBack = () => history.back(); 
