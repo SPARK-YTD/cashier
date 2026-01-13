@@ -3,6 +3,8 @@ import { applyLang, setLang } from "./i18n.js";
 
 window.setLang = setLang;
 
+const PASSWORD = "1234";
+
 /* ===============================
    INIT
 ================================ */
@@ -54,6 +56,7 @@ async function loadReports() {
       <td>
         <button onclick="viewReport('${report.id}')">📄 عرض</button>
         <button onclick="printReport('${report.id}')">🖨 PDF</button>
+        <button class="danger" onclick="deleteReport('${report.id}')">🗑 حذف</button>
       </td>
     `;
 
@@ -73,6 +76,33 @@ window.viewReport = function (id) {
 ================================ */
 window.printReport = function (id) {
   window.open(`report.html?id=${id}&print=1`, "_blank");
+};
+
+/* ===============================
+   حذف تقرير نهائيًا
+================================ */
+window.deleteReport = async function (id) {
+  if (!confirm("⚠️ هل أنت متأكد من حذف التقرير نهائيًا؟")) return;
+
+  const pass = prompt("🔒 أدخل كلمة المرور:");
+  if (pass !== PASSWORD) {
+    alert("❌ كلمة المرور غير صحيحة");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("daily_reports")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("❌ فشل حذف التقرير");
+    console.error(error);
+    return;
+  }
+
+  alert("✅ تم حذف التقرير نهائيًا");
+  loadReports(); // تحديث الجدول
 };
 
 /* ===============================
