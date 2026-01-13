@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ===============================
-     جلب طلبات اليوم (مكتملة فقط)
+     جلب الطلبات المكتملة لليوم
   ================================ */
   const { data: orders } = await supabase
     .from("orders")
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ===============================
-     حساب الإحصائيات
+     حساب الإحصائيات (معاينة)
   ================================ */
   let totalSales = 0;
   const itemsMap = {};
@@ -81,10 +81,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const topItem =
     Object.entries(itemsMap)
-      .sort((a,b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+      .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
 
   /* ===============================
-     عرض التقرير (معاينة فقط)
+     عرض المعاينة فقط
   ================================ */
   closeTimeEl.textContent =
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
@@ -107,15 +107,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /* ===============================
    ⬅ رجوع للكاشير (نفس اليوم)
+   ❌ لا حفظ
 ================================ */
-window.backToCashier = function () {
+window.backToCashierSameDay = function () {
   window.location.href = "index.html";
 };
 
 /* ===============================
    🔄 بدء يوم جديد (الحفظ الحقيقي)
+   ✅ يحفظ
+   ✅ يؤرشف
+   ✅ يفتح يوم جديد
 ================================ */
-window.startNewDay = async function () {
+window.startNewDayFromReport = async function () {
   if (!currentBusinessDay) return;
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
@@ -126,7 +130,6 @@ window.startNewDay = async function () {
 
   if (!confirm("سيتم حفظ التقرير وبدء يوم جديد، هل أنت متأكد؟")) return;
 
-  /* حفظ التقرير */
   let totalSales = 0;
   const itemsMap = {};
 
@@ -140,11 +143,17 @@ window.startNewDay = async function () {
     });
   });
 
+  const topItem =
+    Object.entries(itemsMap)
+      .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+
+  /* حفظ التقرير */
   await supabase.from("daily_reports").insert({
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
     orders_count: ordersCache.length,
     total_sales: totalSales,
+    top_item: topItem,
     items: itemsMap
   });
 
@@ -156,9 +165,9 @@ window.startNewDay = async function () {
     })
     .eq("id", currentBusinessDay.id);
 
-  /* بدء يوم جديد */
+  /* فتح يوم جديد */
   await supabase.from("business_days").insert({
-    day_date: new Date().toISOString().slice(0,10),
+    day_date: new Date().toISOString().slice(0, 10),
     is_open: true,
     opened_at: new Date().toISOString()
   });
