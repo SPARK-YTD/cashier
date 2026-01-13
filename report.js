@@ -17,7 +17,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   const itemsReportEl = document.getElementById("itemsReport");
   const topItemEl     = document.getElementById("topItem");
 
-  /* ===== جلب اليوم المفتوح ===== */
+  const params = new URLSearchParams(window.location.search);
+  const reportId = params.get("id");
+
+  /* ======================================================
+     1️⃣ عرض تقرير محفوظ من الأرشيف
+  ====================================================== */
+  if (reportId) {
+    const { data: report, error } = await supabase
+      .from("daily_reports")
+      .select("*")
+      .eq("id", reportId)
+      .single();
+
+    if (error || !report) {
+      closeTimeEl.textContent = "❌ التقرير غير موجود";
+      return;
+    }
+
+    closeTimeEl.textContent =
+      "🕒 وقت الإقفال: " +
+      new Date(report.created_at).toLocaleString("ar-BH");
+
+    ordersCountEl.textContent = report.orders_count;
+    totalSalesEl.textContent  =
+      Number(report.total_sales).toFixed(3) + " د.ب";
+    topItemEl.textContent = report.top_item || "—";
+
+    itemsReportEl.innerHTML = "";
+    Object.entries(report.items || {}).forEach(([name, item]) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td>${item.qty}</td>
+        <td>${item.total.toFixed(3)} د.ب</td>
+      `;
+      itemsReportEl.appendChild(tr);
+    });
+
+    return;
+  }
+
+  /* ======================================================
+     2️⃣ معاينة إقفال اليوم (بدون حفظ)
+  ====================================================== */
+
   const { data: openDay } = await supabase
     .from("business_days")
     .select("*")
@@ -31,7 +75,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ===== جلب الطلبات المكتملة ===== */
   const { data: orders } = await supabase
     .from("orders")
     .select(`
@@ -58,7 +101,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ===== حساب الإحصائيات (معاينة فقط) ===== */
   let totalSales = 0;
   const itemsMap = {};
 
@@ -74,9 +116,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const topItem =
     Object.entries(itemsMap)
-      .sort((a,b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
-  /* ===== عرض المعاينة ===== */
   closeTimeEl.textContent =
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
 
@@ -98,26 +139,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /* ===============================
    ⬅ رجوع للكاشير (نفس اليوم)
-   ❌ لا حفظ
 ================================ */
-window.backToCashier = function () {
+window.backToCashier = () => {
   window.location.href = "index.html";
 };
 
 /* ===============================
    🔄 بدء يوم جديد (الحفظ الحقيقي)
-   ✅ يحفظ التقرير
-   ✅ يؤرشف
-   ✅ يفتح يوم جديد
 ================================ */
 window.startNewDay = async function () {
   if (!currentBusinessDay) return;
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
-  if (pass !== "1234") {
-    alert("❌ كلمة المرور غير صحيحة");
-    return;
-  }
+  if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
   if (!confirm("سيتم حفظ التقرير وبدء يوم جديد، هل أنت متأكد؟")) return;
 
@@ -138,7 +172,6 @@ window.startNewDay = async function () {
     Object.entries(itemsMap)
       .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
 
-  /* حفظ التقرير */
   await supabase.from("daily_reports").insert({
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
@@ -148,15 +181,10 @@ window.startNewDay = async function () {
     items: itemsMap
   });
 
-  /* إقفال اليوم */
   await supabase.from("business_days")
-    .update({
-      is_open: false,
-      closed_at: new Date().toISOString()
-    })
+    .update({ is_open: false, closed_at: new Date().toISOString() })
     .eq("id", currentBusinessDay.id);
 
-  /* فتح يوم جديد */
   await supabase.from("business_days").insert({
     day_date: new Date().toISOString().slice(0,10),
     is_open: true,
@@ -164,10 +192,10 @@ window.startNewDay = async function () {
   });
 
   alert("✅ تم حفظ التقرير وبدء يوم جديد");
-  window.location.href = "index.html";
+  window.location.href = "reports.html";
 };
 
 /* ===============================
    🖨 PDF
 ================================ */
-window.downloadPDF = () => window.print(); 
+window.downloadPDF = () => window.print();
