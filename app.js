@@ -14,18 +14,42 @@ let currentBusinessDay = null;
 let editingOrderId = null;
 
 /* ===============================
-   تحميل اليوم المفتوح
+   تحميل اليوم المفتوح (مُصحح)
 ================================ */
 async function loadCurrentDay() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
     .order("opened_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  currentBusinessDay = data || null;
+  /* ✅ إذا ما فيه يوم مفتوح → أنشئ واحد تلقائي */
+  if (!data) {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { data: newDay, error: createError } = await supabase
+      .from("business_days")
+      .insert({
+        day_date: today,
+        is_open: true,
+        opened_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("FAILED TO CREATE BUSINESS DAY:", createError);
+      currentBusinessDay = null;
+      return;
+    }
+
+    currentBusinessDay = newDay;
+    return;
+  }
+
+  currentBusinessDay = data;
 }
 
 /* ===============================
@@ -36,7 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCurrentDay();
 
   if (!currentBusinessDay) {
-    alert("❌ اليوم مقفل – يجب بدء يوم جديد");
+    alert("❌ فشل تحميل يوم العمل");
     return;
   }
 
@@ -206,18 +230,9 @@ window.completeOrder = async function () {
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  /* ✏️ تعديل طلب */
   if (editingOrderId) {
-    await supabase
-      .from("orders")
-      .update({ total })
-      .eq("id", editingOrderId);
-
-    await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
-
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
     await supabase.from("order_items").insert(
       cart.map(i => ({
         order_id: editingOrderId,
@@ -226,12 +241,8 @@ window.completeOrder = async function () {
         price: i.price
       }))
     );
-
     editingOrderId = null;
-  }
-
-  /* 🆕 طلب جديد */
-  else {
+  } else {
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -297,11 +308,7 @@ window.editOrder = async function (orderId) {
 
   const { data } = await supabase
     .from("order_items")
-    .select(`
-      qty,
-      price,
-      products ( id, name )
-    `)
+    .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
 
   cart = data.map(i => ({
