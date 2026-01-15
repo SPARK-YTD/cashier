@@ -1,28 +1,51 @@
 export const translations = {
   ar: {
-    app_title: " خذلك بريك  ",
-      login: "تسجيل الدخول",
-  login_btn: "دخول",
-  password: "كلمة المرور",
-  add_item: "إضافة صنف",
-  item_name: "اسم الصنف",
-  price: "السعر",
-  save_item: "حفظ الصنف",
-  current_items: "الأصناف الحالية",
-  back_to_cashier: "رجوع للكاشير",
-    products: "الأصناف",
+    /* ===== App ===== */
+    app_title: "كاشير خذلك بريك",
+
+    /* ===== Auth ===== */
+    login: "تسجيل الدخول",
+    login_btn: "دخول",
+    password: "كلمة المرور",
+    wrong_password: "كلمة المرور غير صحيحة",
+
+    /* ===== Navigation ===== */
+    back: "رجوع",
+    back_to_cashier: "رجوع للكاشير",
     reports_archive: "أرشيف التقارير",
-date: "التاريخ",
-orders_count: "عدد الطلبات",
-total_sales: "إجمالي المبيعات",
-actions: "الإجراءات",
-view: "عرض",
-no_reports: "لا توجد تقارير محفوظة",
-back: "رجوع",
-delete_report_error: "❌ فشل حذف التقرير",
+    reports: "أرشيف التقارير",
+    close_day: "إقفال اليوم",
+    manage_items: "إدارة الأصناف",
+
+    /* ===== Products ===== */
+    products: "الأصناف",
     food: "طعام",
     drinks: "مشروبات",
     sides: "جانبية",
+
+    add_item: "إضافة صنف",
+    item_name: "اسم الصنف",
+    price: "السعر",
+    save_item: "حفظ الصنف",
+    current_items: "الأصناف الحالية",
+    enter_name_price: "أدخل الاسم والسعر",
+
+    status: "الحالة",
+    active: "نشط",
+    disabled: "معطّل",
+    enable: "تفعيل",
+    disable: "تعطيل",
+    delete_final: "حذف نهائي",
+
+    save_item_error: "خطأ في حفظ الصنف",
+    load_items_error: "خطأ في تحميل الأصناف",
+    no_items: "لا توجد أصناف",
+    update_status_error: "فشل تحديث الحالة",
+    confirm_delete_item: "⚠️ حذف نهائي! فقط إذا لم يُستخدم الصنف سابقًا.",
+    delete_item_used: "❌ لا يمكن حذف الصنف لأنه مستخدم في طلبات سابقة",
+    item_deleted: "🗑 تم حذف الصنف نهائيًا",
+
+    /* ===== Invoice ===== */
     invoice: "الفاتورة",
     item: "الصنف",
     qty: "الكمية",
@@ -31,88 +54,72 @@ delete_report_error: "❌ فشل حذف التقرير",
     paid_amount: "المبلغ المدفوع",
     change: "الباقي:",
     complete_order: "إتمام الطلب",
-    reports: "أرشيف التقارير",
-    wrong_password: "كلمة المرور غير صحيحة",
-    
-enter_name_price: "أدخل الاسم والسعر",
-save_item_error: "خطأ في حفظ الصنف",
-load_items_error: "خطأ في تحميل الأصناف",
-no_items: "لا توجد أصناف",
-status: "الحالة",
-active: "نشط",
-disabled: "معطّل",
-disable: "تعطيل",
-enable: "تفعيل",
-delete_final: "حذف نهائي",
-update_status_error: "فشل تحديث الحالة",
-confirm_delete_item: "⚠️ حذف نهائي! فقط إذا لم يُستخدم الصنف سابقًا.",
-delete_item_used: "❌ لا يمكن حذف الصنف لأنه مستخدم في طلبات سابقة",
-item_deleted: "🗑 تم حذف الصنف نهائيًا",
-    close_day: "إقفال اليوم",
-    manage_items: "إدارة الأصناف",
+
+    /* ===== Orders ===== */
+    active_orders: "الطلبات الجارية",
+
+    /* ===== Reports ===== */
     daily_report: "تقرير إقفال اليوم",
-orders_count: "عدد الطلبات",
-total_sales: "إجمالي المبيعات",
-top_item: "الأكثر مبيعًا",
-items_details: "تفاصيل الأصناف",
-new_day: "بدء يوم جديد",
-download_pdf: "تحميل PDF",
-report_footer: "تم إنشاء التقرير تلقائيًا بواسطة خذلك بريك 👨🏻‍🍳 ",
-    
-    active_orders: "الطلبات الجارية"
-    
-    
+    date: "التاريخ",
+    orders_count: "عدد الطلبات",
+    total_sales: "إجمالي المبيعات",
+    top_item: "الأكثر مبيعًا",
+    items_details: "تفاصيل الأصناف",
+    new_day: "بدء يوم جديد",
+    download_pdf: "تحميل PDF",
+    no_reports: "لا توجد تقارير محفوظة",
+    delete_report_error: "❌ فشل حذف التقرير",
 
-
+    report_footer: "تم إنشاء التقرير تلقائيًا بواسطة كاشير خذلك بريك 👨🏻‍🍳"
   },
-  en: {
-    app_title: "Cashier System",
-    wrong_password: "Wrong password",
-    reports_archive: "Reports Archive",
-date: "Date",
-orders_count: "Orders Count",
-total_sales: "Total Sales",
- login: "Login",
-  login_btn: "Enter",
-  password: "Password",
-  add_item: "Add Item",
-  item_name: "Item Name",
-  price: "Price",
-  save_item: "Save Item",
-  current_items: "Current Items",
-  back_to_cashier: "Back to Cashier",
-daily_report: "Daily Close Report",
-orders_count: "Orders Count",
-total_sales: "Total Sales",
-top_item: "Top Item",
-items_details: "Items Details",
-new_day: "Start New Day",
-download_pdf: "Download PDF",
-report_footer: "Report generated automatically by the cashier system",
-actions: "Actions",
-view: "View",
-no_reports: "No saved reports",
-back: "Back",
-delete_report_error: "❌ Failed to delete report",
-enter_name_price: "Enter name and price",
-save_item_error: "Failed to save item",
-load_items_error: "Failed to load items",
-no_items: "No items available",
-status: "Status",
-active: "Active",
-disabled: "Disabled",
-disable: "Disable",
-enable: "Enable",
-delete_final: "Delete permanently",
-update_status_error: "Failed to update status",
-confirm_delete_item: "⚠️ Permanent delete! Only if item was never used.",
-delete_item_used: "❌ Cannot delete item because it was used before",
-item_deleted: "🗑 Item deleted successfully",
 
+  en: {
+    /* ===== App ===== */
+    app_title: "Khathak Break Cashier",
+
+    /* ===== Auth ===== */
+    login: "Login",
+    login_btn: "Enter",
+    password: "Password",
+    wrong_password: "Wrong password",
+
+    /* ===== Navigation ===== */
+    back: "Back",
+    back_to_cashier: "Back to Cashier",
+    reports_archive: "Reports Archive",
+    reports: "Reports",
+    close_day: "Close Day",
+    manage_items: "Manage Items",
+
+    /* ===== Products ===== */
     products: "Products",
     food: "Food",
     drinks: "Drinks",
     sides: "Sides",
+
+    add_item: "Add Item",
+    item_name: "Item Name",
+    price: "Price",
+    save_item: "Save Item",
+    current_items: "Current Items",
+    enter_name_price: "Enter name and price",
+
+    status: "Status",
+    active: "Active",
+    disabled: "Disabled",
+    enable: "Enable",
+    disable: "Disable",
+    delete_final: "Delete Permanently",
+
+    save_item_error: "Failed to save item",
+    load_items_error: "Failed to load items",
+    no_items: "No items available",
+    update_status_error: "Failed to update status",
+    confirm_delete_item: "⚠️ Permanent delete! Only if item was never used.",
+    delete_item_used: "❌ Cannot delete item because it was used before",
+    item_deleted: "🗑 Item deleted successfully",
+
+    /* ===== Invoice ===== */
     invoice: "Invoice",
     item: "Item",
     qty: "Qty",
@@ -121,10 +128,22 @@ item_deleted: "🗑 Item deleted successfully",
     paid_amount: "Paid Amount",
     change: "Change:",
     complete_order: "Complete Order",
-    reports: "Reports Archive",
-    close_day: "Close Day",
-    manage_items: "Manage Items",
-    active_orders: "Active Orders"
+
+    /* ===== Orders ===== */
+    active_orders: "Active Orders",
+
+    /* ===== Reports ===== */
+    daily_report: "Daily Close Report",
+    date: "Date",
+    orders_count: "Orders Count",
+    total_sales: "Total Sales",
+    top_item: "Top Item",
+    items_details: "Items Details",
+    new_day: "Start New Day",
+    download_pdf: "Download PDF",
+    no_reports: "No saved reports",
+    delete_report_error: "❌ Failed to delete report",
+
+    report_footer: "Report generated automatically by Khathak Break Cashier"
   }
 };
-
