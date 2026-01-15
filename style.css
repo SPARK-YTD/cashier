@@ -586,3 +586,7 @@ html, body {
     -webkit-overflow-scrolling: touch;
   }
 }
+.item span {
+  font-size: 14px;
+  color: #555;
+}
