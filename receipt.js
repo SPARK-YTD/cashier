@@ -19,3 +19,28 @@ if (!data) {
     tbody.appendChild(tr);
   });
 }
+document.addEventListener("DOMContentLoaded", () => {
+  const data = JSON.parse(localStorage.getItem("receiptData"));
+
+  if (!data) return;
+
+  const list = document.getElementById("receiptItems");
+  let html = "";
+  let total = 0;
+
+  data.items.forEach(i => {
+    const sum = i.qty * i.price;
+    total += sum;
+    html += `
+      <tr>
+        <td>${i.name}</td>
+        <td>${i.qty}</td>
+        <td>${sum.toFixed(3)}</td>
+      </tr>
+    `;
+  });
+
+  list.innerHTML = html;
+  document.getElementById("receiptTotal").textContent = total.toFixed(3) + " د.ب";
+  document.getElementById("receiptDate").textContent = data.date;
+});
