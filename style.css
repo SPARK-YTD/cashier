@@ -549,3 +549,33 @@ th, td {
 html, body {
   touch-action: manipulation;
 }
+/* ===== MOBILE FIX ===== */
+@media (max-width: 768px) {
+
+  /* نخلي التخطيط عمود واحد */
+  .cashier-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* ترتيب الكروت */
+  .card.products {
+    order: 1;
+    max-height: none;
+  }
+
+  .card.invoice {
+    order: 2;
+  }
+
+  .card.orders {
+    order: 3;
+    max-height: none;
+  }
+
+  /* تحسين السحب باللمس */
+  .items-grid,
+  .orders-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
