@@ -81,12 +81,10 @@ body {
   cursor: pointer;
   transition: 0.2s;
 
-  /* الجديد */
-  height: 230px;               /* ارتفاع موحّد */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
+
 
 
 .item:hover {
@@ -96,8 +94,8 @@ body {
 .item strong {
   text-align: center;
   line-height: 1.3;
-  min-height: 2.6em;
 }
+
 
 .item span {
   text-align: center;
