@@ -355,29 +355,9 @@ window.printReceipt = function () {
     return;
   }
 
-  const receiptData = {
-    items: cart,
-    total: document.getElementById("total").textContent,
-    date: new Date().toLocaleString("ar-BH")
-  };
-
-  localStorage.setItem("receiptData", JSON.stringify(receiptData));
-
-  window.open("receipt.html", "_blank");
-};
-
-let items = [];
-let cart = [];
-let activeOrders = [];
-let currentBusinessDay = null;
-let editingOrderId = null;
 
 /* ===== طباعة الفاتورة ===== */
-window.printReceipt = function () {
-  if (!cart.length) {
-    alert("الفاتورة فارغة");
-    return;
-  }
+
 
   const receiptData = {
     items: cart,
@@ -390,3 +370,5 @@ window.printReceipt = function () {
   localStorage.setItem("receipt", JSON.stringify(receiptData));
   window.open("receipt.html", "_blank");
 };
+
+  
