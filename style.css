@@ -492,26 +492,6 @@ th, td {
   display: block;
 }
 
-/* ===== FIX SCROLL ISSUE ===== */
-
-/* امنع النزول من الصفحة */
-body {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* خلي التخطيط بطول الشاشة */
-.cashier-layout {
-  height: calc(100vh - 70px); /* ارتفاع الهيدر */
-  overflow: hidden;
-}
-
-/* خلي كرت الأصناف مرن */
-.card.products {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
 
 /* ===== SCROLL FIX (FINAL) ===== */
 
