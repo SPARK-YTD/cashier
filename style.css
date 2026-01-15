@@ -492,7 +492,6 @@ th, td {
   display: block;
 }
 
-
 /* ===== SCROLL FIX (FINAL) ===== */
 
 /* خلي التخطيط بطول الشاشة */
@@ -518,6 +517,21 @@ th, td {
   max-height: calc(100vh - 160px);
   overflow-y: auto;
 }
+
+/* ===== (اختياري) سكرول للفواتير ===== */
+/*
+.card.invoice {
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+}
+
+.card.invoice .invoice-table {
+  flex: 1;
+  overflow-y: auto;
+  display: block;
+}
+*/
 
 /* تحسين شكل السكرول */
 .items-grid::-webkit-scrollbar,
