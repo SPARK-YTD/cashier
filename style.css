@@ -513,18 +513,40 @@ body {
   height: 100%;
 }
 
-/* خلي المنيو فقط هو اللي ينزل */
-.items-grid {
-  flex: 1;
+/* ===== SCROLL FIX (FINAL) ===== */
+
+/* خلي التخطيط بطول الشاشة */
+.cashier-layout {
+  min-height: calc(100vh - 80px);
+}
+
+/* الأصناف */
+.card.products {
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+}
+
+.card.products .items-grid {
   overflow-y: auto;
+  flex: 1;
   padding-right: 4px;
 }
 
-/* تحسين شكل السكرول (اختياري) */
-.items-grid::-webkit-scrollbar {
+/* الطلبات الجارية */
+.card.orders {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+/* تحسين شكل السكرول */
+.items-grid::-webkit-scrollbar,
+.orders-list::-webkit-scrollbar {
   width: 6px;
 }
-.items-grid::-webkit-scrollbar-thumb {
+
+.items-grid::-webkit-scrollbar-thumb,
+.orders-list::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 10px;
 }
