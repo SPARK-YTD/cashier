@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>فاتورة</title>
+
+  <meta name="viewport"
+        content="width=device-width,
+                 initial-scale=1,
+                 maximum-scale=1,
+                 user-scalable=no">
+
+  <link rel="stylesheet" href="receipt.css">
+</head>
+<body>
+
+<div class="receipt">
+
+  <h1>خذ لك بريك</h1>
+  <div class="sub">فاتورة حرارية</div>
+
+  <div class="line"></div>
+
+  <div class="meta">
+    <div>فاتورة رقم: <span id="invoiceNo">—</span></div>
+    <div id="date">—</div>
+  </div>
+
+  <div class="line"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>الصنف</th>
+        <th>ك</th>
+        <th>المجموع</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
+
+  <div class="line"></div>
+
+  <div class="total">
+    الإجمالي: <span id="total">0.000</span> د.ب
+  </div>
+
+  <div class="line"></div>
+
+  <div class="thanks">
+    شكراً لزيارتكم 🤍  
+    ننتظركم مرة أخرى
+  </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">🖨 طباعة</button>
+
+<script src="receipt.js"></script>
+</body>
+</html>
