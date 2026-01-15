@@ -1,6 +1,6 @@
 export const translations = {
   ar: {
-    app_title: "نظام الكاشير",
+    app_title: " خذلك بريك  ",
       login: "تسجيل الدخول",
   login_btn: "دخول",
   password: "كلمة المرور",
