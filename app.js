@@ -349,15 +349,16 @@ window.closeDay = () => location.href = "report.html";
 window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
 
-window.printReceipt = function () {
-  if (!cart.length) {
-    alert("الفاتورة فارغة");
-    return;
-  }
 
 
 /* ===== طباعة الفاتورة ===== */
 
+
+  window.printReceipt = function () {
+  if (!cart.length) {
+    alert("الفاتورة فارغة");
+    return;
+  }
 
   const receiptData = {
     items: cart,
@@ -370,5 +371,3 @@ window.printReceipt = function () {
   localStorage.setItem("receipt", JSON.stringify(receiptData));
   window.open("receipt.html", "_blank");
 };
-
-  
