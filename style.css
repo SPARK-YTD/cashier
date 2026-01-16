@@ -491,14 +491,3 @@ html, body {
   transition: all .2s ease;
 }
 
-/* مدفوع */
-.order-box.paid {
-  background: #ECFDF5;
-  border-left: 6px solid #16A34A;
-}
-
-/* متأخر */
-.order-box.late {
-  background: #FFFBEB;
-  border-left: 6px solid #F59E0B;
-}
