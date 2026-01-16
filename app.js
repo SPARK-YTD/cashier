@@ -308,7 +308,7 @@ div.style.background = "#f2f2f2";
 div.style.border = "1px solid #ccc";
 
 // بعد 10 دقائق
-if (minutesPassed >= 10) {
+if (safeMinutesPassed >= 10) {
 
   // 🟡 من 10 إلى 20 دقيقة
   if (minutesPassed < 20) {
