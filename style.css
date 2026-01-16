@@ -346,3 +346,143 @@ html, body {
   background: #CBD5E1;
   border-radius: 10px;
 }
+
+/* ===============================
+   REPORT PAGE (FINAL PRO)
+================================ */
+.report-page {
+  background: #F1F5F9;
+  min-height: 100vh;
+}
+
+/* ===== Header ===== */
+.report-header {
+  background: linear-gradient(135deg, #0F172A, #1E293B);
+  color: #FBBF24;
+  padding: 24px 16px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+
+.report-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.report-header .store-name {
+  font-size: 14px;
+  opacity: .9;
+  margin-top: 4px;
+}
+
+.report-header .close-time {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: .85;
+}
+
+/* ===== Container ===== */
+.report-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+/* ===== Summary Cards ===== */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.summary-cards .card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.summary-cards span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.summary-cards strong {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #0F172A;
+}
+
+/* ===== Table ===== */
+.table-box {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.table-box table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-box thead {
+  background: #F1F5F9;
+}
+
+.table-box th {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 900;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.table-box td {
+  padding: 10px;
+  font-size: 14px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+/* ===== Actions ===== */
+.report-page .actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ===== Footer ===== */
+.report-footer {
+  text-align: center;
+  font-size: 12px;
+  color: #64748B;
+  margin: 24px 0;
+}
+
+/* ===== PRINT MODE ===== */
+@media print {
+  body {
+    background: white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .report-header {
+    box-shadow: none;
+  }
+
+  .table-box {
+    box-shadow: none;
+    padding: 0;
+  }
+
+  th, td {
+    font-size: 12px;
+  }
+}
