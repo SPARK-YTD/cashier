@@ -8,6 +8,40 @@ import { applyLang } from "./i18n.js";
 let currentBusinessDay = null;
 let ordersCache = [];
 
+/* ===============================
+   حساب التقرير (دالة موحدة)
+================================ */
+function calculateReportData(orders) {
+  let totalSales = 0;
+  const itemsMap = {};
+
+  orders.forEach(o => {
+    o.order_items.forEach(i => {
+      const name = i.products.name;
+      const itemTotal = i.qty * i.price;
+
+      totalSales += itemTotal;
+
+      itemsMap[name] ??= { qty: 0, total: 0 };
+      itemsMap[name].qty += i.qty;
+      itemsMap[name].total += itemTotal;
+    });
+  });
+
+  const topItem =
+    Object.entries(itemsMap)
+      .sort((a, b) => b[1].qty - a[1].qty)[0]?.[0] || "—";
+
+  return {
+    totalSales,
+    itemsMap,
+    topItem
+  };
+}
+
+/* ===============================
+   INIT
+================================ */
 document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
 
@@ -82,7 +116,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { data: orders, error: ordersError } = await supabase
     .from("orders")
     .select(`
-      total,
       order_items (
         qty,
         price,
@@ -108,22 +141,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  let totalSales = 0;
-  const itemsMap = {};
-
-  ordersCache.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
-
-  const topItem =
-    Object.entries(itemsMap)
-      .sort((a,b)=>b[1].qty-a[1].qty)[0]?.[0] || "—";
+  const { totalSales, itemsMap, topItem } =
+    calculateReportData(ordersCache);
 
   closeTimeEl.textContent =
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
@@ -145,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ===============================
-   بدء يوم جديد (تشخيص مفصل)
+   بدء يوم جديد
 ================================ */
 window.startNewDay = async function () {
   if (!currentBusinessDay) {
@@ -156,42 +175,25 @@ window.startNewDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  let totalSales = 0;
-  const itemsMap = {};
-
-  ordersCache.forEach(o => {
-    totalSales += o.total;
-    o.order_items.forEach(i => {
-      const name = i.products.name;
-      itemsMap[name] ??= { qty: 0, total: 0 };
-      itemsMap[name].qty += i.qty;
-      itemsMap[name].total += i.qty * i.price;
-    });
-  });
+  const { totalSales, itemsMap, topItem } =
+    calculateReportData(ordersCache);
 
   const insertPayload = {
     business_day_id: currentBusinessDay.id,
     report_date: currentBusinessDay.day_date,
     orders_count: ordersCache.length,
     total_sales: totalSales,
-    top_item: Object.keys(itemsMap)[0] || null,
+    top_item: topItem,
     items: itemsMap
   };
-
-  console.log("📦 INSERT daily_reports payload:", insertPayload);
 
   const { error } = await supabase
     .from("daily_reports")
     .insert(insertPayload);
 
   if (error) {
-    alert(
-      "❌ فشل حفظ التقرير\n\n" +
-      "Message: " + error.message + "\n\n" +
-      "Code: " + error.code + "\n\n" +
-      "Details: " + JSON.stringify(error.details)
-    );
-    console.error("❌ Supabase error:", error);
+    alert("❌ فشل حفظ التقرير");
+    console.error(error);
     return;
   }
 
@@ -201,7 +203,7 @@ window.startNewDay = async function () {
     .eq("id", currentBusinessDay.id);
 
   await supabase.from("business_days").insert({
-    day_date: new Date().toISOString().slice(0,10),
+    day_date: new Date().toISOString().slice(0, 10),
     is_open: true,
     opened_at: new Date().toISOString()
   });
@@ -211,7 +213,7 @@ window.startNewDay = async function () {
 };
 
 /* ===============================
-   رجوع
+   أدوات
 ================================ */
 window.backToCashier = () => {
   window.location.href = "index.html";
