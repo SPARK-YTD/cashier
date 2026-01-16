@@ -296,10 +296,48 @@ function renderActiveOrders() {
      const createdAt = new Date(order.created_at);
 const minutesPassed = (Date.now() - createdAt.getTime()) / 60000;
 
-if (minutesPassed >= 10 && !paidOrders.has(order.id)) {
-  div.style.background = "#fff3cd";
-  div.style.border = "1px solid #f0ad4e";
+// افتراضي: رصاصي فاتح
+div.style.background = "#f2f2f2";
+div.style.border = "1px solid #ccc";
+
+// بعد 10 دقائق
+if (minutesPassed >= 10) {
+
+  // 🟡 من 10 إلى 20 دقيقة
+  if (minutesPassed < 20) {
+
+    // مدفوع → نص أخضر + نص أصفر
+    if (paidOrders.has(order.id)) {
+      div.style.background =
+        "linear-gradient(to right, #d4f8d4 50%, #fff3cd 50%)";
+      div.style.border = "1px solid #f0ad4e";
+    }
+    // غير مدفوع → أصفر كامل
+    else {
+      div.style.background = "#fff3cd";
+      div.style.border = "1px solid #f0ad4e";
+    }
+
+  }
+
+  // 🔴 أكثر من 20 دقيقة
+  else {
+
+    // مدفوع → نص أخضر + نص أحمر
+    if (paidOrders.has(order.id)) {
+      div.style.background =
+        "linear-gradient(to right, #d4f8d4 50%, #f8d7da 50%)";
+      div.style.border = "1px solid #dc3545";
+    }
+    // غير مدفوع → أحمر كامل
+    else {
+      div.style.background = "#f8d7da";
+      div.style.border = "1px solid #dc3545";
+    }
+
+  }
 }
+
 
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
