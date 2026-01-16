@@ -347,7 +347,9 @@ if (safeMinutesPassed >= 10) {
 
 
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+      <strong>
+  فاتورة رقم ${order.invoice_no ?? order.id.slice(0, 6)}
+</strong>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
