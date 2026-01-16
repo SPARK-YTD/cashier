@@ -19,27 +19,31 @@
   <!-- ===== Content ===== -->
   <main class="report-container">
 
-    <!-- Summary -->
-    <div class="summary-cards">
-      <div class="card">
+    <!-- ===== Summary Cards ===== -->
+    <section class="summary-cards">
+
+      <div class="card summary">
         <span>🧾 عدد الطلبات</span>
         <strong id="ordersCount">0</strong>
       </div>
 
-      <div class="card">
+      <div class="card summary highlight">
         <span>💰 إجمالي المبيعات</span>
         <strong id="totalSales">0.000 د.ب</strong>
       </div>
 
-      <div class="card">
+      <div class="card summary">
         <span>🥇 الأكثر مبيعًا</span>
         <strong id="topItem">—</strong>
       </div>
-    </div>
 
-    <!-- Items Table -->
-    <div class="table-box">
-      <table>
+    </section>
+
+    <!-- ===== Items Table ===== -->
+    <section class="table-box">
+      <h3 class="section-title">تفاصيل الأصناف</h3>
+
+      <table class="report-table">
         <thead>
           <tr>
             <th>الصنف</th>
@@ -53,27 +57,30 @@
           </tr>
         </tbody>
       </table>
-    </div>
+    </section>
 
-    <!-- Actions -->
-    <div class="actions no-print">
+    <!-- ===== Actions ===== -->
+    <section class="actions no-print">
+
       <button class="btn success" onclick="downloadPDF()">
-        🖨 تحميل PDF
+        🖨 طباعة / PDF
       </button>
 
       <button class="btn danger" onclick="startNewDay()">
-        🔄 بدء يوم جديد
+        🔄 إقفال اليوم وبدء جديد
       </button>
 
       <button class="btn secondary" onclick="backToCashier()">
         ⬅ رجوع للكاشير
       </button>
-    </div>
+
+    </section>
 
   </main>
 
+  <!-- ===== Footer ===== -->
   <footer class="report-footer">
-    تقرير معاينة — لن يتم الحفظ إلا بعد بدء يوم جديد
+    هذا التقرير للمعاينة فقط — لن يتم الحفظ إلا بعد بدء يوم جديد
   </footer>
 
   <script type="module" src="report.js"></script>
