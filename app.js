@@ -12,6 +12,7 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
+let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
@@ -292,16 +293,34 @@ function renderActiveOrders() {
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
+     const createdAt = new Date(order.created_at);
+const minutesPassed = (Date.now() - createdAt.getTime()) / 60000;
+
+if (minutesPassed >= 10 && !paidOrders.has(order.id)) {
+  div.style.background = "#fff3cd";
+  div.style.border = "1px solid #f0ad4e";
+}
+
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+      <button onclick="markPaid('${order.id}', this)">💰 تم الدفع</button>
+
     `;
     box.appendChild(div);
   });
 }
+window.markPaid = function (orderId, btn) {
+  paidOrders.add(orderId);
+  const box = btn.closest(".order-box");
+  if (box) {
+    box.style.background = "#d4f8d4";
+    box.style.border = "1px solid #3cb371";
+  }
+};
 
 /* ✏️ تحميل الفاتورة للتعديل */
 window.editOrder = async function (orderId) {
