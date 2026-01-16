@@ -25,11 +25,13 @@ async function loadCurrentDay() {
     .limit(1)
     .maybeSingle();
 
+  // ✅ إذا فيه يوم مفتوح
   if (data) {
     currentBusinessDay = data;
     return;
   }
 
+  // 🟡 إذا ما فيه يوم مفتوح → نفتح يوم جديد تلقائي
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: newDay, error: createError } = await supabase
@@ -50,6 +52,7 @@ async function loadCurrentDay() {
 
   currentBusinessDay = newDay;
 }
+
 
 /* ===============================
    INIT
@@ -222,7 +225,7 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+   إتمام الطلب (جديد / تعديل)
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
@@ -247,8 +250,7 @@ window.completeOrder = async function () {
       .insert({
         total,
         status: "active",
-        business_day_id: currentBusinessDay.id,
-        is_paid: false
+        business_day_id: currentBusinessDay.id
       })
       .select("id")
       .single();
@@ -269,7 +271,7 @@ window.completeOrder = async function () {
 };
 
 /* ===============================
-   الطلبات الجارية (🔥 مطوّر)
+   الطلبات الجارية
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
@@ -287,32 +289,12 @@ function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
   box.innerHTML = "";
 
-  const now = Date.now();
-
   activeOrders.forEach(order => {
-    const createdAt = new Date(order.created_at).getTime();
-    const diffMinutes = (now - createdAt) / 60000;
-
-    let statusClass = "";
-    let statusText = "";
-
-    if (order.is_paid) {
-      statusClass = "paid";
-      statusText = "💰 مدفوع";
-    } else if (diffMinutes >= 10) {
-      statusClass = "late";
-      statusText = "⏱️ متأخر";
-    }
-
     const div = document.createElement("div");
-    div.className = `order-box ${statusClass}`;
-
+    div.className = "order-box";
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
-      <small>${statusText}</small><br><br>
-
-      <button onclick="markPaid('${order.id}')">💵 تم الدفع</button>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
@@ -321,7 +303,7 @@ function renderActiveOrders() {
   });
 }
 
-/* ✏️ تعديل */
+/* ✏️ تحميل الفاتورة للتعديل */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
   cart = [];
@@ -340,12 +322,6 @@ window.editOrder = async function (orderId) {
   }));
 
   renderCart();
-};
-
-/* 💵 تم الدفع */
-window.markPaid = async function (id) {
-  await supabase.from("orders").update({ is_paid: true }).eq("id", id);
-  loadActiveOrders();
 };
 
 /* ✅ مكتمل */
@@ -373,10 +349,12 @@ window.closeDay = () => location.href = "report.html";
 window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
 
-/* ===============================
-   طباعة الفاتورة
-================================ */
-window.printReceipt = function () {
+
+
+/* ===== طباعة الفاتورة ===== */
+
+
+  window.printReceipt = function () {
   if (!cart.length) {
     alert("الفاتورة فارغة");
     return;
