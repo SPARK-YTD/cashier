@@ -69,10 +69,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadItems("food");
   await loadActiveOrders();
+
+  // 🔄 تحديث ألوان الطلبات كل دقيقة
+  setInterval(() => {
+    renderActiveOrders();
+  }, 60000);
+
   renderCart();
 
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
+
 
 /* ===============================
    الأصناف
