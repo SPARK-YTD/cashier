@@ -61,7 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadItems("food");
   await loadActiveOrders();
 
-  // تحديث الألوان كل دقيقة
   setInterval(renderActiveOrders, 60000);
 
   renderCart();
@@ -200,31 +199,45 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+   إتمام الطلب (جديد / تعديل)
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const { data: order } = await supabase
-    .from("orders")
-    .insert({
-      total,
-      status: "active",
-      business_day_id: currentBusinessDay.id
-    })
-    .select("id")
-    .single();
+  if (editingOrderId) {
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: editingOrderId,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+    editingOrderId = null;
+  } else {
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
+      .select("id")
+      .single();
 
-  await supabase.from("order_items").insert(
-    cart.map(i => ({
-      order_id: order.id,
-      product_id: i.id,
-      qty: i.qty,
-      price: i.price
-    }))
-  );
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+  }
 
   cart = [];
   renderCart();
@@ -291,7 +304,7 @@ window.markPaid = async function (orderId) {
   }).eq("id", orderId);
 
   paidOrders.add(orderId);
-  renderActiveOrders();
+  loadActiveOrders();
 };
 
 /* ===============================
