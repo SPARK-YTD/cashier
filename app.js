@@ -15,7 +15,7 @@ let editingOrderId = null;
 let paidOrders = new Set();
 
 /* ===============================
-   تحميل اليوم المفتوح
+‎   تحميل اليوم المفتوح
 ================================ */
 async function loadCurrentDay() {
   const { data } = await supabase
@@ -61,15 +61,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadItems("food");
   await loadActiveOrders();
 
-  // ✅ التحديث الصحيح للألوان والتأخير
-  setInterval(loadActiveOrders, 60000);
+  setInterval(renderActiveOrders, 60000);
 
   renderCart();
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 
 /* ===============================
-   الأصناف
+‎   الأصناف
 ================================ */
 window.filterCategory = function (category, btn) {
   document.querySelectorAll(".cat").forEach(b => b.classList.remove("active"));
@@ -107,7 +106,7 @@ function renderItems() {
 }
 
 /* ===============================
-   الأحجام
+‎   الأحجام
 ================================ */
 async function handleItemClick(item) {
   if (!item.has_variants) {
@@ -146,7 +145,7 @@ window.selectVariant = function (id, name, variantId, label, price) {
 };
 
 /* ===============================
-   السلة
+‎   السلة
 ================================ */
 function addToCart(item) {
   const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
@@ -188,14 +187,10 @@ window.changeQty = (i, d) => {
   if (cart[i].qty <= 0) cart.splice(i, 1);
   renderCart();
 };
-
-window.removeItem = i => {
-  cart.splice(i, 1);
-  renderCart();
-};
+window.removeItem = i => { cart.splice(i, 1); renderCart(); };
 
 /* ===============================
-   الدفع
+‎   الدفع
 ================================ */
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
@@ -205,7 +200,7 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+‎   إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
@@ -253,7 +248,7 @@ window.completeOrder = async function () {
 };
 
 /* ===============================
-   الطلبات الجارية + الألوان
+‎   الطلبات الجارية + الألوان
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
@@ -277,23 +272,20 @@ function renderActiveOrders() {
 
     const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
+    if (order.is_paid) paidOrders.add(order.id);
+
     div.style.background = "transparent";
     div.style.border = "1px solid #E5E7EB";
 
-    // 🟢 مدفوع فورًا
     if (order.is_paid && mins < 10) {
       div.style.background = "#d4f8d4";
       div.style.border = "1px solid #3cb371";
-    }
-    // 🟡 بعد 10 دقائق
-    else if (mins >= 10 && mins < 20) {
+    } else if (mins >= 10 && mins < 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
         : "#fff3cd";
       div.style.border = "1px solid #f0ad4e";
-    }
-    // 🔴 بعد 20 دقيقة
-    else if (mins >= 20) {
+    } else if (mins >= 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
         : "#f8d7da";
@@ -314,7 +306,7 @@ function renderActiveOrders() {
 }
 
 /* ===============================
-   تم الدفع
+‎   تم الدفع
 ================================ */
 window.markPaid = async function (orderId) {
   await supabase.from("orders").update({
@@ -325,11 +317,12 @@ window.markPaid = async function (orderId) {
   const order = activeOrders.find(o => o.id === orderId);
   if (order) order.is_paid = true;
 
+  paidOrders.add(orderId);
   renderActiveOrders();
 };
 
 /* ===============================
-   تعديل / مكتمل / حذف
+‎   تعديل / مكتمل / حذف
 ================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
