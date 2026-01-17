@@ -217,12 +217,14 @@ html, body {
 }
 
 .order-box {
-  background: #F8FAFC;
+  background: #FFFFFF;              /* بدون لون */
   border-radius: 14px;
   padding: 12px;
-  border-left: 6px solid #FBBF24;
+  border: 1px solid #E5E7EB;        /* إطار محايد */
   box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  transition: all .2s ease;
 }
+
 
 .order-box strong {
   font-size: 14px;
