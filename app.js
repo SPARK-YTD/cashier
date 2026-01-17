@@ -12,6 +12,7 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
+let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -59,6 +60,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadItems("food");
   await loadActiveOrders();
+
+  setInterval(renderActiveOrders, 60000);
 
   renderCart();
   document.getElementById("paid")?.addEventListener("input", calculateChange);
@@ -125,11 +128,12 @@ async function handleItemClick(item) {
     <div class="variant-box">
       <h3>${item.name}</h3>
       ${variants.map(v => `
-        <button onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+        <button class="variant-btn"
+          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
-      <button onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
+      <button class="variant-cancel" onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -183,14 +187,10 @@ window.changeQty = (i, d) => {
   if (cart[i].qty <= 0) cart.splice(i, 1);
   renderCart();
 };
-
-window.removeItem = i => {
-  cart.splice(i, 1);
-  renderCart();
-};
+window.removeItem = i => { cart.splice(i, 1); renderCart(); };
 
 /* ===============================
-   الدفع (حساب الباقي فقط)
+   الدفع
 ================================ */
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
@@ -200,7 +200,7 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب (جديد / تعديل)
+   إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
@@ -227,7 +227,7 @@ window.completeOrder = async function () {
         status: "active",
         business_day_id: currentBusinessDay.id
       })
-      .select("id")
+      .select("*")
       .single();
 
     await supabase.from("order_items").insert(
@@ -238,15 +238,17 @@ window.completeOrder = async function () {
         price: i.price
       }))
     );
+
+    activeOrders.unshift(order);
   }
 
   cart = [];
   renderCart();
-  loadActiveOrders();
+  renderActiveOrders();
 };
 
 /* ===============================
-   الطلبات الجارية (بدون ألوان)
+   الطلبات الجارية + الألوان
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
@@ -268,12 +270,35 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
+    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
+
+    if (order.is_paid) paidOrders.add(order.id);
+
+    div.style.background = "transparent";
+    div.style.border = "1px solid #E5E7EB";
+
+    if (order.is_paid && mins < 10) {
+      div.style.background = "#d4f8d4";
+      div.style.border = "1px solid #3cb371";
+    } else if (mins >= 10 && mins < 20) {
+      div.style.background = order.is_paid
+        ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
+        : "#fff3cd";
+      div.style.border = "1px solid #f0ad4e";
+    } else if (mins >= 20) {
+      div.style.background = order.is_paid
+        ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
+        : "#f8d7da";
+      div.style.border = "1px solid #dc3545";
+    }
+
     div.innerHTML = `
       <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
     `;
 
     box.appendChild(div);
@@ -281,11 +306,26 @@ function renderActiveOrders() {
 }
 
 /* ===============================
+   تم الدفع
+================================ */
+window.markPaid = async function (orderId) {
+  await supabase.from("orders").update({
+    is_paid: true,
+    paid_at: new Date().toISOString()
+  }).eq("id", orderId);
+
+  const order = activeOrders.find(o => o.id === orderId);
+  if (order) order.is_paid = true;
+
+  paidOrders.add(orderId);
+  renderActiveOrders();
+};
+
+/* ===============================
    تعديل / مكتمل / حذف
 ================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
-
   const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products (id,name)`)
