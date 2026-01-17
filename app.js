@@ -12,7 +12,6 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
-let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -60,10 +59,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadItems("food");
   await loadActiveOrders();
+  renderCart();
 
+  // تحديث ألوان الطلبات كل دقيقة
   setInterval(renderActiveOrders, 60000);
 
-  renderCart();
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 
@@ -187,7 +187,11 @@ window.changeQty = (i, d) => {
   if (cart[i].qty <= 0) cart.splice(i, 1);
   renderCart();
 };
-window.removeItem = i => { cart.splice(i, 1); renderCart(); };
+
+window.removeItem = i => {
+  cart.splice(i, 1);
+  renderCart();
+};
 
 /* ===============================
    الدفع
@@ -238,13 +242,11 @@ window.completeOrder = async function () {
         price: i.price
       }))
     );
-
-    activeOrders.unshift(order);
   }
 
   cart = [];
   renderCart();
-  renderActiveOrders();
+  loadActiveOrders();
 };
 
 /* ===============================
@@ -270,22 +272,29 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
+    const mins =
+      (Date.now() - new Date(order.created_at).getTime()) / 60000;
 
-    if (order.is_paid) paidOrders.add(order.id);
-
+    // افتراضي: بدون لون
     div.style.background = "transparent";
     div.style.border = "1px solid #E5E7EB";
 
+    // مدفوع وأقل من 10 دقائق
     if (order.is_paid && mins < 10) {
       div.style.background = "#d4f8d4";
       div.style.border = "1px solid #3cb371";
-    } else if (mins >= 10 && mins < 20) {
+    }
+
+    // من 10 إلى 20 دقيقة
+    else if (mins >= 10 && mins < 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
         : "#fff3cd";
       div.style.border = "1px solid #f0ad4e";
-    } else if (mins >= 20) {
+    }
+
+    // أكثر من 20 دقيقة
+    else if (mins >= 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
         : "#f8d7da";
@@ -293,11 +302,13 @@ function renderActiveOrders() {
     }
 
     div.innerHTML = `
-      <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
+      <strong>فاتورة رقم ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
+
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+
       ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
     `;
 
@@ -317,7 +328,6 @@ window.markPaid = async function (orderId) {
   const order = activeOrders.find(o => o.id === orderId);
   if (order) order.is_paid = true;
 
-  paidOrders.add(orderId);
   renderActiveOrders();
 };
 
@@ -326,9 +336,11 @@ window.markPaid = async function (orderId) {
 ================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
+  cart = [];
+
   const { data } = await supabase
     .from("order_items")
-    .select(`qty, price, products (id,name)`)
+    .select(`qty, price, products ( id, name )`)
     .eq("order_id", orderId);
 
   cart = data.map(i => ({
@@ -347,12 +359,38 @@ window.markCompleted = async id => {
     status: "completed",
     closed_at: new Date().toISOString()
   }).eq("id", id);
+
   loadActiveOrders();
 };
 
 window.deleteOrder = async id => {
-  if (!confirm("حذف الفاتورة؟")) return;
+  if (!confirm("حذف الفاتورة نهائيًا؟")) return;
   await supabase.from("order_items").delete().eq("order_id", id);
   await supabase.from("orders").delete().eq("id", id);
   loadActiveOrders();
+};
+
+/* ===============================
+   NAV
+================================ */
+window.closeDay = () => location.href = "report.html";
+window.goToReports = () => location.href = "reports.html";
+window.goToSettings = () => location.href = "settings.html";
+
+/* ===============================
+   طباعة الفاتورة
+================================ */
+window.printReceipt = function () {
+  if (!cart.length) return alert("الفاتورة فارغة");
+
+  const receiptData = {
+    items: cart,
+    total: document.getElementById("total").textContent,
+    paid: document.getElementById("paid").value || "—",
+    change: document.getElementById("change").textContent,
+    date: new Date().toLocaleString("ar-BH")
+  };
+
+  localStorage.setItem("receipt", JSON.stringify(receiptData));
+  window.open("receipt.html", "_blank");
 };
