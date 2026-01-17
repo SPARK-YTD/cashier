@@ -255,24 +255,31 @@ function renderActiveOrders() {
 
     const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
-    // بدون لون افتراضي
+    // بدون لون // الحالة الافتراضية (جديد – بدون لون)
 div.style.background = "transparent";
 div.style.border = "1px solid #E5E7EB";
 
+// 🟢 مدفوع قبل 10 دقائق → أخضر كامل فورًا
+if (order.is_paid && mins < 10) {
+  div.style.background = "#d4f8d4";
+  div.style.border = "1px solid #3cb371";
+}
 
-    if (mins >= 10) {
-      if (mins < 20) {
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
-          : "#fff3cd";
-        div.style.border = "1px solid #f0ad4e";
-      } else {
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
-          : "#f8d7da";
-        div.style.border = "1px solid #dc3545";
-      }
-    }
+// ⏱️ بعد 10 دقائق
+else if (mins >= 10 && mins < 20) {
+  div.style.background = order.is_paid
+    ? "linear-gradient(to right, #d4f8d4 50%, #fff3cd 50%)"
+    : "#fff3cd";
+  div.style.border = "1px solid #f0ad4e";
+}
+
+// ⏱️ بعد 20 دقيقة
+else if (mins >= 20) {
+  div.style.background = order.is_paid
+    ? "linear-gradient(to right, #d4f8d4 50%, #f8d7da 50%)"
+    : "#f8d7da";
+  div.style.border = "1px solid #dc3545";
+}
 
     div.innerHTML = `
       <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
