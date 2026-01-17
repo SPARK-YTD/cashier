@@ -117,10 +117,7 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants?.length) {
-    alert("لا توجد أحجام");
-    return;
-  }
+  if (!variants?.length) return alert("لا توجد أحجام");
 
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
@@ -193,7 +190,7 @@ window.removeItem = i => {
 };
 
 /* ===============================
-   الدفع
+   الدفع (حساب الباقي فقط)
 ================================ */
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
@@ -203,31 +200,45 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+   إتمام الطلب (جديد / تعديل)
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const { data: order } = await supabase
-    .from("orders")
-    .insert({
-      total,
-      status: "active",
-      business_day_id: currentBusinessDay.id
-    })
-    .select("id")
-    .single();
+  if (editingOrderId) {
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: editingOrderId,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+    editingOrderId = null;
+  } else {
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
+      .select("id")
+      .single();
 
-  await supabase.from("order_items").insert(
-    cart.map(i => ({
-      order_id: order.id,
-      product_id: i.id,
-      qty: i.qty,
-      price: i.price
-    }))
-  );
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+  }
 
   cart = [];
   renderCart();
@@ -235,7 +246,7 @@ window.completeOrder = async function () {
 };
 
 /* ===============================
-   الطلبات الجارية
+   الطلبات الجارية (بدون ألوان)
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
@@ -263,24 +274,11 @@ function renderActiveOrders() {
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
     `;
 
     box.appendChild(div);
   });
 }
-
-/* ===============================
-   تم الدفع
-================================ */
-window.markPaid = async function (orderId) {
-  await supabase.from("orders").update({
-    is_paid: true,
-    paid_at: new Date().toISOString()
-  }).eq("id", orderId);
-
-  loadActiveOrders();
-};
 
 /* ===============================
    تعديل / مكتمل / حذف
@@ -309,7 +307,6 @@ window.markCompleted = async id => {
     status: "completed",
     closed_at: new Date().toISOString()
   }).eq("id", id);
-
   loadActiveOrders();
 };
 
