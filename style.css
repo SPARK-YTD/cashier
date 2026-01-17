@@ -499,3 +499,16 @@ html, body {
 .order-box[style*="background"] {
   background: inherit;
 }
+
+.overlay {
+  pointer-events: none;
+}
+
+.overlay.show {
+  pointer-events: auto;
+}
+.order-box button {
+  pointer-events: auto;
+  position: relative;
+  z-index: 5;
+}
