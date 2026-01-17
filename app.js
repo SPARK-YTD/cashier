@@ -15,10 +15,10 @@ let editingOrderId = null;
 let paidOrders = new Set();
 
 /* ===============================
-   تحميل اليوم المفتوح (مُصحح)
+   تحميل اليوم المفتوح
 ================================ */
 async function loadCurrentDay() {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
@@ -26,16 +26,14 @@ async function loadCurrentDay() {
     .limit(1)
     .maybeSingle();
 
-  // ✅ إذا فيه يوم مفتوح
   if (data) {
     currentBusinessDay = data;
     return;
   }
 
-  // 🟡 إذا ما فيه يوم مفتوح → نفتح يوم جديد تلقائي
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: newDay, error: createError } = await supabase
+  const { data: newDay } = await supabase
     .from("business_days")
     .insert({
       day_date: today,
@@ -45,15 +43,8 @@ async function loadCurrentDay() {
     .select()
     .single();
 
-  if (createError) {
-    console.error("FAILED TO CREATE BUSINESS DAY:", createError);
-    currentBusinessDay = null;
-    return;
-  }
-
   currentBusinessDay = newDay;
 }
-
 
 /* ===============================
    INIT
@@ -70,16 +61,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadItems("food");
   await loadActiveOrders();
 
-  // 🔄 تحديث ألوان الطلبات كل دقيقة
-  setInterval(() => {
-    renderActiveOrders();
-  }, 60000);
+  // تحديث الألوان كل دقيقة
+  setInterval(renderActiveOrders, 60000);
 
   renderCart();
-
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
-
 
 /* ===============================
    الأصناف
@@ -134,41 +121,26 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants?.length) {
-    alert("لا توجد أحجام");
-    return;
-  }
+  if (!variants?.length) return alert("لا توجد أحجام");
 
-  showVariantsPopup(item, variants);
-}
-
-function showVariantsPopup(item, variants) {
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
-
   overlay.innerHTML = `
     <div class="variant-box">
       <h3>${item.name}</h3>
       ${variants.map(v => `
-        <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
+        <button onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
       `).join("")}
-      <button class="variant-cancel" onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
+      <button onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
     </div>
   `;
-
   document.body.appendChild(overlay);
 }
 
-window.selectVariant = function (productId, name, variantId, label, price) {
-  addToCart({
-    id: productId,
-    name: `${name} (${label})`,
-    price,
-    variant_id: variantId
-  });
+window.selectVariant = function (id, name, variantId, label, price) {
+  addToCart({ id, name: `${name} (${label})`, price, variant_id: variantId });
   document.querySelector(".variant-overlay")?.remove();
 };
 
@@ -215,11 +187,7 @@ window.changeQty = (i, d) => {
   if (cart[i].qty <= 0) cart.splice(i, 1);
   renderCart();
 };
-
-window.removeItem = i => {
-  cart.splice(i, 1);
-  renderCart();
-};
+window.removeItem = i => { cart.splice(i, 1); renderCart(); };
 
 /* ===============================
    الدفع
@@ -227,51 +195,36 @@ window.removeItem = i => {
 function calculateChange() {
   const paid = parseFloat(document.getElementById("paid").value) || 0;
   const total = parseFloat(document.getElementById("total").textContent) || 0;
-  const change = paid - total;
   document.getElementById("change").textContent =
-    change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
+    paid >= total && paid ? (paid - total).toFixed(3) + " د.ب" : "—";
 }
 
 /* ===============================
-   إتمام الطلب (جديد / تعديل)
+   إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  if (editingOrderId) {
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
-    editingOrderId = null;
-  } else {
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id
-      })
-      .select("id")
-      .single();
+  const { data: order } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "active",
+      business_day_id: currentBusinessDay.id
+    })
+    .select("id")
+    .single();
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
-  }
+  await supabase.from("order_items").insert(
+    cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }))
+  );
 
   cart = [];
   renderCart();
@@ -301,85 +254,54 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-    const createdAt = new Date(order.created_at);
-    let minutesPassed = (Date.now() - createdAt.getTime()) / 60000;
+    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
+    if (order.is_paid) paidOrders.add(order.id);
 
-    // حماية من فرق التوقيت أو القيم الخاطئة
-    if (isNaN(minutesPassed) || minutesPassed < 1) {
-      minutesPassed = 0;
-    }
-
-    // مزامنة حالة الدفع من قاعدة البيانات
-    if (order.is_paid) {
-      paidOrders.add(order.id);
-    }
-
-    // افتراضي: رصاصي فاتح
     div.style.background = "#f2f2f2";
-    div.style.border = "1px solid #ccc";
-
-    // بعد 10 دقائق
-    if (minutesPassed >= 10) {
-
-      // 🟡 من 10 إلى 20 دقيقة
-      if (minutesPassed < 20) {
-
-        // مدفوع → نص أخضر + نص أصفر
-        if (paidOrders.has(order.id)) {
-          div.style.background =
-            "linear-gradient(to right, #d4f8d4 50%, #fff3cd 50%)";
-          div.style.border = "1px solid #f0ad4e";
-        }
-        // غير مدفوع → أصفر كامل
-        else {
-          div.style.background = "#fff3cd";
-          div.style.border = "1px solid #f0ad4e";
-        }
-
-      }
-
-      // 🔴 أكثر من 20 دقيقة
-      else {
-
-        // مدفوع → نص أخضر + نص أحمر
-        if (paidOrders.has(order.id)) {
-          div.style.background =
-            "linear-gradient(to right, #d4f8d4 50%, #f8d7da 50%)";
-          div.style.border = "1px solid #dc3545";
-        }
-        // غير مدفوع → أحمر كامل
-        else {
-          div.style.background = "#f8d7da";
-          div.style.border = "1px solid #dc3545";
-        }
-
-      }
+    if (mins >= 10) {
+      if (mins < 20)
+        div.style.background = order.is_paid
+          ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
+          : "#fff3cd";
+      else
+        div.style.background = order.is_paid
+          ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
+          : "#f8d7da";
     }
 
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no ?? order.id.slice(0, 6)}</strong><br>
+      <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
-
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-
-      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}', this)">💰 تم الدفع</button>`}
+      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
     `;
-
     box.appendChild(div);
   });
 }
 
+/* ===============================
+   تم الدفع
+================================ */
+window.markPaid = async function (orderId) {
+  await supabase.from("orders").update({
+    is_paid: true,
+    paid_at: new Date().toISOString()
+  }).eq("id", orderId);
 
-/* ✏️ تحميل الفاتورة للتعديل */
+  paidOrders.add(orderId);
+  renderActiveOrders();
+};
+
+/* ===============================
+   تعديل / مكتمل / حذف
+================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
-  cart = [];
-
   const { data } = await supabase
     .from("order_items")
-    .select(`qty, price, products ( id, name )`)
+    .select(`qty, price, products (id,name)`)
     .eq("order_id", orderId);
 
   cart = data.map(i => ({
@@ -389,54 +311,20 @@ window.editOrder = async function (orderId) {
     qty: i.qty,
     key: i.products.id
   }));
-
   renderCart();
 };
 
-/* ✅ مكتمل */
 window.markCompleted = async id => {
   await supabase.from("orders").update({
     status: "completed",
     closed_at: new Date().toISOString()
   }).eq("id", id);
-
   loadActiveOrders();
 };
 
-/* 🗑 حذف */
 window.deleteOrder = async id => {
-  if (!confirm("حذف الفاتورة نهائيًا؟")) return;
+  if (!confirm("حذف الفاتورة؟")) return;
   await supabase.from("order_items").delete().eq("order_id", id);
   await supabase.from("orders").delete().eq("id", id);
   loadActiveOrders();
-};
-
-/* ===============================
-   NAV
-================================ */
-window.closeDay = () => location.href = "report.html";
-window.goToReports = () => location.href = "reports.html";
-window.goToSettings = () => location.href = "settings.html";
-
-
-
-/* ===== طباعة الفاتورة ===== */
-
-
-  window.printReceipt = function () {
-  if (!cart.length) {
-    alert("الفاتورة فارغة");
-    return;
-  }
-
-  const receiptData = {
-    items: cart,
-    total: document.getElementById("total").textContent,
-    paid: document.getElementById("paid").value || "—",
-    change: document.getElementById("change").textContent,
-    date: new Date().toLocaleString("ar-BH")
-  };
-
-  localStorage.setItem("receipt", JSON.stringify(receiptData));
-  window.open("receipt.html", "_blank");
 };
