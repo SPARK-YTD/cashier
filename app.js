@@ -256,8 +256,9 @@ function renderActiveOrders() {
     const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
     // بدون لون افتراضي
-    div.style.background = "";
-    div.style.border = "1px solid #e0e0e0";
+div.style.background = "transparent";
+div.style.border = "1px solid #E5E7EB";
+
 
     if (mins >= 10) {
       if (mins < 20) {
