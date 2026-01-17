@@ -300,66 +300,66 @@ function renderActiveOrders() {
   activeOrders.forEach(order => {
     const div = document.createElement("div");
     div.className = "order-box";
-     const createdAt = new Date(order.created_at);
-const minutesPassed = (Date.now() - createdAt.getTime()) / 60000;
 
-// افتراضي: رصاصي فاتح
-div.style.background = "#f2f2f2";
-div.style.border = "1px solid #ccc";
+    const createdAt = new Date(order.created_at);
+    const minutesPassed = (Date.now() - createdAt.getTime()) / 60000;
 
-// بعد 10 دقائق
-if (safeMinutesPassed >= 10) {
+    // افتراضي: رصاصي فاتح
+    div.style.background = "#f2f2f2";
+    div.style.border = "1px solid #ccc";
 
-  // 🟡 من 10 إلى 20 دقيقة
-  if (minutesPassed < 20) {
+    // بعد 10 دقائق
+    if (minutesPassed >= 10) {
 
-    // مدفوع → نص أخضر + نص أصفر
-    if (paidOrders.has(order.id)) {
-      div.style.background =
-        "linear-gradient(to right, #d4f8d4 50%, #fff3cd 50%)";
-      div.style.border = "1px solid #f0ad4e";
+      // 🟡 من 10 إلى 20 دقيقة
+      if (minutesPassed < 20) {
+
+        // مدفوع → نص أخضر + نص أصفر
+        if (paidOrders.has(order.id)) {
+          div.style.background =
+            "linear-gradient(to right, #d4f8d4 50%, #fff3cd 50%)";
+          div.style.border = "1px solid #f0ad4e";
+        }
+        // غير مدفوع → أصفر كامل
+        else {
+          div.style.background = "#fff3cd";
+          div.style.border = "1px solid #f0ad4e";
+        }
+
+      }
+
+      // 🔴 أكثر من 20 دقيقة
+      else {
+
+        // مدفوع → نص أخضر + نص أحمر
+        if (paidOrders.has(order.id)) {
+          div.style.background =
+            "linear-gradient(to right, #d4f8d4 50%, #f8d7da 50%)";
+          div.style.border = "1px solid #dc3545";
+        }
+        // غير مدفوع → أحمر كامل
+        else {
+          div.style.background = "#f8d7da";
+          div.style.border = "1px solid #dc3545";
+        }
+
+      }
     }
-    // غير مدفوع → أصفر كامل
-    else {
-      div.style.background = "#fff3cd";
-      div.style.border = "1px solid #f0ad4e";
-    }
-
-  }
-
-  // 🔴 أكثر من 20 دقيقة
-  else {
-
-    // مدفوع → نص أخضر + نص أحمر
-    if (paidOrders.has(order.id)) {
-      div.style.background =
-        "linear-gradient(to right, #d4f8d4 50%, #f8d7da 50%)";
-      div.style.border = "1px solid #dc3545";
-    }
-    // غير مدفوع → أحمر كامل
-    else {
-      div.style.background = "#f8d7da";
-      div.style.border = "1px solid #dc3545";
-    }
-
-  }
-}
-
 
     div.innerHTML = `
-      <strong>
-  فاتورة رقم ${order.invoice_no ?? order.id.slice(0, 6)}
-</strong>
+      <strong>فاتورة رقم ${order.invoice_no ?? order.id.slice(0, 6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
       <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
       <button onclick="markPaid('${order.id}', this)">💰 تم الدفع</button>
-
     `;
+
     box.appendChild(div);
   });
 }
+    
+    
 window.markPaid = function (orderId, btn) {
   paidOrders.add(orderId);
   const box = btn.closest(".order-box");
