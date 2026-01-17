@@ -12,7 +12,6 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
-let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -60,8 +59,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadItems("food");
   await loadActiveOrders();
-
-  setInterval(renderActiveOrders, 60000);
 
   renderCart();
   document.getElementById("paid")?.addEventListener("input", calculateChange);
@@ -120,7 +117,10 @@ async function handleItemClick(item) {
     .eq("product_id", item.id)
     .eq("active", true);
 
-  if (!variants?.length) return alert("لا توجد أحجام");
+  if (!variants?.length) {
+    alert("لا توجد أحجام");
+    return;
+  }
 
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
@@ -257,29 +257,6 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-    const mins = Math.max(
-      0,
-      (Date.now() - new Date(order.created_at)) / 60000
-    );
-
-    div.style.background = "transparent";
-    div.style.border = "1px solid #E5E7EB";
-
-    if (order.is_paid && mins < 10) {
-      div.style.background = "#d4f8d4";
-      div.style.border = "1px solid #3cb371";
-    } else if (mins >= 10 && mins < 20) {
-      div.style.background = order.is_paid
-        ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
-        : "#fff3cd";
-      div.style.border = "1px solid #f0ad4e";
-    } else if (mins >= 20) {
-      div.style.background = order.is_paid
-        ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
-        : "#f8d7da";
-      div.style.border = "1px solid #dc3545";
-    }
-
     div.innerHTML = `
       <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
@@ -294,7 +271,7 @@ function renderActiveOrders() {
 }
 
 /* ===============================
-   تم الدفع (مُصحح – خارج الرندر)
+   تم الدفع
 ================================ */
 window.markPaid = async function (orderId) {
   await supabase.from("orders").update({
@@ -302,10 +279,7 @@ window.markPaid = async function (orderId) {
     paid_at: new Date().toISOString()
   }).eq("id", orderId);
 
-  const order = activeOrders.find(o => o.id === orderId);
-  if (order) order.is_paid = true;
-
-  renderActiveOrders();
+  loadActiveOrders();
 };
 
 /* ===============================
@@ -313,6 +287,7 @@ window.markPaid = async function (orderId) {
 ================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
+
   const { data } = await supabase
     .from("order_items")
     .select(`qty, price, products (id,name)`)
@@ -325,6 +300,7 @@ window.editOrder = async function (orderId) {
     qty: i.qty,
     key: i.products.id
   }));
+
   renderCart();
 };
 
@@ -333,6 +309,7 @@ window.markCompleted = async id => {
     status: "completed",
     closed_at: new Date().toISOString()
   }).eq("id", id);
+
   loadActiveOrders();
 };
 
