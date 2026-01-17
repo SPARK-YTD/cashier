@@ -12,6 +12,7 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
+let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -59,11 +60,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadItems("food");
   await loadActiveOrders();
+
+  // ✅ التحديث الصحيح للألوان والتأخير
+  setInterval(loadActiveOrders, 60000);
+
   renderCart();
-
-  // 🔄 تحديث الألوان كل دقيقة
-  setInterval(renderActiveOrders, 60000);
-
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 
@@ -187,7 +188,11 @@ window.changeQty = (i, d) => {
   if (cart[i].qty <= 0) cart.splice(i, 1);
   renderCart();
 };
-window.removeItem = i => { cart.splice(i, 1); renderCart(); };
+
+window.removeItem = i => {
+  cart.splice(i, 1);
+  renderCart();
+};
 
 /* ===============================
    الدفع
@@ -270,22 +275,24 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-    const mins = (Date.now() - new Date(order.created_at)) / 60000;
+    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
-    // افتراضي
     div.style.background = "transparent";
     div.style.border = "1px solid #E5E7EB";
 
+    // 🟢 مدفوع فورًا
     if (order.is_paid && mins < 10) {
       div.style.background = "#d4f8d4";
       div.style.border = "1px solid #3cb371";
     }
+    // 🟡 بعد 10 دقائق
     else if (mins >= 10 && mins < 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
         : "#fff3cd";
       div.style.border = "1px solid #f0ad4e";
     }
+    // 🔴 بعد 20 دقيقة
     else if (mins >= 20) {
       div.style.background = order.is_paid
         ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
@@ -294,7 +301,7 @@ function renderActiveOrders() {
     }
 
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+      <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
@@ -338,6 +345,7 @@ window.editOrder = async function (orderId) {
     qty: i.qty,
     key: i.products.id
   }));
+
   renderCart();
 };
 
