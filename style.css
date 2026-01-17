@@ -488,4 +488,14 @@ html, body {
     font-size: 12px;
   }
 }
+/* ===== NEW ORDER (NO COLOR AT ALL) ===== */
+.order-box {
+  background: transparent !important;
+  border: 1px solid #E5E7EB !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+}
 
+/* الألوان لا تظهر إلا إذا JS غيّرها */
+.order-box[style*="background"] {
+  background: inherit;
+}
