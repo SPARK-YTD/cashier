@@ -267,32 +267,29 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
-    if (order.is_paid) paidOrders.add(order.id);
+const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
-    div.style.background = "#f2f2f2";
-    if (mins >= 10) {
-      if (mins < 20)
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
-          : "#fff3cd";
-      else
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
-          : "#f8d7da";
-    }
+// بدون لون افتراضي
+div.style.background = "";
+div.style.border = "1px solid #e0e0e0";
 
-    div.innerHTML = `
-      <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
-      ${order.total.toFixed(3)} د.ب<br>
-      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
-    `;
-    box.appendChild(div);
-  });
+// يبدأ التلوين فقط بعد 10 دقائق
+if (mins >= 10) {
+  if (mins < 20) {
+    // 🟡 من 10 إلى 20
+    div.style.background = order.is_paid
+      ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
+      : "#fff3cd";
+    div.style.border = "1px solid #f0ad4e";
+  } else {
+    // 🔴 أكثر من 20
+    div.style.background = order.is_paid
+      ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
+      : "#f8d7da";
+    div.style.border = "1px solid #dc3545";
+  }
 }
+
 
 /* ===============================
    تم الدفع
