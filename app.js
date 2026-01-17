@@ -12,7 +12,6 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
-let paidOrders = new Set();
 
 /* ===============================
    تحميل اليوم المفتوح
@@ -61,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadItems("food");
   await loadActiveOrders();
 
+  // تحديث الألوان فقط كل دقيقة
   setInterval(renderActiveOrders, 60000);
 
   renderCart();
@@ -199,31 +199,45 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب
+   إتمام الطلب (قديم بدون تغيير)
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const { data: order } = await supabase
-    .from("orders")
-    .insert({
-      total,
-      status: "active",
-      business_day_id: currentBusinessDay.id
-    })
-    .select("id")
-    .single();
+  if (editingOrderId) {
+    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
+    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: editingOrderId,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+    editingOrderId = null;
+  } else {
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id
+      })
+      .select("id")
+      .single();
 
-  await supabase.from("order_items").insert(
-    cart.map(i => ({
-      order_id: order.id,
-      product_id: i.id,
-      qty: i.qty,
-      price: i.price
-    }))
-  );
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: order.id,
+        product_id: i.id,
+        qty: i.qty,
+        price: i.price
+      }))
+    );
+  }
 
   cart = [];
   renderCart();
@@ -231,7 +245,7 @@ window.completeOrder = async function () {
 };
 
 /* ===============================
-   الطلبات الجارية
+   الطلبات الجارية + الألوان فقط
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
@@ -255,23 +269,28 @@ function renderActiveOrders() {
 
     const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
-    // بدون لون افتراضي
-div.style.background = "transparent";
-div.style.border = "1px solid #E5E7EB";
+    // الحالة الافتراضية (بدون لون)
+    div.style.background = "transparent";
+    div.style.border = "1px solid #E5E7EB";
 
-
-    if (mins >= 10) {
-      if (mins < 20) {
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
-          : "#fff3cd";
-        div.style.border = "1px solid #f0ad4e";
-      } else {
-        div.style.background = order.is_paid
-          ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
-          : "#f8d7da";
-        div.style.border = "1px solid #dc3545";
-      }
+    // مدفوع فورًا
+    if (order.is_paid && mins < 10) {
+      div.style.background = "#d4f8d4";
+      div.style.border = "1px solid #3cb371";
+    }
+    // بعد 10 دقائق
+    else if (mins >= 10 && mins < 20) {
+      div.style.background = order.is_paid
+        ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
+        : "#fff3cd";
+      div.style.border = "1px solid #f0ad4e";
+    }
+    // بعد 20 دقيقة
+    else if (mins >= 20) {
+      div.style.background = order.is_paid
+        ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
+        : "#f8d7da";
+      div.style.border = "1px solid #dc3545";
     }
 
     div.innerHTML = `
@@ -296,12 +315,11 @@ window.markPaid = async function (orderId) {
     paid_at: new Date().toISOString()
   }).eq("id", orderId);
 
-  paidOrders.add(orderId);
-  renderActiveOrders();
+  loadActiveOrders();
 };
 
 /* ===============================
-   تعديل / مكتمل / حذف
+   تعديل / مكتمل / حذف (كما هو)
 ================================ */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
