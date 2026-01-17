@@ -289,19 +289,31 @@ if (mins >= 10) {
     div.style.border = "1px solid #dc3545";
   }
 }
-
-
 /* ===============================
    تم الدفع
 ================================ */
 window.markPaid = async function (orderId) {
-  await supabase.from("orders").update({
-    is_paid: true,
-    paid_at: new Date().toISOString()
-  }).eq("id", orderId);
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        is_paid: true,
+        paid_at: new Date().toISOString()
+      })
+      .eq("id", orderId);
 
-  paidOrders.add(orderId);
-  loadActiveOrders();
+    if (error) {
+      console.error("PAYMENT ERROR:", error);
+      alert("حدث خطأ أثناء تسجيل الدفع");
+      return;
+    }
+
+    paidOrders.add(orderId);
+    renderActiveOrders();
+
+  } catch (err) {
+    console.error("MARK PAID FAILED:", err);
+  }
 };
 
 /* ===============================
