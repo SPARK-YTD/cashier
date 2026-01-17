@@ -312,14 +312,19 @@ function renderActiveOrders() {
    تم الدفع
 ================================ */
 window.markPaid = async function (orderId) {
-  await supabase.from("orders").update({
-    is_paid: true,
-    paid_at: new Date().toISOString()
-  }).eq("id", orderId);
+  await supabase
+    .from("orders")
+    .update({
+      is_paid: true,
+      paid_at: new Date().toISOString()
+    })
+    .eq("id", orderId);
 
+  // ✅ هذا السطر هو المفتاح
   const order = activeOrders.find(o => o.id === orderId);
   if (order) order.is_paid = true;
 
+  // إعادة الرسم مباشرة
   renderActiveOrders();
 };
 
