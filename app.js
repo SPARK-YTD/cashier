@@ -199,45 +199,31 @@ function calculateChange() {
 }
 
 /* ===============================
-   إتمام الطلب (جديد / تعديل)
+   إتمام الطلب
 ================================ */
 window.completeOrder = async function () {
   if (!cart.length) return alert("الفاتورة فارغة");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  if (editingOrderId) {
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
-    editingOrderId = null;
-  } else {
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id
-      })
-      .select("id")
-      .single();
+  const { data: order } = await supabase
+    .from("orders")
+    .insert({
+      total,
+      status: "active",
+      business_day_id: currentBusinessDay.id
+    })
+    .select("id")
+    .single();
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
-  }
+  await supabase.from("order_items").insert(
+    cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      qty: i.qty,
+      price: i.price
+    }))
+  );
 
   cart = [];
   renderCart();
@@ -267,53 +253,50 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
 
-const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
+    const mins = Math.max(0, (Date.now() - new Date(order.created_at)) / 60000);
 
-// بدون لون افتراضي
-div.style.background = "";
-div.style.border = "1px solid #e0e0e0";
+    // بدون لون افتراضي
+    div.style.background = "";
+    div.style.border = "1px solid #e0e0e0";
 
-// يبدأ التلوين فقط بعد 10 دقائق
-if (mins >= 10) {
-  if (mins < 20) {
-    // 🟡 من 10 إلى 20
-    div.style.background = order.is_paid
-      ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
-      : "#fff3cd";
-    div.style.border = "1px solid #f0ad4e";
-  } else {
-    // 🔴 أكثر من 20
-    div.style.background = order.is_paid
-      ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
-      : "#f8d7da";
-    div.style.border = "1px solid #dc3545";
-  }
+    if (mins >= 10) {
+      if (mins < 20) {
+        div.style.background = order.is_paid
+          ? "linear-gradient(to right,#d4f8d4 50%,#fff3cd 50%)"
+          : "#fff3cd";
+        div.style.border = "1px solid #f0ad4e";
+      } else {
+        div.style.background = order.is_paid
+          ? "linear-gradient(to right,#d4f8d4 50%,#f8d7da 50%)"
+          : "#f8d7da";
+        div.style.border = "1px solid #dc3545";
+      }
+    }
+
+    div.innerHTML = `
+      <strong>فاتورة ${order.invoice_no ?? order.id.slice(0,6)}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
+      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+      ${order.is_paid ? "" : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`}
+    `;
+
+    box.appendChild(div);
+  });
 }
+
 /* ===============================
    تم الدفع
 ================================ */
 window.markPaid = async function (orderId) {
-  try {
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        is_paid: true,
-        paid_at: new Date().toISOString()
-      })
-      .eq("id", orderId);
+  await supabase.from("orders").update({
+    is_paid: true,
+    paid_at: new Date().toISOString()
+  }).eq("id", orderId);
 
-    if (error) {
-      console.error("PAYMENT ERROR:", error);
-      alert("حدث خطأ أثناء تسجيل الدفع");
-      return;
-    }
-
-    paidOrders.add(orderId);
-    renderActiveOrders();
-
-  } catch (err) {
-    console.error("MARK PAID FAILED:", err);
-  }
+  paidOrders.add(orderId);
+  renderActiveOrders();
 };
 
 /* ===============================
