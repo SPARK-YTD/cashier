@@ -299,30 +299,39 @@ function renderActiveOrders() {
     let bgColor = "";
     let borderColor = "";
 
-    // ⏱️ منطق التلوين
-    if (diffMin >= 20) {
-      borderColor = "red";
+    // 🟢 1) فاتورة جديدة جدًا (أقل من دقيقة) → بدون لون
+    if (diffMin < 1) {
+      bgColor = "";
+      borderColor = "";
+    }
+
+    // 🔴 2) 20 دقيقة وأكثر
+    else if (diffMin >= 20) {
+      borderColor = "#DC2626";
       bgColor = order.is_paid
-        ? "linear-gradient(90deg,#bbf7d0,#fecaca)"
-        : "#fecaca";
-    } else if (diffMin >= 10) {
-      borderColor = "#facc15";
+        ? "linear-gradient(90deg,#BBF7D0,#FECACA)" // مدفوعة + تأخير
+        : "#FECACA";                               // غير مدفوعة
+    }
+
+    // 🟡 3) من 10 إلى 19 دقيقة
+    else if (diffMin >= 10) {
+      borderColor = "#FACC15";
       bgColor = order.is_paid
-        ? "linear-gradient(90deg,#bbf7d0,#fde68a)"
-        : "#fde68a";
-    } else {
-      if (order.is_paid) {
-        bgColor = "#bbf7d0";
-        borderColor = "#22c55e";
-      }
+        ? "linear-gradient(90deg,#BBF7D0,#FDE68A)" // مدفوعة + تأخير
+        : "#FDE68A";                               // غير مدفوعة
+    }
+
+    // 🟢 4) أقل من 10 دقائق ومدفوعة
+    else if (order.is_paid) {
+      bgColor = "#BBF7D0";
+      borderColor = "#22C55E";
     }
 
     const div = document.createElement("div");
     div.className = "order-box";
-    div.style.background = bgColor;
-    div.style.borderLeft = borderColor
-      ? `6px solid ${borderColor}`
-      : "";
+
+    if (bgColor) div.style.background = bgColor;
+    if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
 
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
