@@ -88,18 +88,26 @@ window.addItem = async function () {
       image_url = await uploadImage(imageFile);
       if (!image_url) return;
     }
+// ===== قراءة الإضافات الداخلية =====
+const extrasRaw = document.getElementById("itemExtras")?.value || "";
 
+const extras = extrasRaw
+  .split("\n")
+  .map(e => e.trim())
+  .filter(e => e.length > 0);
+  
     /* === إدخال الصنف === */
-    const { data: product, error } = await supabase
-      .from("products")
-      .insert({
-        name,
-        category,
-        price: hasVariants ? null : priceNormal,
-        has_variants: hasVariants,
-        image_url,
-        active: true
-      })
+const { data: product, error } = await supabase
+  .from("products")
+  .insert({
+    name,
+    category,
+    price: hasVariants ? null : priceNormal,
+    has_variants: hasVariants,
+    image_url,
+    extras: extras, // ⭐ الإضافات الداخلية
+    active: true
+  })
       .select()
       .single();
 
@@ -220,6 +228,7 @@ function clearForm() {
   document.getElementById("variantsBox").style.display = "none";
   document.getElementById("priceSmall").value = "";
   document.getElementById("priceMedium").value = "";
+  document.getElementById("itemExtras").value = "";
   document.getElementById("priceLarge").value = "";
 }
 
