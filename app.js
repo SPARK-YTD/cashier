@@ -277,12 +277,11 @@ window.completeOrder = async function () {
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("status", "active")
-    .eq("business_day_id", currentBusinessDay.id)
-    .order("created_at", { ascending: false });
-
+  .from("orders")
+  .select("id, total, invoice_no, created_at, is_paid")
+  .eq("status", "active")
+  .eq("business_day_id", currentBusinessDay.id)
+  .order("created_at", { ascending: false });
   activeOrders = data || [];
   renderActiveOrders();
 }
