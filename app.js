@@ -85,13 +85,19 @@ window.filterCategory = function (category, btn) {
 };
 
 async function loadItems(category) {
-  const { data } = await supabase
-    .from("products")
-    .select("*")
-    .eq("category", category)
-    .eq("active", true);
+const { data, error } = await supabase
+  .from("products")
+  .select("*")
+  .eq("category", category)
+  .eq("active", true);
 
-  items = data || [];
+if (error) {
+  console.error(error);
+  items = [];
+  return;
+}
+
+items = data;
   renderItems();
 }
 
@@ -118,6 +124,9 @@ function renderItems() {
 ================================ */
 async function handleItemClick(item) {
 
+  // 🚫 إذا فيه نافذة مفتوحة لا تفتح وحدة ثانية
+  if (document.querySelector(".variant-overlay")) return;
+
   // 🟢 إذا عنده إضافات داخلية
   if (item.extras && item.extras.length > 0) {
     showExtrasPopup(item);
@@ -135,16 +144,22 @@ async function handleItemClick(item) {
   }
 
   // 🟠 إذا عنده أحجام
-  const { data: variants } = await supabase
-    .from("product_variants")
-    .select("*")
-    .eq("product_id", item.id)
-    .eq("active", true);
+  const { data: variants, error } = await supabase
+  .from("product_variants")
+  .select("*")
+  .eq("product_id", item.id)
+  .eq("active", true);
 
-  if (!variants?.length) {
-    alert("لا توجد أحجام");
-    return;
-  }
+if (error) {
+  console.error(error);
+  alert("حصل خطأ أثناء تحميل الأحجام");
+  return;
+}
+
+if (!variants || variants.length === 0) {
+  alert("لا توجد أحجام");
+  return;
+}
 
   showVariantsPopup(item, variants);
 }
@@ -235,7 +250,10 @@ window.selectVariant = function (productId, name, variantId, label, price) {
    السلة
 ================================ */
 function addToCart(item) {
-  const key = item.variant_id ? `${item.id}-${item.variant_id}` : item.id;
+  const key = item.variant_id
+    ? `${item.id}-${item.variant_id}-${item.name}`
+    : `${item.id}-${item.name}`;
+
   const found = cart.find(i => i.key === key);
   found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
   renderCart();
@@ -303,13 +321,14 @@ window.completeOrder = async function () {
     await supabase.from("orders").update({ total }).eq("id", editingOrderId);
     await supabase.from("order_items").delete().eq("order_id", editingOrderId);
     await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
+  cart.map(i => ({
+    order_id: editingOrderId,
+    product_id: i.id,
+    item_name: i.name, // ⭐ الاسم مع الإضافات
+    qty: i.qty,
+    price: i.price
+  }))
+);
     editingOrderId = null;
   } else {
     const { data: order } = await supabase
@@ -323,19 +342,24 @@ window.completeOrder = async function () {
   .select("id")
   .single();
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,
-        product_id: i.id,
-        qty: i.qty,
-        price: i.price
-      }))
-    );
+await supabase.from("order_items").insert(
+  cart.map(i => ({
+    order_id: order.id, // ✅ هذا الصح
+    product_id: i.id,
+    item_name: i.name,
+    qty: i.qty,
+    price: i.price
+  }))
+);
+
   }
 
   cart = [];
   renderCart();
   loadActiveOrders();
+  const paidInput = document.getElementById("paid");
+if (paidInput) paidInput.value = "";
+document.getElementById("change").textContent = "—";
 };
 
 /* ===============================
@@ -403,7 +427,7 @@ const createdAt = new Date(baseTime).getTime();
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
-
+<button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
 
       ${
@@ -427,16 +451,16 @@ window.editOrder = async function (orderId) {
 
   const { data } = await supabase
     .from("order_items")
-    .select(`qty, price, products ( id, name )`)
+.select("qty, price, item_name, product_id")
     .eq("order_id", orderId);
 
-  cart = data.map(i => ({
-    id: i.products.id,
-    name: i.products.name,
-    price: i.price,
-    qty: i.qty,
-    key: i.products.id
-  }));
+cart = data.map(i => ({
+  id: i.product_id,
+  name: i.item_name, // ⭐ الاسم المحفوظ مع الإضافات
+  price: i.price,
+  qty: i.qty,
+  key: i.product_id + "-" + i.item_name
+}));
 
   renderCart();
 };
@@ -495,4 +519,46 @@ window.goToSettings = () => location.href = "settings.html";
 
   localStorage.setItem("receipt", JSON.stringify(receiptData));
   window.open("receipt.html", "_blank");
+};
+window.viewOrder = async function (orderId) {
+  const { data: items } = await supabase
+    .from("order_items")
+.select("qty, price, item_name")
+    .eq("order_id", orderId);
+
+  if (!items || items.length === 0) {
+    alert("لا توجد بيانات للفاتورة");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:500px">
+      <h3>🧾 تفاصيل الفاتورة</h3>
+
+      <div style="text-align:right;max-height:300px;overflow:auto">
+        ${items.map(i => `
+          <div style="border-bottom:1px dashed #ddd;padding:8px 0">
+<strong>${i.item_name}</strong>
+            الكمية: ${i.qty}<br>
+            السعر: ${(i.price * i.qty).toFixed(3)} د.ب
+          </div>
+        `).join("")}
+      </div>
+
+      <button class="variant-cancel" style="margin-top:10px">
+        إغلاق
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // إغلاق
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+  overlay.onclick = e => {
+    if (e.target === overlay) overlay.remove();
+  };
 };
