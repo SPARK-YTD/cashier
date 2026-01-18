@@ -293,16 +293,19 @@ function renderActiveOrders() {
     const div = document.createElement("div");
     div.className = "order-box";
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
-      ${order.total.toFixed(3)} د.ب<br>
-      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-${order.is_paid 
-  ? `<span style="color:green;font-weight:800;">✔ مدفوعة</span>`
-  : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
-}
-<button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-<button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-    `;
+  <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+  ${order.total.toFixed(3)} د.ب<br>
+
+  <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+
+  ${order.is_paid 
+    ? `<span style="color:green;font-weight:800;">✔ مدفوعة</span>`
+    : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+  }
+
+  <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+  <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+`;
     box.appendChild(div);
   });
 }
