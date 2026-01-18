@@ -100,7 +100,12 @@ if (error) {
 items = data;
   renderItems();
 }
-
+function cleanImageUrl(url) {
+  if (!url) return "";
+  return url
+    .replace(/"/g, "")   // يشيل علامات الاقتباس
+    .trim();             // يشيل المسافات
+}
 function renderItems() {
   const container = document.getElementById("items");
   if (!container) return;
@@ -110,7 +115,7 @@ function renderItems() {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      ${item.image_url ? `<img src="${item.image_url}" class="cashier-item-img">` : ""}
+${item.image_url ? `<img src="${cleanImageUrl(item.image_url)}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
     `;
