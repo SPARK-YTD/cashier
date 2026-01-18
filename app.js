@@ -248,14 +248,15 @@ window.completeOrder = async function () {
     editingOrderId = null;
   } else {
     const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id
-      })
-      .select("id")
-      .single();
+  .from("orders")
+  .insert({
+    total,
+    status: "active",
+    business_day_id: currentBusinessDay.id,
+    timer_started_at: new Date().toISOString()
+  })
+  .select("id")
+  .single();
 
     await supabase.from("order_items").insert(
       cart.map(i => ({
@@ -278,7 +279,7 @@ window.completeOrder = async function () {
 async function loadActiveOrders() {
   const { data } = await supabase
   .from("orders")
-  .select("id, total, invoice_no, created_at, is_paid")
+  .select("id, total, invoice_no, created_at, timer_started_at, is_paid")
   .eq("status", "active")
   .eq("business_day_id", currentBusinessDay.id)
   .order("created_at", { ascending: false });
@@ -293,7 +294,8 @@ function renderActiveOrders() {
   const now = Date.now();
 
   activeOrders.forEach(order => {
-    const createdAt = new Date(order.created_at).getTime();
+    const baseTime = order.timer_started_at || order.created_at;
+const createdAt = new Date(baseTime).getTime();
     const diffMin = Math.floor((now - createdAt) / 60000);
 
     let bgColor = "";
