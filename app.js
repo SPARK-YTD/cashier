@@ -352,9 +352,10 @@ window.completeOrder = async function () {
     await supabase.from("order_items").delete().eq("order_id", editingOrderId);
     await supabase.from("order_items").insert(
   cart.map(i => ({
-    order_id: editingOrderId,
+    order_id: editingOrderId, // ✅ الصحيح في حالة التعديل
     product_id: i.id,
-    item_name: i.name, // ⭐ الاسم مع الإضافات
+    variant_id: i.variant_id || null,
+    item_name: i.name,
     qty: i.qty,
     price: i.price
   }))
@@ -481,10 +482,14 @@ window.editOrder = async function (orderId) {
   cart = [];
 
   const { data } = await supabase
-    .from("order_items")
-    .select("qty, price, item_name, product_id, variant_id")
-    .eq("order_id", orderId);
+  .from("order_items")
+  .select("qty, price, item_name, product_id, variant_id")
+  .eq("order_id", orderId);
 
+if (!data || data.length === 0) {
+  alert("الفاتورة فارغة أو فيها خطأ");
+  return;
+}
   cart = data.map(i => {
     const extras = extractExtras(i.item_name);
     const extrasKey = extras.join("|");
