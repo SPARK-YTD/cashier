@@ -296,8 +296,9 @@ function renderActiveOrders() {
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>
+<button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+<button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
     `;
     box.appendChild(div);
   });
@@ -333,7 +334,15 @@ window.markCompleted = async id => {
 
   loadActiveOrders();
 };
+/* 💰 تم الدفع */
+window.markPaid = async id => {
+  await supabase.from("orders").update({
+    is_paid: true,
+    paid_at: new Date().toISOString()
+  }).eq("id", id);
 
+  loadActiveOrders();
+};
 /* 🗑 حذف */
 window.deleteOrder = async id => {
   if (!confirm("حذف الفاتورة نهائيًا؟")) return;
