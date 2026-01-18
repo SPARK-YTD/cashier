@@ -289,24 +289,56 @@ function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
   box.innerHTML = "";
 
+  const now = Date.now();
+
   activeOrders.forEach(order => {
+    const createdAt = new Date(order.created_at).getTime();
+    const diffMin = Math.floor((now - createdAt) / 60000);
+
+    let bgColor = "";
+    let borderColor = "";
+
+    // ⏱️ منطق التلوين
+    if (diffMin >= 20) {
+      borderColor = "red";
+      bgColor = order.is_paid
+        ? "linear-gradient(90deg,#bbf7d0,#fecaca)"
+        : "#fecaca";
+    } else if (diffMin >= 10) {
+      borderColor = "#facc15";
+      bgColor = order.is_paid
+        ? "linear-gradient(90deg,#bbf7d0,#fde68a)"
+        : "#fde68a";
+    } else {
+      if (order.is_paid) {
+        bgColor = "#bbf7d0";
+        borderColor = "#22c55e";
+      }
+    }
+
     const div = document.createElement("div");
     div.className = "order-box";
+    div.style.background = bgColor;
+    div.style.borderLeft = borderColor
+      ? `6px solid ${borderColor}`
+      : "";
+
     div.innerHTML = `
-  <strong>فاتورة رقم ${order.invoice_no}</strong><br>
-  ${order.total.toFixed(3)} د.ب<br>
+      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+      ${order.total.toFixed(3)} د.ب<br>
 
-  <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
 
-  ${
-    order.is_paid
-      ? `<span style="color:green;font-weight:800;">✔ مدفوعة</span>`
-      : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
-  }
+      ${
+        order.is_paid
+          ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
+          : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+      }
 
-  <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-  <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-`;
+      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+    `;
+
     box.appendChild(div);
   });
 }
