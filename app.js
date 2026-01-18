@@ -148,7 +148,59 @@ async function handleItemClick(item) {
 
   showVariantsPopup(item, variants);
 }
+function showExtrasPopup(item) {
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
 
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>${item.name}</h3>
+
+      <p style="font-size:14px;color:#555;margin-bottom:10px">
+        اختر الإضافات التي لا يريدها الزبون
+      </p>
+
+      <div style="text-align:right;max-height:200px;overflow:auto">
+        ${item.extras.map(extra => `
+          <label style="display:block;margin-bottom:6px">
+            <input type="checkbox" value="${extra}" checked>
+            ${extra}
+          </label>
+        `).join("")}
+      </div>
+
+      <button class="variant-btn" id="confirmExtras">إضافة للسلة</button>
+      <button class="variant-cancel">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // زر الإلغاء
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+
+  // زر التأكيد
+  overlay.querySelector("#confirmExtras").onclick = () => {
+    const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
+      .filter(cb => !cb.checked)
+      .map(cb => cb.value);
+
+    let nameWithExtras = item.name;
+
+    if (unchecked.length > 0) {
+      nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
+    }
+
+    addToCart({
+      id: item.id,
+      name: nameWithExtras,
+      price: item.price,
+      extras_removed: unchecked
+    });
+
+    overlay.remove();
+  };
+}
 function showVariantsPopup(item, variants) {
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
