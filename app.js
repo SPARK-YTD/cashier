@@ -117,11 +117,24 @@ function renderItems() {
    الأحجام
 ================================ */
 async function handleItemClick(item) {
-  if (!item.has_variants) {
-    addToCart({ id: item.id, name: item.name, price: item.price });
+
+  // 🟢 إذا عنده إضافات داخلية
+  if (item.extras && item.extras.length > 0) {
+    showExtrasPopup(item);
     return;
   }
 
+  // 🟡 إذا ما عنده أحجام
+  if (!item.has_variants) {
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price
+    });
+    return;
+  }
+
+  // 🟠 إذا عنده أحجام
   const { data: variants } = await supabase
     .from("product_variants")
     .select("*")
