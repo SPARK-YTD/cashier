@@ -70,6 +70,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadActiveOrders();
   renderCart();
 
+  setInterval(loadActiveOrders, 60000); // 🔁 تحديث تلقائي كل دقيقة
+
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 
