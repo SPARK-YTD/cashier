@@ -296,7 +296,10 @@ function renderActiveOrders() {
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
       ${order.total.toFixed(3)} د.ب<br>
       <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>
+${order.is_paid 
+  ? `<span style="color:green;font-weight:800;">✔ مدفوعة</span>`
+  : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+}
 <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
 <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
     `;
