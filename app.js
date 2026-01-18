@@ -250,13 +250,38 @@ window.selectVariant = function (productId, name, variantId, label, price) {
    السلة
 ================================ */
 function addToCart(item) {
+  const extrasKey = item.extras_removed
+    ? item.extras_removed.join("|")
+    : "";
+
   const key = item.variant_id
-    ? `${item.id}-${item.variant_id}-${item.name}`
-    : `${item.id}-${item.name}`;
+    ? `${item.id}-${item.variant_id}-${extrasKey}`
+    : `${item.id}-${extrasKey}`;
 
   const found = cart.find(i => i.key === key);
-  found ? found.qty++ : cart.push({ ...item, key, qty: 1 });
+
+  if (found) {
+    found.qty++;
+  } else {
+cart.push({
+  ...item,
+  variant_id: item.variant_id || null,
+  extras_removed: item.extras_removed || [],
+  key,
+  qty: 1
+});
+  }
+
   renderCart();
+}
+
+/* ===============================
+   استخراج الإضافات من الاسم
+================================ */
+function extractExtras(name) {
+  const match = name.match(/\(بدون:\s*(.*?)\)/);
+  if (!match) return [];
+  return match[1].split("،").map(e => e.trim());
 }
 
 function renderCart() {
@@ -344,8 +369,9 @@ window.completeOrder = async function () {
 
 await supabase.from("order_items").insert(
   cart.map(i => ({
-    order_id: order.id, // ✅ هذا الصح
+    order_id: order.id,        // ✅ هذا هو الصح
     product_id: i.id,
+    variant_id: i.variant_id || null,
     item_name: i.name,
     qty: i.qty,
     price: i.price
@@ -451,16 +477,27 @@ window.editOrder = async function (orderId) {
 
   const { data } = await supabase
     .from("order_items")
-.select("qty, price, item_name, product_id")
+    .select("qty, price, item_name, product_id, variant_id")
     .eq("order_id", orderId);
 
-cart = data.map(i => ({
-  id: i.product_id,
-  name: i.item_name, // ⭐ الاسم المحفوظ مع الإضافات
-  price: i.price,
-  qty: i.qty,
-  key: i.product_id + "-" + i.item_name
-}));
+  cart = data.map(i => {
+    const extras = extractExtras(i.item_name);
+    const extrasKey = extras.join("|");
+
+    const key = i.variant_id
+      ? `${i.product_id}-${i.variant_id}-${extrasKey}`
+      : `${i.product_id}-${extrasKey}`;
+
+    return {
+      id: i.product_id,
+      name: i.item_name,
+      price: i.price,
+      qty: i.qty,
+      variant_id: i.variant_id || null,
+      extras_removed: extras,
+      key
+    };
+  });
 
   renderCart();
 };
