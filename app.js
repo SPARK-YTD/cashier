@@ -350,77 +350,109 @@ function calculateChange() {
    إتمام الطلب (جديد / تعديل)
 ================================ */
 
+let isSavingOrder = false; // 🔒 قفل الحفظ
+
 window.completeOrder = async function () {
-if (!cart.length) {
-  editingOrderId = null;
-  return alert("الفاتورة فارغة");
-}
+
+  // 🛑 منع الضغط المتكرر
+  if (isSavingOrder) return;
+  isSavingOrder = true;
+
+  // 🧺 الفاتورة فاضية
+  if (!cart.length) {
+    editingOrderId = null;
+    isSavingOrder = false;
+    return alert("الفاتورة فارغة");
+  }
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  // ✏️ إذا كنا نعدّل طلب
-  if (editingOrderId) {
+  try {
 
-    await supabase
-      .from("orders")
-      .update({ total })
-      .eq("id", editingOrderId);
+    /* ===============================
+       ✏️ تعديل طلب موجود
+    ================================ */
+    if (editingOrderId) {
 
-    await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", editingOrderId);
+      // تحديث الإجمالي
+      await supabase
+        .from("orders")
+        .update({ total })
+        .eq("id", editingOrderId);
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: editingOrderId,   // ✅ هنا
-        product_id: i.id,
-        variant_id: i.variant_id || null,
-        item_name: i.name,
-        qty: i.qty,
-        price: i.price,
-        extras_removed: i.extras_removed || []
-      }))
-    );
+      // حذف الأصناف القديمة
+      await supabase
+        .from("order_items")
+        .delete()
+        .eq("order_id", editingOrderId);
 
-    editingOrderId = null;
+      // إدخال الأصناف الجديدة
+      await supabase.from("order_items").insert(
+        cart.map(i => ({
+          order_id: editingOrderId,
+          product_id: i.id,
+          variant_id: i.variant_id || null,
+          item_name: i.name,
+          qty: i.qty,
+          price: i.price,
+          extras_removed: i.extras_removed || []
+        }))
+      );
 
-  } 
-  // 🆕 طلب جديد
-  else {
+      editingOrderId = null;
+    }
 
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        total,
-        status: "active",
-        business_day_id: currentBusinessDay.id,
-        timer_started_at: new Date().toISOString()
-      })
-      .select("id")
-      .single();
+    /* ===============================
+       🆕 طلب جديد
+    ================================ */
+    else {
 
-    await supabase.from("order_items").insert(
-      cart.map(i => ({
-        order_id: order.id,        // ✅ هنا
-        product_id: i.id,
-        variant_id: i.variant_id || null,
-        item_name: i.name,
-        qty: i.qty,
-        price: i.price,
-        extras_removed: i.extras_removed || []
-      }))
-    );
+      const { data: order, error } = await supabase
+        .from("orders")
+        .insert({
+          total,
+          status: "active",
+          business_day_id: currentBusinessDay.id,
+          timer_started_at: new Date().toISOString()
+        })
+        .select("id")
+        .single();
+
+      if (error || !order) {
+        throw new Error("فشل إنشاء الطلب");
+      }
+
+      await supabase.from("order_items").insert(
+        cart.map(i => ({
+          order_id: order.id,
+          product_id: i.id,
+          variant_id: i.variant_id || null,
+          item_name: i.name,
+          qty: i.qty,
+          price: i.price,
+          extras_removed: i.extras_removed || []
+        }))
+      );
+    }
+
+    /* ===============================
+       🧹 تنظيف بعد الحفظ
+    ================================ */
+    cart = [];
+    renderCart();
+    loadActiveOrders();
+
+    const paidInput = document.getElementById("paid");
+    if (paidInput) paidInput.value = "";
+    document.getElementById("change").textContent = "—";
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ حصل خطأ أثناء حفظ الطلب");
   }
 
-  // 🧹 تنظيف بعد الحفظ
-  cart = [];
-  renderCart();
-  loadActiveOrders();
-
-  const paidInput = document.getElementById("paid");
-  if (paidInput) paidInput.value = "";
-  document.getElementById("change").textContent = "—";
+  // 🔓 فتح القفل
+  isSavingOrder = false;
 };
 
 /* ===============================
@@ -516,7 +548,7 @@ window.editOrder = async function (orderId) {
   .eq("order_id", orderId);
 
 if (!data || data.length === 0) {
-  alert("الفاتورة فارغة أو فيها خطأ");
+  alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
   return;
 }
   cart = data.map(i => {
