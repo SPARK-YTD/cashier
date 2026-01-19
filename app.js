@@ -374,34 +374,27 @@ window.completeOrder = async function () {
     ================================ */
     if (editingOrderId) {
 
-      // تحديث الإجمالي
-      await supabase
-        .from("orders")
-        .update({ total })
-        .eq("id", editingOrderId);
+  // تحديث الإجمالي
+  await supabase
+    .from("orders")
+    .update({ total })
+    .eq("id", editingOrderId);
 
-      // حذف الأصناف القديمة
-      await supabase
-        .from("order_items")
-        .delete()
-        .eq("order_id", editingOrderId);
+  // 🔥 استبدال الأصناف بالكامل (آمن)
+  await supabase.rpc("replace_order_items", {
+    p_order_id: editingOrderId,
+    p_items: cart.map(i => ({
+      product_id: i.id,
+      variant_id: i.variant_id,
+      item_name: i.name,
+      qty: i.qty,
+      price: i.price,
+      extras_removed: i.extras_removed || []
+    }))
+  });
 
-      // إدخال الأصناف الجديدة
-      await supabase.from("order_items").insert(
-        cart.map(i => ({
-          order_id: editingOrderId,
-          product_id: i.id,
-          variant_id: i.variant_id || null,
-          item_name: i.name,
-          qty: i.qty,
-          price: i.price,
-          extras_removed: i.extras_removed || []
-        }))
-      );
-
-      editingOrderId = null;
-    }
-
+  editingOrderId = null;
+}
     /* ===============================
        🆕 طلب جديد
     ================================ */
