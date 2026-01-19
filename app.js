@@ -97,7 +97,14 @@ if (error) {
   return;
 }
 
-items = data;
+items = data.map(p => ({
+  ...p,
+  extras: Array.isArray(p.extras)
+    ? p.extras
+    : p.extras
+      ? p.extras.split(",").map(e => e.trim())
+      : []
+}));
   renderItems();
 }
 function cleanImageUrl(url) {
@@ -132,11 +139,11 @@ async function handleItemClick(item) {
   // 🚫 إذا فيه نافذة مفتوحة لا تفتح وحدة ثانية
   if (document.querySelector(".variant-overlay")) return;
 
-  // 🟢 إذا عنده إضافات داخلية
-  if (item.extras && item.extras.length > 0) {
-    showExtrasPopup(item);
-    return;
-  }
+ // 🟢 إذا عنده إضافات داخلية
+if (Array.isArray(item.extras) && item.extras.length > 0) {
+  showExtrasPopup(item);
+  return;
+}
 
   // 🟡 إذا ما عنده أحجام
   if (!item.has_variants) {
@@ -181,12 +188,12 @@ function showExtrasPopup(item) {
       </p>
 
       <div style="text-align:right;max-height:200px;overflow:auto">
-        ${item.extras.map(extra => `
-          <label style="display:block;margin-bottom:6px">
-            <input type="checkbox" value="${extra}" checked>
-            ${extra}
-          </label>
-        `).join("")}
+${(Array.isArray(item.extras) ? item.extras : []).map(extra => `
+  <label style="display:block;margin-bottom:6px">
+    <input type="checkbox" value="${extra}" checked>
+    ${extra}
+  </label>
+`).join("")}
       </div>
 
       <button class="variant-btn" id="confirmExtras">إضافة للسلة</button>
