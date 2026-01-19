@@ -262,19 +262,18 @@ window.selectVariant = function (productId, name, variantId, label, price) {
    السلة
 ================================ */
 function addToCart(item) {
-  const extrasKey = item.extras_removed
-    ? item.extras_removed.join("|")
-    : "";
+  cart.push({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    qty: 1,
+    variant_id: item.variant_id || null,
+    extras_removed: item.extras_removed || [],
+    key: crypto.randomUUID() // 🔑 مفتاح فريد لكل صف
+  });
 
-  const key = item.variant_id
-    ? `${item.id}-${item.variant_id}-${extrasKey}`
-    : `${item.id}-${extrasKey}`;
-
-  const found = cart.find(i => i.key === key);
-
-  if (found) {
-    found.qty++;
-  } else {
+  renderCart();
+}
 cart.push({
   ...item,
   variant_id: item.variant_id || null,
