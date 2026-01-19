@@ -274,17 +274,7 @@ function addToCart(item) {
 
   renderCart();
 }
-cart.push({
-  ...item,
-  variant_id: item.variant_id || null,
-  extras_removed: item.extras_removed || [],
-  key,
-  qty: 1
-});
-  }
 
-  renderCart();
-}
 
 /* ===============================
    استخراج الإضافات من الاسم
