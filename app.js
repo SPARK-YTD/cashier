@@ -354,20 +354,29 @@ window.completeOrder = async function () {
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-  if (editingOrderId) {
-    await supabase.from("orders").update({ total }).eq("id", editingOrderId);
-    await supabase.from("order_items").delete().eq("order_id", editingOrderId);
-    await supabase.from("order_items").insert(
-  cart.map(i => ({
-    order_id: editingOrderId, // ✅ الصحيح في حالة التعديل
-    product_id: i.id,
-    variant_id: i.variant_id || null,
-    item_name: i.name,
-    qty: i.qty,
-    price: i.price
-  }))
-);
-    editingOrderId = null;
+if (editingOrderId) {
+  await supabase.from("orders")
+    .update({ total })
+    .eq("id", editingOrderId);
+
+  await supabase.from("order_items")
+    .delete()
+    .eq("order_id", editingOrderId);
+
+  await supabase.from("order_items").insert(
+    cart.map(i => ({
+      order_id: editingOrderId, // ✅ هنا
+      product_id: i.id,
+      variant_id: i.variant_id || null,
+      item_name: i.name,
+      qty: i.qty,
+      price: i.price,
+      extras_removed: i.extras_removed || []
+    }))
+  );
+
+  editingOrderId = null;
+}
   } else {
     const { data: order } = await supabase
   .from("orders")
@@ -382,12 +391,13 @@ window.completeOrder = async function () {
 
 await supabase.from("order_items").insert(
   cart.map(i => ({
-    order_id: order.id,        // ✅ هذا هو الصح
+    order_id: editingOrderId, // ✅ الصحيح
     product_id: i.id,
     variant_id: i.variant_id || null,
     item_name: i.name,
     qty: i.qty,
-    price: i.price
+    price: i.price,
+    extras_removed: i.extras_removed || []
   }))
 );
 
@@ -490,7 +500,7 @@ window.editOrder = async function (orderId) {
 
   const { data } = await supabase
   .from("order_items")
-  .select("qty, price, item_name, product_id, variant_id")
+.select("qty, price, item_name, product_id, variant_id, extras_removed")
   .eq("order_id", orderId);
 
 if (!data || data.length === 0) {
@@ -498,7 +508,7 @@ if (!data || data.length === 0) {
   return;
 }
   cart = data.map(i => {
-    const extras = extractExtras(i.item_name);
+const extras = i.extras_removed || [];
     const extrasKey = extras.join("|");
 
     const key = i.variant_id
