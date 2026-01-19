@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.js";
 import { applyLang, setLang } from "./i18n.js";
-import { saveOfflineOrder } from "./offline.js";
+import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 window.setLang = setLang;
 
 /*********************************
@@ -74,7 +74,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
-
+window.addEventListener("online", async () => {
+  await syncOfflineOrders(currentBusinessDay?.id);
+  loadActiveOrders();
+});
 /* ===============================
    الأصناف
 ================================ */
