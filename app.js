@@ -598,9 +598,9 @@ window.goToSettings = () => location.href = "settings.html";
 };
 window.viewOrder = async function (orderId) {
   const { data: items } = await supabase
-    .from("order_items")
-.select("qty, price, item_name")
-    .eq("order_id", orderId);
+  .from("order_items")
+  .select("qty, price, item_name, extras_removed")
+  .eq("order_id", orderId);
 
   if (!items || items.length === 0) {
     alert("لا توجد بيانات للفاتورة");
