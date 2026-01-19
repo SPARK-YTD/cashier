@@ -568,41 +568,15 @@ window.deleteOrder = async id => {
   await supabase.from("orders").delete().eq("id", id);
   loadActiveOrders();
 };
-
 /* ===============================
-   NAV
+   👁 عرض الفاتورة + طباعة
 ================================ */
-window.closeDay = () => location.href = "report.html";
-window.goToReports = () => location.href = "reports.html";
-window.goToSettings = () => location.href = "settings.html";
 
-
-
-/* ===== طباعة الفاتورة ===== */
-
-
-  window.printReceipt = function () {
-  if (!cart.length) {
-    alert("الفاتورة فارغة");
-    return;
-  }
-
-  const receiptData = {
-    items: cart,
-    total: document.getElementById("total").textContent,
-    paid: document.getElementById("paid").value || "—",
-    change: document.getElementById("change").textContent,
-    date: new Date().toLocaleString("ar-BH")
-  };
-
-  localStorage.setItem("receipt", JSON.stringify(receiptData));
-  window.open("receipt.html", "_blank");
-};
 window.viewOrder = async function (orderId) {
   const { data: items } = await supabase
-  .from("order_items")
-  .select("qty, price, item_name, extras_removed")
-  .eq("order_id", orderId);
+    .from("order_items")
+    .select("qty, price, item_name, extras_removed")
+    .eq("order_id", orderId);
 
   if (!items || items.length === 0) {
     alert("لا توجد بيانات للفاتورة");
@@ -613,37 +587,80 @@ window.viewOrder = async function (orderId) {
   overlay.className = "variant-overlay";
 
   overlay.innerHTML = `
-    <div class="variant-box" style="max-width:500px">
+    <div class="variant-box" id="invoiceContent" style="max-width:500px">
       <h3>🧾 تفاصيل الفاتورة</h3>
 
       <div style="text-align:right;max-height:300px;overflow:auto">
         ${items.map(i => `
           <div style="border-bottom:1px dashed #ddd;padding:8px 0">
-<strong>${i.item_name}</strong>
-${
-  i.extras_removed && i.extras_removed.length
-    ? `<div style="font-size:13px;color:#555">
-         بدون: ${i.extras_removed.join("، ")}
-       </div>`
-    : ""
-}
+            <strong>${i.item_name}</strong>
+            ${
+              i.extras_removed?.length
+                ? `<div style="font-size:13px;color:#555">
+                     بدون: ${i.extras_removed.join("، ")}
+                   </div>`
+                : ""
+            }
             الكمية: ${i.qty}<br>
             السعر: ${(i.price * i.qty).toFixed(3)} د.ب
           </div>
         `).join("")}
       </div>
 
-      <button class="variant-cancel" style="margin-top:10px">
-        إغلاق
-      </button>
+      <button class="variant-btn" onclick="printInvoice()">🖨 طباعة</button>
+      <button class="variant-cancel" style="margin-top:10px">إغلاق</button>
     </div>
   `;
 
   document.body.appendChild(overlay);
 
-  // إغلاق
   overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
   overlay.onclick = e => {
     if (e.target === overlay) overlay.remove();
   };
 };
+
+window.printInvoice = function () {
+  const content = document.getElementById("invoiceContent").innerHTML;
+
+  const win = window.open("", "", "width=400,height=600");
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>فاتورة</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            padding: 10px;
+          }
+          h3 {
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          button {
+            display: none;
+          }
+        </style>
+      </head>
+      <body>
+        ${content}
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+  win.focus();
+  win.print();
+  win.close();
+};
+/* ===============================
+   NAV
+================================ */
+window.closeDay = () => location.href = "report.html";
+window.goToReports = () => location.href = "reports.html";
+window.goToSettings = () => location.href = "settings.html";
+
+
