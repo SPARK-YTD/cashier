@@ -354,61 +354,69 @@ window.completeOrder = async function () {
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
-if (editingOrderId) {
-  await supabase.from("orders")
-    .update({ total })
-    .eq("id", editingOrderId);
+  // ✏️ إذا كنا نعدّل طلب
+  if (editingOrderId) {
 
-  await supabase.from("order_items")
-    .delete()
-    .eq("order_id", editingOrderId);
+    await supabase
+      .from("orders")
+      .update({ total })
+      .eq("id", editingOrderId);
 
-  await supabase.from("order_items").insert(
-    cart.map(i => ({
-      order_id: editingOrderId, // ✅ هنا
-      product_id: i.id,
-      variant_id: i.variant_id || null,
-      item_name: i.name,
-      qty: i.qty,
-      price: i.price,
-      extras_removed: i.extras_removed || []
-    }))
-  );
+    await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", editingOrderId);
 
-  editingOrderId = null;
-}
-  } else {
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: editingOrderId,   // ✅ هنا
+        product_id: i.id,
+        variant_id: i.variant_id || null,
+        item_name: i.name,
+        qty: i.qty,
+        price: i.price,
+        extras_removed: i.extras_removed || []
+      }))
+    );
+
+    editingOrderId = null;
+
+  } 
+  // 🆕 طلب جديد
+  else {
+
     const { data: order } = await supabase
-  .from("orders")
-  .insert({
-    total,
-    status: "active",
-    business_day_id: currentBusinessDay.id,
-    timer_started_at: new Date().toISOString()
-  })
-  .select("id")
-  .single();
+      .from("orders")
+      .insert({
+        total,
+        status: "active",
+        business_day_id: currentBusinessDay.id,
+        timer_started_at: new Date().toISOString()
+      })
+      .select("id")
+      .single();
 
-await supabase.from("order_items").insert(
-  cart.map(i => ({
-    order_id: editingOrderId, // ✅ الصحيح
-    product_id: i.id,
-    variant_id: i.variant_id || null,
-    item_name: i.name,
-    qty: i.qty,
-    price: i.price,
-    extras_removed: i.extras_removed || []
-  }))
-);
-
+    await supabase.from("order_items").insert(
+      cart.map(i => ({
+        order_id: order.id,        // ✅ هنا
+        product_id: i.id,
+        variant_id: i.variant_id || null,
+        item_name: i.name,
+        qty: i.qty,
+        price: i.price,
+        extras_removed: i.extras_removed || []
+      }))
+    );
   }
 
+  // 🧹 تنظيف بعد الحفظ
   cart = [];
   renderCart();
   loadActiveOrders();
+
   const paidInput = document.getElementById("paid");
-if (paidInput) paidInput.value = "";
-document.getElementById("change").textContent = "—";
+  if (paidInput) paidInput.value = "";
+  document.getElementById("change").textContent = "—";
 };
 
 /* ===============================
