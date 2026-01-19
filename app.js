@@ -349,8 +349,12 @@ function calculateChange() {
 /* ===============================
    إتمام الطلب (جديد / تعديل)
 ================================ */
+
 window.completeOrder = async function () {
-  if (!cart.length) return alert("الفاتورة فارغة");
+if (!cart.length) {
+  editingOrderId = null;
+  return alert("الفاتورة فارغة");
+}
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
