@@ -618,6 +618,13 @@ window.viewOrder = async function (orderId) {
         ${items.map(i => `
           <div style="border-bottom:1px dashed #ddd;padding:8px 0">
 <strong>${i.item_name}</strong>
+${
+  i.extras_removed && i.extras_removed.length
+    ? `<div style="font-size:13px;color:#555">
+         بدون: ${i.extras_removed.join("، ")}
+       </div>`
+    : ""
+}
             الكمية: ${i.qty}<br>
             السعر: ${(i.price * i.qty).toFixed(3)} د.ب
           </div>
