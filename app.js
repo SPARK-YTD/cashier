@@ -263,13 +263,13 @@ window.selectVariant = function (productId, name, variantId, label, price) {
 ================================ */
 function addToCart(item) {
   cart.push({
+    row_id: crypto.randomUUID(), // 🔑 معرف فريد للواجهة فقط
     id: item.id,
     name: item.name,
     price: item.price,
     qty: 1,
     variant_id: item.variant_id || null,
-    extras_removed: item.extras_removed || [],
-    key: crypto.randomUUID() // 🔑 مفتاح فريد لكل صف
+    extras_removed: item.extras_removed || []
   });
 
   renderCart();
@@ -279,11 +279,7 @@ function addToCart(item) {
 /* ===============================
    استخراج الإضافات من الاسم
 ================================ */
-function extractExtras(name) {
-  const match = name.match(/\(بدون:\s*(.*?)\)/);
-  if (!match) return [];
-  return match[1].split("،").map(e => e.trim());
-}
+
 
 function renderCart() {
   const tbody = document.getElementById("cart");
@@ -533,13 +529,15 @@ if (!data || data.length === 0) {
   alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
   return;
 }
-  cart = data.map(i => {
-const extras = i.extras_removed || [];
-    const extrasKey = extras.join("|");
-
-    const key = i.variant_id
-      ? `${i.product_id}-${i.variant_id}-${extrasKey}`
-      : `${i.product_id}-${extrasKey}`;
+  cart = data.map(i => ({
+  row_id: crypto.randomUUID(), // 🔑 جديد لكل سطر
+  id: i.product_id,
+  name: i.item_name,
+  price: i.price,
+  qty: i.qty,
+  variant_id: i.variant_id || null,
+  extras_removed: i.extras_removed || []
+}));
 
     return {
       id: i.product_id,
