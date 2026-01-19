@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.js";
 import { applyLang, setLang } from "./i18n.js";
-
+import { saveOfflineOrder } from "./offline.js";
 window.setLang = setLang;
 
 /*********************************
@@ -342,7 +342,45 @@ window.completeOrder = async function () {
   // 🛑 منع الضغط المتكرر
   if (isSavingOrder) return;
   isSavingOrder = true;
+  // 📴 إذا ما فيه إنترنت → حفظ محلي
+  if (!navigator.onLine) {
+    const offlineOrder = {
+      offline_id: crypto.randomUUID(),
+      cart: cart.map(i => ({
+        product_id: i.id,
+        variant_id: i.variant_id,
+        item_name: i.name,
+        qty: i.qty,
+        price: i.price,
+        extras_removed: i.extras_removed || []
+      })),
+      total: cart.reduce((s, i) => s + i.qty * i.price, 0),
+      business_day_id: currentBusinessDay.id,
+      created_at: new Date().toISOString(),
+      is_paid: false
+    };
 
+    try {
+      await saveOfflineOrder(offlineOrder);
+
+      // تنظيف الواجهة
+      cart = [];
+      renderCart();
+      loadActiveOrders();
+
+      const paidInput = document.getElementById("paid");
+      if (paidInput) paidInput.value = "";
+      document.getElementById("change").textContent = "—";
+
+      alert("📦 تم حفظ الطلب محليًا (بدون إنترنت)");
+    } catch (e) {
+      alert("❌ فشل حفظ الطلب محليًا");
+      console.error(e);
+    }
+
+    isSavingOrder = false;
+    return;
+  }
   // 🧺 الفاتورة فاضية
   if (!cart.length) {
     editingOrderId = null;
