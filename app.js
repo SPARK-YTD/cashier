@@ -521,34 +521,24 @@ window.editOrder = async function (orderId) {
   cart = [];
 
   const { data } = await supabase
-  .from("order_items")
-.select("qty, price, item_name, product_id, variant_id, extras_removed")
-  .eq("order_id", orderId);
+    .from("order_items")
+    .select("qty, price, item_name, product_id, variant_id, extras_removed")
+    .eq("order_id", orderId);
 
-if (!data || data.length === 0) {
-  alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
-  return;
-}
+  if (!data || data.length === 0) {
+    alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
+    return;
+  }
+
   cart = data.map(i => ({
-  row_id: crypto.randomUUID(), // 🔑 جديد لكل سطر
-  id: i.product_id,
-  name: i.item_name,
-  price: i.price,
-  qty: i.qty,
-  variant_id: i.variant_id || null,
-  extras_removed: i.extras_removed || []
-}));
-
-    return {
-      id: i.product_id,
-      name: i.item_name,
-      price: i.price,
-      qty: i.qty,
-      variant_id: i.variant_id || null,
-      extras_removed: extras,
-      key
-    };
-  });
+    row_id: crypto.randomUUID(), // 🔑 فريد لكل سطر
+    id: i.product_id,
+    name: i.item_name,
+    price: i.price,
+    qty: i.qty,
+    variant_id: i.variant_id || null,
+    extras_removed: i.extras_removed || []
+  }));
 
   renderCart();
 };
