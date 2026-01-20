@@ -511,3 +511,68 @@ html, body {
   font-size: 16px;
   border-radius: 10px;
 }
+/* ===============================
+   PRINT RECEIPT STYLE
+================================ */
+@media print {
+
+  /* إخفاء كل شي */
+  body * {
+    visibility: hidden;
+  }
+
+  /* إظهار منطقة الطباعة فقط */
+  #printArea,
+  #printArea * {
+    visibility: visible;
+  }
+
+  /* تمركز الفاتورة */
+  #printArea {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    padding: 12px;
+    font-family: "Arial", sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* عنوان المتجر */
+  #printArea strong {
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  /* رقم الفاتورة */
+  #printArea span {
+    font-size: 13px;
+  }
+
+  /* خطوط */
+  #printArea hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+  }
+
+  /* عناصر الفاتورة */
+  #printItems div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  /* الإجمالي */
+  #printTotal {
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  /* منع رقم الصفحة واسم المتصفح */
+  @page {
+    margin: 0;
+  }
+}
