@@ -68,17 +68,17 @@
       <div id="variantsBox" style="display:none;margin-top:10px">
 
         <div class="variant-row">
-  <span>Small</span>
+<span class="variant-label">Small</span>
   <input id="priceSmall" type="number" step="0.001" placeholder="السعر">
 </div>
 
 <div class="variant-row">
-  <span>Medium</span>
+<span class="variant-label">Medium</span>
   <input id="priceMedium" type="number" step="0.001" placeholder="السعر">
 </div>
 
 <div class="variant-row">
-  <span>Large</span>
+<span class="variant-label">Large</span>
   <input id="priceLarge" type="number" step="0.001" placeholder="السعر">
 </div>
       </div>
@@ -125,12 +125,22 @@
 
 
 <script>
-  const hasVariants = document.getElementById("hasVariants");
-  const variantsBox = document.getElementById("variantsBox");
+const hasVariants = document.getElementById("hasVariants");
+const variantsBox = document.getElementById("variantsBox");
+const itemPrice = document.getElementById("itemPrice");
 
-  hasVariants.addEventListener("change", () => {
-    variantsBox.style.display = hasVariants.checked ? "block" : "none";
-  });
+function toggleVariantsUI() {
+  if (hasVariants.checked) {
+    variantsBox.style.display = "block";
+    itemPrice.style.display = "none";
+  } else {
+    variantsBox.style.display = "none";
+    itemPrice.style.display = "block";
+  }
+}
+
+hasVariants.addEventListener("change", toggleVariantsUI);
+toggleVariantsUI();
 </script>
 
 <!-- ⬇️ الصق السكربت هنا بالضبط -->
@@ -144,12 +154,12 @@
       labels[0].textContent = "عادي";
       labels[1].textContent = "وجبة";
       variantRows[2].style.display = "none";
-    } else {
-      labels[0].textContent = "0.500";
-      labels[1].textContent = "1.000";
-      labels[2].textContent = "1.500";
-      variantRows[2].style.display = "flex";
-    }
+   } else {
+  labels[0].textContent = "Small";
+  labels[1].textContent = "Medium";
+  labels[2].textContent = "Large";
+  variantRows[2].style.display = "flex";
+}
   }
 
   typeRadios.forEach(radio => {
