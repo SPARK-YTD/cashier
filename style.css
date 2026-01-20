@@ -570,3 +570,9 @@ hr {
   border-top: 1px dashed #000;
   margin: 8px 0;
 }
+.receipt-no {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
