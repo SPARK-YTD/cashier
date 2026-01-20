@@ -160,45 +160,68 @@ ${item.image_url ? `<img src="${cleanImageUrl(item.image_url)}" class="cashier-i
 ================================ */
 async function handleItemClick(item) {
 
-  // 🚫 إذا فيه نافذة مفتوحة لا تفتح وحدة ثانية
   if (document.querySelector(".variant-overlay")) return;
 
- // 🟢 إذا عنده إضافات داخلية
-if (Array.isArray(item.extras) && item.extras.length > 0) {
-  showExtrasPopup(item);
-  return;
-}
+  if (item.has_variants) {
+    const { data: variants, error } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", item.id)
+      .eq("active", true);
 
-  // 🟡 إذا ما عنده أحجام
-  if (!item.has_variants) {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      price: item.price
-    });
+    if (error || !variants || variants.length === 0) {
+      alert("لا توجد أحجام");
+      return;
+    }
+
+    showVariantsPopup(item, variants);
     return;
   }
 
-  // 🟠 إذا عنده أحجام
-  const { data: variants, error } = await supabase
-  .from("product_variants")
-  .select("*")
-  .eq("product_id", item.id)
-  .eq("active", true);
+  if (Array.isArray(item.extras) && item.extras.length > 0) {
+    showExtrasPopup(item);
+    return;
+  }
 
-if (error) {
-  console.error(error);
-  alert("حصل خطأ أثناء تحميل الأحجام");
-  return;
+  addToCart({
+    id: item.id,
+    name: item.name,
+    price: item.price
+  });
+}
+function showVariantsPopup(item, variants) {
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>${item.name}</h3>
+
+      ${variants.map(v => `
+        <button class="variant-btn"
+          onclick="selectVariant(
+            '${item.id}',
+            '${item.name}',
+            '${v.id}',
+            '${v.label}',
+            ${v.price}
+          )">
+          ${v.label} — ${v.price.toFixed(3)} د.ب
+        </button>
+      `).join("")}
+
+      <button class="variant-cancel">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+  overlay.onclick = e => {
+    if (e.target === overlay) overlay.remove();
+  };
 }
 
-if (!variants || variants.length === 0) {
-  alert("لا توجد أحجام");
-  return;
-}
-
-  showVariantsPopup(item, variants);
-}
 function showExtrasPopup(item) {
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
@@ -243,42 +266,36 @@ ${(Array.isArray(item.extras) ? item.extras : []).map(extra => `
     }
 
     addToCart({
-      id: item.id,
-      name: nameWithExtras,
-      price: item.price,
-      extras_removed: unchecked
-    });
+  id: item.id,
+  name: nameWithExtras,
+  price: item.price,
+  variant_id: item.variant_id || null,
+  extras_removed: unchecked
+});
 
     overlay.remove();
   };
 }
-function showVariantsPopup(item, variants) {
-  const overlay = document.createElement("div");
-  overlay.className = "variant-overlay";
 
-  overlay.innerHTML = `
-    <div class="variant-box">
-      <h3>${item.name}</h3>
-      ${variants.map(v => `
-        <button class="variant-btn"
-          onclick="selectVariant('${item.id}','${item.name}','${v.id}','${v.label}',${v.price})">
-          ${v.label} — ${v.price.toFixed(3)} د.ب
-        </button>
-      `).join("")}
-      <button class="variant-cancel" onclick="this.closest('.variant-overlay').remove()">إلغاء</button>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-}
 
 window.selectVariant = function (productId, name, variantId, label, price) {
+  const baseItem = items.find(i => i.id === productId);
+
+if (baseItem?.extras?.length) {
+  showExtrasPopup({
+    ...baseItem,
+    name: `${name} (${label})`,
+    price,
+    variant_id: variantId
+  });
+} else {
   addToCart({
     id: productId,
     name: `${name} (${label})`,
     price,
     variant_id: variantId
   });
+}
   document.querySelector(".variant-overlay")?.remove();
 };
 
@@ -745,28 +762,91 @@ window.logout = async function () {
 // طباعة الفاتورة
 // ===============================
 window.printReceipt = function () {
+
   if (!cart.length) {
     alert("الفاتورة فارغة");
     return;
   }
 
-  const printItems = document.getElementById("printItems");
-  const printTotal = document.getElementById("printTotal");
-  const printReceiptNo = document.getElementById("printReceiptNo");
+  const invoiceNo = Date.now().toString().slice(-6);
 
-  printItems.innerHTML = "";
+  const itemsHTML = cart.map(item => {
+    return `
+      <div class="item">
+        <div class="name">${item.name}</div>
+        <div class="qty">× ${item.qty}</div>
+        ${
+          item.extras_removed?.length
+            ? `<div class="extras">بدون: ${item.extras_removed.join("، ")}</div>`
+            : ""
+        }
+      </div>
+    `;
+  }).join("");
 
-  cart.forEach(item => {
-    const line = document.createElement("div");
-    line.className = "receipt-line";
-    line.textContent = `${item.name} × ${item.qty}`;
-    printItems.appendChild(line);
-  });
+  const win = window.open("", "", "width=300,height=600");
 
-  const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
-  printTotal.textContent = total.toFixed(3) + " د.ب";
+  win.document.write(`
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>فاتورة</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    direction: rtl;
+    text-align: center;
+    padding: 10px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 5px 0;
+  }
+  .invoice-no {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 10px 0;
+  }
+  .item {
+    margin-bottom: 12px;
+  }
+  .name {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  .qty {
+    font-size: 16px;
+  }
+  .extras {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
 
-  printReceiptNo.textContent = Date.now().toString().slice(-6);
+<h1>عربة خذ لك بريك</h1>
+<div class="invoice-no">فاتورة رقم: ${invoiceNo}</div>
 
-  window.print();
+<hr>
+
+${itemsHTML}
+
+</body>
+</html>
+  `);
+
+  win.document.close();
+  win.focus();
+
+  // ⏱️ تأخير بسيط عشان iOS
+  setTimeout(() => {
+    win.print();
+    win.close();
+  }, 500);
 };
