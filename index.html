@@ -98,29 +98,18 @@
 </script>
 
 
-
-<!-- ===== RECEIPT PRINT AREA (HIDDEN) ===== -->
 <!-- ===== RECEIPT PRINT AREA (HIDDEN) ===== -->
 <div id="printArea" style="display:none">
+  <div class="receipt">
+    <div class="receipt-header">
+      خذ لك بريك
+    </div>
 
-  <div style="text-align:center;margin-bottom:10px">
-    <strong style="font-size:18px">عربة خذ لك بريك</strong><br>
-    <span style="font-size:12px">
-      فاتورة رقم: <span id="receiptNumber">—</span>
-    </span>
+    <div id="printItems" class="receipt-items"></div>
+
+    <div class="receipt-total">
+      الإجمالي<br>
+      <span id="printTotal"></span>
+    </div>
   </div>
-
-  <hr>
-
-  <div id="printItems" style="font-size:13px"></div>
-
-  <hr>
-
-  <div style="font-size:14px;font-weight:bold">
-    الإجمالي: <span id="printTotal">0.000 د.ب</span>
-  </div>
-
 </div>
-
-</body>
-</html>
