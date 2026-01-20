@@ -286,19 +286,29 @@ window.selectVariant = function (productId, name, variantId, label, price) {
    السلة
 ================================ */
 function addToCart(item) {
-  cart.push({
-    row_id: crypto.randomUUID(), // 🔑 معرف فريد للواجهة فقط
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    qty: 1,
-    variant_id: item.variant_id || null,
-    extras_removed: item.extras_removed || []
-  });
+
+  const existing = cart.find(i =>
+    i.id === item.id &&
+    i.variant_id === (item.variant_id || null) &&
+    JSON.stringify(i.extras_removed || []) === JSON.stringify(item.extras_removed || [])
+  );
+
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({
+      row_id: crypto.randomUUID(),
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      qty: 1,
+      variant_id: item.variant_id || null,
+      extras_removed: item.extras_removed || []
+    });
+  }
 
   renderCart();
 }
-
 
 /* ===============================
    استخراج الإضافات من الاسم
