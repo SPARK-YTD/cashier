@@ -1,4 +1,13 @@
 import { supabase } from "./supabase.js";
+
+(async () => {
+  const { data } = await supabase.auth.getSession();
+
+  if (!data.session) {
+    location.href = "login.html";
+  }
+})();
+import { supabase } from "./supabase.js";
 import { applyLang, setLang } from "./i18n.js";
 import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 window.setLang = setLang;
