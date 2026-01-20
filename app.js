@@ -1,12 +1,4 @@
-import { supabase } from "./supabase.js";
 
-(async () => {
-  const { data } = await supabase.auth.getSession();
-
-  if (!data.session) {
-    location.href = "login.html";
-  }
-})();
 import { supabase } from "./supabase.js";
 import { applyLang, setLang } from "./i18n.js";
 import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
@@ -67,6 +59,14 @@ async function loadCurrentDay() {
    INIT
 ================================ */
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // 🔐 حماية الصفحة (حتى مع Refresh / إغلاق)
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) {
+    location.href = "login.html";
+    return;
+  }
+
   applyLang();
   await loadCurrentDay();
 
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadActiveOrders();
   renderCart();
 
-  setInterval(loadActiveOrders, 60000); // 🔁 تحديث تلقائي كل دقيقة
+  setInterval(loadActiveOrders, 60000);
 
   document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
