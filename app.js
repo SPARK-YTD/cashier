@@ -708,38 +708,28 @@ window.goToSettings = () => location.href = "settings.html";
 // طباعة الفاتورة
 // ===============================
 window.printReceipt = function () {
-  const printArea = document.getElementById("printArea");
-  const printItems = document.getElementById("printItems");
-  const printTotal = document.getElementById("printTotal");
-  const receiptNumberEl = document.getElementById("receiptNumber");
-
   if (!cart.length) {
     alert("الفاتورة فارغة");
     return;
   }
 
-  // 🔢 توليد رقم فاتورة بسيط وواضح
-  const receiptNumber = Date.now().toString().slice(-6);
-  receiptNumberEl.textContent = receiptNumber;
+  const printItems = document.getElementById("printItems");
+  const printTotal = document.getElementById("printTotal");
+  const printReceiptNo = document.getElementById("printReceiptNo");
 
-  // تفريغ الأصناف
   printItems.innerHTML = "";
 
   cart.forEach(item => {
     const line = document.createElement("div");
     line.className = "receipt-line";
-    line.innerHTML = `
-      ${item.name} × ${item.qty}
-    `;
+    line.textContent = `${item.name} × ${item.qty}`;
     printItems.appendChild(line);
   });
 
-  // الإجمالي
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
   printTotal.textContent = total.toFixed(3) + " د.ب";
 
-  // طباعة
-  printArea.style.display = "block";
+  printReceiptNo.textContent = Date.now().toString().slice(-6);
+
   window.print();
-  printArea.style.display = "none";
 };
