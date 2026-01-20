@@ -569,3 +569,19 @@ html, body {
     font-weight: 900;
   }
 }
+@media print {
+  body * {
+    display: none !important;
+  }
+
+  #printArea,
+  #printArea * {
+    display: block !important;
+  }
+
+  #printArea {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+}
