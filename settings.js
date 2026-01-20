@@ -59,7 +59,7 @@ async function uploadImage(file) {
    إضافة صنف (نهائي + مضمون)
 ================================ */
 window.addItem = async function () {
-  try {
+  try {const itemType = document.querySelector('input[name="itemType"]:checked')?.value;
     const name = document.getElementById("itemName").value.trim();
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
@@ -114,26 +114,36 @@ const { data: product, error } = await supabase
     if (error) throw error;
 
     /* === إدخال الأحجام === */
-    if (hasVariants) {
-      const variants = [];
+/* === إدخال الأحجام === */
+if (hasVariants) {
+  const variants = [];
 
-      if (!isNaN(priceSmall))
-        variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
+  if (itemType === "burger") {
+    if (!isNaN(priceSmall))
+      variants.push({ product_id: product.id, label: "عادي", price: priceSmall, active: true });
 
-      if (!isNaN(priceMedium))
-        variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
+    if (!isNaN(priceMedium))
+      variants.push({ product_id: product.id, label: "وجبة", price: priceMedium, active: true });
+  } 
+  else {
+    if (!isNaN(priceSmall))
+      variants.push({ product_id: product.id, label: "0.500", price: priceSmall, active: true });
 
-      if (!isNaN(priceLarge))
-        variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
+    if (!isNaN(priceMedium))
+      variants.push({ product_id: product.id, label: "1.000", price: priceMedium, active: true });
 
-      if (variants.length > 0) {
-        const { error: vErr } = await supabase
-          .from("product_variants")
-          .insert(variants);
+    if (!isNaN(priceLarge))
+      variants.push({ product_id: product.id, label: "1.500", price: priceLarge, active: true });
+  }
 
-        if (vErr) throw vErr;
-      }
-    }
+  if (variants.length > 0) {
+    const { error: vErr } = await supabase
+      .from("product_variants")
+      .insert(variants);
+
+    if (vErr) throw vErr;
+  }
+}
 
     clearForm();
     await loadItems();
