@@ -561,3 +561,7 @@ hr {
   border-top: 2px dashed #000;
   margin: 10px 0;
 }
+/* إخفاء الفاتورة في الوضع العادي */
+#printArea {
+  display: none;
+}
