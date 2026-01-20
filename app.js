@@ -58,16 +58,26 @@ async function loadCurrentDay() {
 /* ===============================
    INIT
 ================================ */
+/* ===============================
+   INIT (OPTIMIZED)
+================================ */
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // 🔐 حماية الصفحة (حتى مع Refresh / إغلاق)
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
+  // 🔐 تحقق سريع من الجلسة (أسرع من getSession)
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
+  if (!session) {
     location.href = "login.html";
     return;
   }
 
+  // 🚀 واجهة فورية
   applyLang();
+  renderCart();
+
+  // 📦 تحميل البيانات بعد التأكد من الدخول
   await loadCurrentDay();
 
   if (!currentBusinessDay) {
@@ -75,13 +85,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  await loadItems("food");
-  await loadActiveOrders();
-  renderCart();
+  loadItems("food");        // بدون await (غير حاجز)
+  loadActiveOrders();       // بدون await
 
+  document
+    .getElementById("paid")
+    ?.addEventListener("input", calculateChange);
+
+  // تحديث الطلبات كل دقيقة
   setInterval(loadActiveOrders, 60000);
-
-  document.getElementById("paid")?.addEventListener("input", calculateChange);
 });
 window.addEventListener("online", async () => {
   await syncOfflineOrders(currentBusinessDay?.id);
