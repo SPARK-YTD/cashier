@@ -163,7 +163,10 @@ if (hasVariants) {
 await loadItems();
 editingItemId = null;
 alert("✅ تم إضافة الصنف بنجاح");
-
+setTimeout(() => {
+  document.getElementById("itemsList")
+    ?.scrollIntoView({ behavior: "smooth" });
+}, 300);
   } catch (err) {
     console.error("ADD ITEM ERROR:", err);
     alert("❌ فشل إضافة الصنف (تحقق من الصلاحيات)");
