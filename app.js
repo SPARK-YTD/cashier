@@ -708,92 +708,38 @@ window.goToSettings = () => location.href = "settings.html";
 // طباعة الفاتورة
 // ===============================
 window.printReceipt = function () {
+  const printArea = document.getElementById("printArea");
+  const printItems = document.getElementById("printItems");
+  const printTotal = document.getElementById("printTotal");
+  const receiptNumberEl = document.getElementById("receiptNumber");
+
   if (!cart.length) {
     alert("الفاتورة فارغة");
     return;
   }
 
-  let itemsHtml = "";
-  let total = 0;
+  // 🔢 توليد رقم فاتورة بسيط وواضح
+  const receiptNumber = Date.now().toString().slice(-6);
+  receiptNumberEl.textContent = receiptNumber;
+
+  // تفريغ الأصناف
+  printItems.innerHTML = "";
 
   cart.forEach(item => {
-    const lineTotal = item.price * item.qty;
-    total += lineTotal;
-
-    itemsHtml += `
-      <div style="display:flex;justify-content:space-between;
-                  font-size:18px;font-weight:700;margin-bottom:6px">
-        <span>${item.name} × ${item.qty}</span>
-        <span>${lineTotal.toFixed(3)}</span>
-      </div>
+    const line = document.createElement("div");
+    line.className = "receipt-line";
+    line.innerHTML = `
+      ${item.name} × ${item.qty}
     `;
+    printItems.appendChild(line);
   });
 
-  const html = `
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            direction: rtl;
-          }
-          .receipt {
-            width: 100%;
-            padding: 10px;
-          }
-          .title {
-            text-align: center;
-            font-size: 22px;
-            font-weight: 900;
-            margin-bottom: 10px;
-          }
-          .total {
-            margin-top: 10px;
-            font-size: 20px;
-            font-weight: 900;
-            text-align: right;
-          }
-          hr {
-            border: none;
-            border-top: 1px dashed #000;
-            margin: 8px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="title">عربة خذ لك بريك</div>
-          <hr>
-          ${itemsHtml}
-          <hr>
-          <div class="total">الإجمالي: ${total.toFixed(3)} د.ب</div>
-        </div>
-      </body>
-    </html>
-  `;
+  // الإجمالي
+  const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  printTotal.textContent = total.toFixed(3) + " د.ب";
 
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  // طباعة
+  printArea.style.display = "block";
+  window.print();
+  printArea.style.display = "none";
 };
