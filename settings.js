@@ -124,7 +124,6 @@ const query = editingItemId
 const { data: product, error } = await query.select().single();
     if (error) throw error;
 
-    /* === إدخال الأحجام === */
 /* === إدخال الأحجام === */
 if (hasVariants) {
 
@@ -137,23 +136,57 @@ if (hasVariants) {
 
   const variants = [];
 
-
+  // 🍔 برقر
   if (itemType === "burger") {
-    if (!isNaN(priceSmall))
-      variants.push({ product_id: product.id, label: "عادي", price: priceSmall, active: true });
 
-    if (!isNaN(priceMedium))
-      variants.push({ product_id: product.id, label: "وجبة", price: priceMedium, active: true });
+    if (!isNaN(priceSmall)) {
+      variants.push({
+        product_id: product.id,
+        label: "عادي",
+        price: priceSmall,
+        active: true
+      });
+    }
+
+    if (!isNaN(priceMedium)) {
+      variants.push({
+        product_id: product.id,
+        label: "وجبة",
+        price: priceMedium,
+        active: true
+      });
+    }
+
   } 
+  // 🍝 باقي الأصناف
   else {
-    if (!isNaN(priceSmall))
-      variants.push({ product_id: product.id, label: "0.500", price: priceSmall, active: true });
 
-    if (!isNaN(priceMedium))
-      variants.push({ product_id: product.id, label: "1.000", price: priceMedium, active: true });
+    if (!isNaN(priceSmall)) {
+      variants.push({
+        product_id: product.id,
+        label: "Small",
+        price: priceSmall,
+        active: true
+      });
+    }
 
-    if (!isNaN(priceLarge))
-      variants.push({ product_id: product.id, label: "1.500", price: priceLarge, active: true });
+    if (!isNaN(priceMedium)) {
+      variants.push({
+        product_id: product.id,
+        label: "Medium",
+        price: priceMedium,
+        active: true
+      });
+    }
+
+    if (!isNaN(priceLarge)) {
+      variants.push({
+        product_id: product.id,
+        label: "Large",
+        price: priceLarge,
+        active: true
+      });
+    }
   }
 
   if (variants.length > 0) {
@@ -164,19 +197,18 @@ if (hasVariants) {
     if (vErr) throw vErr;
   }
 }
-    clearForm();
+
+/* ✅ هذا كله داخل addItem */
+clearForm();
 await loadItems();
 editingItemId = null;
 alert("✅ تم إضافة الصنف بنجاح");
-setTimeout(() => {
-  document.getElementById("itemsList")
-    ?.scrollIntoView({ behavior: "smooth" });
-}, 300);
-  } catch (err) {
-    console.error("ADD ITEM ERROR:", err);
-    alert("❌ فشل إضافة الصنف (تحقق من الصلاحيات)");
-  }
-};
+
+} catch (err) {
+  console.error("ADD ITEM ERROR:", err);
+  alert("❌ فشل إضافة الصنف (تحقق من الصلاحيات)");
+}
+}; // ✅ هذا القوس كان ناقص
 
 /* ===============================
    عرض الأصناف
