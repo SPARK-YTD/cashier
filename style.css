@@ -511,8 +511,12 @@ html, body {
   font-size: 16px;
   border-radius: 10px;
 }
-/* ===== PRINT RECEIPT ===== */
+/* ===== Receipt Print Style ===== */
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
 
   body * {
     visibility: hidden;
@@ -525,63 +529,44 @@ html, body {
 
   #printArea {
     position: absolute;
-    inset: 0;
-    padding: 0;
-    margin: 0;
-  }
-
-  @page {
-    size: 70mm auto;   /* مناسب لطابعة حرارية */
-    margin: 0;
-  }
-
-  .receipt {
-    font-family: Arial, sans-serif;
-    width: 100%;
-    padding: 6px;
-  }
-
-  .receipt-header {
-    text-align: center;
-    font-size: 18px;
-    font-weight: 900;
-    margin-bottom: 8px;
-  }
-
-  .receipt-items {
-    font-size: 14px;
-    margin-bottom: 8px;
-  }
-
-  .receipt-line {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 4px;
-    font-weight: 700;
-  }
-
-  .receipt-total {
-    border-top: 1px dashed #000;
-    margin-top: 8px;
-    padding-top: 6px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 900;
+    top: 0;
+    right: 0;
+    width: 80mm;
   }
 }
-@media print {
-  body * {
-    display: none !important;
-  }
 
-  #printArea,
-  #printArea * {
-    display: block !important;
-  }
+.receipt {
+  width: 80mm;
+  padding: 6mm;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  direction: rtl;
+}
 
-  #printArea {
-    width: 100%;
-    padding: 0;
-    margin: 0;
-  }
+.title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.total {
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed #000;
+  margin: 8px 0;
 }
