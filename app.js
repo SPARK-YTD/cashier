@@ -711,65 +711,28 @@ window.printReceipt = function () {
   const printArea = document.getElementById("printArea");
   const printItems = document.getElementById("printItems");
   const printTotal = document.getElementById("printTotal");
-  const receiptNumberEl = document.getElementById("receiptNumber");
 
-  // حماية
-  if (!printArea || !printItems || !printTotal) {
-    alert("منطقة الطباعة غير جاهزة");
-    return;
-  }
-
-  // رقم فاتورة بسيط (تاريخ + عشوائي)
-  const receiptNumber =
-    Date.now().toString().slice(-6) +
-    Math.floor(Math.random() * 9);
-
-  receiptNumberEl.textContent = receiptNumber;
-
-  // تفريغ المحتوى السابق
-  printItems.innerHTML = "";
-
-  // قراءة عناصر السلة
-  const cartRows = document.querySelectorAll("#cart tr");
-
-  if (cartRows.length === 0) {
+  if (!cart.length) {
     alert("الفاتورة فارغة");
     return;
   }
 
-  cartRows.forEach(row => {
-    const cols = row.querySelectorAll("td");
-    if (cols.length < 3) return;
+  printItems.innerHTML = "";
 
-    const name = cols[0].innerText;
-    const qty = cols[1].innerText;
-    const total = cols[2].innerText;
-
+  cart.forEach(item => {
     const line = document.createElement("div");
-    line.style.display = "flex";
-    line.style.justifyContent = "space-between";
-    line.style.marginBottom = "6px";
-
+    line.className = "receipt-line";
     line.innerHTML = `
-      <span>${name} × ${qty}</span>
-      <strong>${total}</strong>
+      <span>${item.name} × ${item.qty}</span>
+      <span>${(item.price * item.qty).toFixed(3)}</span>
     `;
-
     printItems.appendChild(line);
   });
 
-  // الإجمالي
-  const totalText = document.getElementById("total").innerText;
-  printTotal.textContent = totalText;
+  const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  printTotal.textContent = total.toFixed(3) + " د.ب";
 
-  // إظهار منطقة الطباعة
   printArea.style.display = "block";
-
-  // طباعة
   window.print();
-
-  // إخفائها بعد الطباعة
-  setTimeout(() => {
-    printArea.style.display = "none";
-  }, 500);
+  printArea.style.display = "none";
 };
