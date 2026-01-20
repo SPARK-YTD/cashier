@@ -575,3 +575,31 @@ hr {
   font-weight: 700;
   margin-bottom: 6px;
 }
+
+.print-area {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 80mm;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .print-area {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
