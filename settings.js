@@ -70,6 +70,9 @@ window.addItem = async function () {
     const priceSmall  = parseFloat(document.getElementById("priceSmall").value);
     const priceMedium = parseFloat(document.getElementById("priceMedium").value);
     const priceLarge  = parseFloat(document.getElementById("priceLarge").value);
+    const sortOrder = editingItemId
+  ? null
+  : Date.now(); // ترتيب تلقائي للصنف الجديد
 
     if (!name) return alert("أدخل اسم الصنف");
 
@@ -107,13 +110,14 @@ const query = editingItemId
       image_url,
       extras
     }).eq("id", editingItemId)
-  : supabase.from("products").insert({
+    : supabase.from("products").insert({
       name,
       category,
       price: hasVariants ? null : priceNormal,
       has_variants: hasVariants,
       image_url,
       extras,
+      sort_order: sortOrder,
       active: true
     });
 
@@ -184,10 +188,10 @@ async function loadItems() {
   box.innerHTML = "";
 
   const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
-
+  .from("products")
+  .select("*")
+  .order("sort_order", { ascending: true })
+  .order("created_at", { ascending: true });
   if (error) {
     console.error("LOAD ITEMS ERROR:", error);
     box.innerHTML = "<p>خطأ في تحميل الأصناف</p>";
