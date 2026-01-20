@@ -464,30 +464,6 @@ html, body {
   margin: 24px 0;
 }
 
-/* ===== PRINT MODE ===== */
-@media print {
-  body {
-    background: white;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .report-header {
-    box-shadow: none;
-  }
-
-  .table-box {
-    box-shadow: none;
-    padding: 0;
-  }
-
-  th, td {
-    font-size: 12px;
-  }
-}
-
 
 .overlay {
   pointer-events: none;
