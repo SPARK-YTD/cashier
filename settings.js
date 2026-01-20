@@ -4,7 +4,7 @@ import { applyLang, setLang } from "./i18n.js";
 window.setLang = setLang;
 
 const PASSWORD = "1234";
-
+let editingItemId = null;
 /* ===============================
    INIT
 ================================ */
@@ -97,26 +97,41 @@ const extras = extrasRaw
   .filter(e => e.length > 0);
   
     /* === إدخال الصنف === */
-const { data: product, error } = await supabase
-  .from("products")
-  .insert({
-    name,
-    category,
-    price: hasVariants ? null : priceNormal,
-    has_variants: hasVariants,
-    image_url,
-    extras: extras, // ⭐ الإضافات الداخلية
-    active: true
-  })
-      .select()
-      .single();
+const query = editingItemId
+  ? supabase.from("products").update({
+      name,
+      category,
+      price: hasVariants ? null : priceNormal,
+      has_variants: hasVariants,
+      image_url,
+      extras
+    }).eq("id", editingItemId)
+  : supabase.from("products").insert({
+      name,
+      category,
+      price: hasVariants ? null : priceNormal,
+      has_variants: hasVariants,
+      image_url,
+      extras,
+      active: true
+    });
 
+const { data: product, error } = await query.select().single();
     if (error) throw error;
 
     /* === إدخال الأحجام === */
 /* === إدخال الأحجام === */
 if (hasVariants) {
+
+  if (editingItemId) {
+    await supabase
+      .from("product_variants")
+      .delete()
+      .eq("product_id", product.id);
+  }
+
   const variants = [];
+
 
   if (itemType === "burger") {
     if (!isNaN(priceSmall))
@@ -144,10 +159,10 @@ if (hasVariants) {
     if (vErr) throw vErr;
   }
 }
-
     clearForm();
-    await loadItems();
-    alert("✅ تم إضافة الصنف بنجاح");
+await loadItems();
+editingItemId = null;
+alert("✅ تم إضافة الصنف بنجاح");
 
   } catch (err) {
     console.error("ADD ITEM ERROR:", err);
@@ -200,7 +215,8 @@ async function loadItems() {
           : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
       }
 
-      <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
+<button class="btn secondary" onclick="editItem('${item.id}')">✏️ تعديل</button>
+<button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
     `;
 
     box.appendChild(div);
@@ -226,7 +242,29 @@ window.deleteItem = async function (id) {
 
   loadItems();
 };
+window.editItem = async function (id) {
+  const { data: item } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .single();
 
+  if (!item) return alert("فشل تحميل الصنف");
+
+  editingItemId = id;
+
+  document.getElementById("itemName").value = item.name;
+  document.getElementById("itemCategory").value = item.category;
+  document.getElementById("itemPrice").value = item.price || "";
+  document.getElementById("hasVariants").checked = item.has_variants;
+  document.getElementById("variantsBox").style.display =
+    item.has_variants ? "block" : "none";
+
+  document.getElementById("itemExtras").value =
+    (item.extras || []).join("\n");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 /* ===============================
    أدوات
 ================================ */
