@@ -511,68 +511,61 @@ html, body {
   font-size: 16px;
   border-radius: 10px;
 }
-/* ===============================
-   PRINT RECEIPT STYLE
-================================ */
+/* ===== PRINT RECEIPT ===== */
 @media print {
 
-  /* إخفاء كل شي */
   body * {
     visibility: hidden;
   }
 
-  /* إظهار منطقة الطباعة فقط */
   #printArea,
   #printArea * {
     visibility: visible;
   }
 
-  /* تمركز الفاتورة */
   #printArea {
     position: absolute;
-    top: 0;
-    right: 0;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  @page {
+    size: 70mm auto;   /* مناسب لطابعة حرارية */
+    margin: 0;
+  }
+
+  .receipt {
+    font-family: Arial, sans-serif;
     width: 100%;
-    padding: 12px;
-    font-family: "Arial", sans-serif;
-    direction: rtl;
-    text-align: right;
+    padding: 6px;
   }
 
-  /* عنوان المتجر */
-  #printArea strong {
-    font-size: 20px;
+  .receipt-header {
+    text-align: center;
+    font-size: 18px;
     font-weight: 900;
+    margin-bottom: 8px;
   }
 
-  /* رقم الفاتورة */
-  #printArea span {
-    font-size: 13px;
+  .receipt-items {
+    font-size: 14px;
+    margin-bottom: 8px;
   }
 
-  /* خطوط */
-  #printArea hr {
-    border: none;
-    border-top: 1px dashed #000;
-    margin: 8px 0;
-  }
-
-  /* عناصر الفاتورة */
-  #printItems div {
+  .receipt-line {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
     margin-bottom: 4px;
+    font-weight: 700;
   }
 
-  /* الإجمالي */
-  #printTotal {
+  .receipt-total {
+    border-top: 1px dashed #000;
+    margin-top: 8px;
+    padding-top: 6px;
+    text-align: center;
     font-size: 16px;
     font-weight: 900;
-  }
-
-  /* منع رقم الصفحة واسم المتصفح */
-  @page {
-    margin: 0;
   }
 }
