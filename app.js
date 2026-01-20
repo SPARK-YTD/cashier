@@ -712,7 +712,13 @@ window.printInvoice = function () {
 window.closeDay = () => location.href = "report.html";
 window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
-
+// ===============================
+// تسجيل الخروج
+// ===============================
+window.logout = async function () {
+  await supabase.auth.signOut();
+  location.href = "login.html";
+};
 // ===============================
 // طباعة الفاتورة
 // ===============================
