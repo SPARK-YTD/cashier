@@ -43,7 +43,20 @@
     </select>
 
     <input type="file" id="itemImage" accept="image/*">
+<!-- ===== نوع الصنف ===== -->
+<div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
+  <strong>نوع الصنف:</strong><br>
 
+  <label style="margin-left:15px">
+    <input type="radio" name="itemType" value="dish" checked>
+    🍲 طبق (أحجام)
+  </label>
+
+  <label>
+    <input type="radio" name="itemType" value="burger">
+    🍔 برقر (عادي / وجبة)
+  </label>
+</div>
     <!-- ===== دعم الأحجام ===== -->
     <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
 
@@ -55,17 +68,17 @@
       <div id="variantsBox" style="display:none;margin-top:10px">
 
         <div class="variant-row">
-          <label>Small</label>
+<label class="variant-label">الخيار 1</label>
           <input type="number" step="0.001" id="priceSmall">
         </div>
 
         <div class="variant-row">
-          <label>Medium</label>
+<label class="variant-label">الخيار 2</label>
           <input type="number" step="0.001" id="priceMedium">
         </div>
 
         <div class="variant-row">
-          <label>Large</label>
+<label class="variant-label">الخيار 3</label>
           <input type="number" step="0.001" id="priceLarge">
         </div>
 
@@ -104,6 +117,7 @@
 
 <script type="module" src="settings.js"></script>
 
+
 <script>
   const hasVariants = document.getElementById("hasVariants");
   const variantsBox = document.getElementById("variantsBox");
@@ -111,6 +125,34 @@
   hasVariants.addEventListener("change", () => {
     variantsBox.style.display = hasVariants.checked ? "block" : "none";
   });
+</script>
+
+<!-- ⬇️ الصق السكربت هنا بالضبط -->
+<script>
+  const typeRadios = document.querySelectorAll('input[name="itemType"]');
+  const labels = document.querySelectorAll(".variant-label");
+  const variantRows = document.querySelectorAll(".variant-row");
+
+  function updateVariantLabels(type) {
+    if (type === "burger") {
+      labels[0].textContent = "عادي";
+      labels[1].textContent = "وجبة";
+      variantRows[2].style.display = "none";
+    } else {
+      labels[0].textContent = "0.500";
+      labels[1].textContent = "1.000";
+      labels[2].textContent = "1.500";
+      variantRows[2].style.display = "flex";
+    }
+  }
+
+  typeRadios.forEach(radio => {
+    radio.addEventListener("change", e => {
+      updateVariantLabels(e.target.value);
+    });
+  });
+
+  updateVariantLabels("dish");
 </script>
 
 </body>
