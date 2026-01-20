@@ -502,3 +502,12 @@ html, body {
   position: relative;
   z-index: 5;
 }
+.fixed-back {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;        /* لو تبيه يمين غيّرها right */
+  z-index: 9999;
+  padding: 12px 18px;
+  font-size: 16px;
+  border-radius: 10px;
+}
