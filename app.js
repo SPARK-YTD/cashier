@@ -28,11 +28,13 @@ function subscribeToOrders() {
         table: "orders"
       },
       () => {
-        loadActiveOrders(); // تحديث فوري بدون رفرش
+        if (!currentBusinessDay) return; // ✅ حماية
+        loadActiveOrders();
       }
     )
     .subscribe();
 }
+
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
 ================================ */
@@ -96,16 +98,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 applyLang();
 renderCart();
 
-await loadCurrentDay();   // 1️⃣ تحميل يوم العمل
+await loadCurrentDay();          // 1️⃣ لازم أول شي
 if (!currentBusinessDay) {
   alert("❌ فشل تحميل يوم العمل");
   return;
 }
 
-subscribeToOrders();     // 2️⃣ تشغيل realtime
-loadActiveOrders();      // 3️⃣ تحميل الطلبات
-
-loadItems("food");
+loadItems("food");               // 2️⃣
+loadActiveOrders();              // 3️⃣ تحميل أولي
+subscribeToOrders();             // 4️⃣ realtime آخر شي
 
   document
     .getElementById("paid")
@@ -533,16 +534,18 @@ loadActiveOrders();
    الطلبات الجارية
 ================================ */
 async function loadActiveOrders() {
+  if (!currentBusinessDay) return; // ✅ أهم سطر
+
   const { data } = await supabase
-  .from("orders")
-  .select("id, total, invoice_no, created_at, timer_started_at, is_paid")
-  .eq("status", "active")
-  .eq("business_day_id", currentBusinessDay.id)
-  .order("created_at", { ascending: false });
+    .from("orders")
+    .select("id, total, invoice_no, created_at, timer_started_at, is_paid")
+    .eq("status", "active")
+    .eq("business_day_id", currentBusinessDay.id)
+    .order("created_at", { ascending: false });
+
   activeOrders = data || [];
   renderActiveOrders();
 }
-
 function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
   box.innerHTML = "";
