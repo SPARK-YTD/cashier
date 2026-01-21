@@ -696,7 +696,7 @@ window.viewOrder = async function (orderId) {
         `).join("")}
       </div>
 
-      <button class="variant-btn" onclick="printInvoice()">🖨 طباعة</button>
+
       <button class="variant-cancel" style="margin-top:10px">إغلاق</button>
     </div>
   `;
@@ -709,42 +709,6 @@ window.viewOrder = async function (orderId) {
   };
 };
 
-window.printInvoice = function () {
-  const content = document.getElementById("invoiceContent").innerHTML;
-
-  const win = window.open("", "", "width=400,height=600");
-
-  win.document.write(`
-    <html>
-      <head>
-        <title>فاتورة</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            direction: rtl;
-            text-align: right;
-            padding: 10px;
-          }
-          h3 {
-            text-align: center;
-            margin-bottom: 10px;
-          }
-          button {
-            display: none;
-          }
-        </style>
-      </head>
-      <body>
-        ${content}
-      </body>
-    </html>
-  `);
-
-  win.document.close();
-  win.focus();
-  win.print();
-  win.close();
-};
 /* ===============================
    NAV
 ================================ */
@@ -770,19 +734,17 @@ window.printReceipt = function () {
 
   const invoiceNo = Date.now().toString().slice(-6);
 
-  const itemsHTML = cart.map(item => {
-    return `
-      <div class="item">
-        <div class="name">${item.name}</div>
-        <div class="qty">× ${item.qty}</div>
-        ${
-          item.extras_removed?.length
-            ? `<div class="extras">بدون: ${item.extras_removed.join("، ")}</div>`
-            : ""
-        }
-      </div>
-    `;
-  }).join("");
+  const itemsHTML = cart.map(item => `
+    <div class="item">
+      <div class="name">${item.name}</div>
+      <div class="qty">× ${item.qty}</div>
+      ${
+        item.extras_removed?.length
+          ? `<div class="extras">بدون: ${item.extras_removed.join("، ")}</div>`
+          : ""
+      }
+    </div>
+  `).join("");
 
   const win = window.open("", "", "width=300,height=600");
 
@@ -800,12 +762,12 @@ window.printReceipt = function () {
     padding: 10px;
   }
   h1 {
-    font-size: 22px;
+    font-size: 24px;
     margin: 5px 0;
   }
   .invoice-no {
     font-size: 16px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   hr {
     border: none;
@@ -813,7 +775,7 @@ window.printReceipt = function () {
     margin: 10px 0;
   }
   .item {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
   .name {
     font-size: 18px;
@@ -844,7 +806,6 @@ ${itemsHTML}
   win.document.close();
   win.focus();
 
-  // ⏱️ تأخير بسيط عشان iOS
   setTimeout(() => {
     win.print();
     win.close();
