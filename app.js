@@ -123,11 +123,9 @@ if (error) {
 
 items = data.map(p => ({
   ...p,
-  extras: Array.isArray(p.extras)
-    ? p.extras
-    : p.extras
-      ? p.extras.split(",").map(e => e.trim())
-      : []
+  extras: p.extras_list
+    ? p.extras_list.split("\n").map(e => e.trim()).filter(Boolean)
+    : []
 }));
   renderItems();
 }
