@@ -113,7 +113,7 @@ window.addItem = async function () {
           price: hasVariants ? null : priceNormal,
           has_variants: hasVariants,
           image_url,
-          extras
+          extras_list: extras.join("\n")
         })
         .eq("id", editingItemId);
     } else {
@@ -123,7 +123,7 @@ window.addItem = async function () {
         price: hasVariants ? null : priceNormal,
         has_variants: hasVariants,
         image_url,
-        extras,
+        extras_list: extras.join("\n"),
         active: true,
         sort_order: Date.now()
       });
@@ -276,7 +276,7 @@ window.editItem = async function (id) {
   document.getElementById("itemCategory").value = item.category;
   document.getElementById("itemPrice").value = item.price || "";
   document.getElementById("itemExtras").value =
-    (item.extras || []).join("\n");
+  item.extras_list || "";
 
   // ===== تحديد نوع الصنف (normal / burger / sizes) =====
   let itemType = "normal";
