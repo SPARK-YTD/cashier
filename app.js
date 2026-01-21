@@ -854,3 +854,18 @@ ${itemsHTML}
     win.close();
   }, 500);
 };
+
+// ===== MENU (FIX) =====
+window.toggleMenu = function () {
+  const menu = document.getElementById("sideMenu");
+  const overlay = document.getElementById("overlay");
+  if (!menu || !overlay) return;
+
+  menu.classList.toggle("open");
+  overlay.classList.toggle("show");
+};
+
+window.closeMenu = function () {
+  document.getElementById("sideMenu")?.classList.remove("open");
+  document.getElementById("overlay")?.classList.remove("show");
+};
