@@ -59,7 +59,8 @@ async function uploadImage(file) {
       .from("products")
       .upload(path, file, {
         cacheControl: "3600",
-        upsert: false
+        upsert: false,
+        contentType: file.type || "image/png"
       });
 
     if (error) throw error;
