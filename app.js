@@ -96,16 +96,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 applyLang();
 renderCart();
 
-await loadCurrentDay();   // ✅ أول شي نجيب يوم العمل
-subscribeToOrders();     // ✅ بعدها نشغل الـ realtime
-loadActiveOrders();      // ✅ تحميل أولي
-  if (!currentBusinessDay) {
-    alert("❌ فشل تحميل يوم العمل");
-    return;
-  }
+await loadCurrentDay();   // 1️⃣ تحميل يوم العمل
+if (!currentBusinessDay) {
+  alert("❌ فشل تحميل يوم العمل");
+  return;
+}
 
-  loadItems("food");        // بدون await (غير حاجز)
-  loadActiveOrders();       // بدون await
+subscribeToOrders();     // 2️⃣ تشغيل realtime
+loadActiveOrders();      // 3️⃣ تحميل الطلبات
+
+loadItems("food");
 
   document
     .getElementById("paid")
@@ -521,15 +521,13 @@ loadActiveOrders();
   // ✅ هذا المهم
   loadActiveOrders();   // 1
   clearForNewOrder();  // 2
-  loadActiveOrders();   // 3
 
 } catch (err) {
   console.error(err);
   alert("❌ حصل خطأ أثناء حفظ الطلب");
+} finally {
+  isSavingOrder = false;
 }
-
-isSavingOrder = false;
-};
 
 /* ===============================
    الطلبات الجارية
