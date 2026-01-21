@@ -101,33 +101,37 @@ window.addItem = async function () {
       if (!image_url) return;
     }
 
-    /* === حفظ الصنف === */
-    let query;
+/* === حفظ الصنف === */
+let query;
 
-    if (editingItemId) {
-      query = supabase
-        .from("products")
-        .update({
-          name,
-          category,
-          price: hasVariants ? null : priceNormal,
-          has_variants: hasVariants,
-          image_url,
-          extras_list: extras.join("\n")
-        })
-        .eq("id", editingItemId);
-    } else {
-      query = supabase.from("products").insert({
-        name,
-        category,
-        price: hasVariants ? null : priceNormal,
-        has_variants: hasVariants,
-        image_url,
-        extras_list: extras.join("\n"),
-        active: true,
-        sort_order: Date.now()
-      });
-    }
+if (editingItemId) {
+  // ✏️ تعديل
+  query = supabase
+    .from("products")
+    .update({
+      name,
+      category,
+      price: hasVariants ? null : priceNormal,
+      has_variants: hasVariants,
+      image_url,
+      extras_list: extras.join("\n")
+    })
+    .eq("id", editingItemId);
+} else {
+  // ➕ إضافة
+  query = supabase
+    .from("products")
+    .insert({
+      name,
+      category,
+      price: hasVariants ? null : priceNormal,
+      has_variants: hasVariants,
+      image_url,
+      extras_list: extras.join("\n"),
+      active: true,
+      sort_order: Date.now()
+    });
+}
 
     const { data: product, error } = await query.select().single();
     if (error) throw error;
