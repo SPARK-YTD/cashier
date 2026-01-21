@@ -60,12 +60,12 @@ async function uploadImage(file) {
     const path = `products/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const { error } = await supabase.storage
-      .from("products")
-      .upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type || "image/jpeg"
-      });
+  .from("products")
+  .upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type
+  });
 
     if (error) throw error;
 
