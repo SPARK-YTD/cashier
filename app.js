@@ -732,7 +732,7 @@ window.printReceipt = function () {
     return;
   }
 
-  const invoiceNo = Date.now().toString().slice(-6);
+const invoiceNo = currentInvoiceNo || "—";
 
   const itemsHTML = cart.map(item => `
     <div class="item">
