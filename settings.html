@@ -48,7 +48,12 @@
   <strong>نوع الصنف:</strong><br>
 
   <label style="margin-left:15px">
-    <input type="radio" name="itemType" value="dish" checked>
+    <input type="radio" name="itemType" value="normal">
+    🍽️ صنف عادي (بدون أحجام)
+  </label>
+
+  <label style="margin-left:15px">
+<input type="radio" name="itemType" value="normal" checked>
     🍲 طبق (أحجام)
   </label>
 
@@ -59,11 +64,6 @@
 </div>
     <!-- ===== دعم الأحجام ===== -->
     <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
-
-      <label style="display:flex;gap:8px;align-items:center">
-        <input type="checkbox" id="hasVariants">
-        <strong>الصنف له عدة أحجام</strong>
-      </label>
 
       <div id="variantsBox" style="display:none;margin-top:10px">
 
@@ -123,52 +123,43 @@
 
 <script type="module" src="settings.js"></script>
 
-
+<!-- سكربت التحكم بنوع الصنف -->
 <script>
-const hasVariants = document.getElementById("hasVariants");
+const typeRadios = document.querySelectorAll('input[name="itemType"]');
 const variantsBox = document.getElementById("variantsBox");
 const itemPrice = document.getElementById("itemPrice");
 
-function toggleVariantsUI() {
-  if (hasVariants.checked) {
-    variantsBox.style.display = "block";
-    itemPrice.style.display = "none";
-  } else {
+const labels = document.querySelectorAll(".variant-label");
+const rows = document.querySelectorAll(".variant-row");
+
+function updateUI(type) {
+  if (type === "normal") {
     variantsBox.style.display = "none";
     itemPrice.style.display = "block";
+  } else {
+    variantsBox.style.display = "block";
+    itemPrice.style.display = "none";
+  }
+
+  if (type === "burger") {
+    labels[0].textContent = "عادي";
+    labels[1].textContent = "وجبة";
+    rows[2].style.display = "none";
+  } else {
+    labels[0].textContent = "Small";
+    labels[1].textContent = "Medium";
+    labels[2].textContent = "Large";
+    rows[2].style.display = "flex";
   }
 }
 
-hasVariants.addEventListener("change", toggleVariantsUI);
-toggleVariantsUI();
-</script>
+typeRadios.forEach(radio => {
+  radio.addEventListener("change", e => updateUI(e.target.value));
+});
 
-<!-- ⬇️ الصق السكربت هنا بالضبط -->
-<script>
-  const typeRadios = document.querySelectorAll('input[name="itemType"]');
-  const labels = document.querySelectorAll(".variant-label");
-  const variantRows = document.querySelectorAll(".variant-row");
-
-  function updateVariantLabels(type) {
-    if (type === "burger") {
-      labels[0].textContent = "عادي";
-      labels[1].textContent = "وجبة";
-      variantRows[2].style.display = "none";
-   } else {
-  labels[0].textContent = "Small";
-  labels[1].textContent = "Medium";
-  labels[2].textContent = "Large";
-  variantRows[2].style.display = "flex";
-}
-  }
-
-  typeRadios.forEach(radio => {
-    radio.addEventListener("change", e => {
-      updateVariantLabels(e.target.value);
-    });
-  });
-
-  updateVariantLabels("dish");
+updateUI(
+  document.querySelector('input[name="itemType"]:checked').value
+);
 </script>
 
 </body>
