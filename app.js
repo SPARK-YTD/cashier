@@ -414,13 +414,9 @@ window.completeOrder = async function () {
       await saveOfflineOrder(offlineOrder);
 
       // تنظيف الواجهة
-      cart = [];
-      renderCart();
-      loadActiveOrders();
 
-      const paidInput = document.getElementById("paid");
-      if (paidInput) paidInput.value = "";
-      document.getElementById("change").textContent = "—";
+clearForNewOrder();
+loadActiveOrders();
 
       alert("📦 تم حفظ الطلب محليًا (بدون إنترنت)");
     } catch (e) {
@@ -506,16 +502,8 @@ currentInvoiceNo = order.invoice_no;
     /* ===============================
        🧹 تنظيف بعد الحفظ
     ================================ */
-    function clearForNewOrder() {
-  cart = [];
-  currentInvoiceNo = null;
-  renderCart();
-}
 
-    const paidInput = document.getElementById("paid");
-    if (paidInput) paidInput.value = "";
-    document.getElementById("change").textContent = "—";
-
+clearForNewOrder();
   } catch (err) {
     console.error(err);
     alert("❌ حصل خطأ أثناء حفظ الطلب");
@@ -736,6 +724,17 @@ window.logout = async function () {
 // ===============================
 // طباعة الفاتورة
 // ===============================
+function clearForNewOrder() {
+  cart = [];
+  currentInvoiceNo = null;
+  editingOrderId = null;
+  renderCart();
+
+  const paidInput = document.getElementById("paid");
+  if (paidInput) paidInput.value = "";
+
+  document.getElementById("change").textContent = "—";
+}
 window.printReceipt = function () {
 
   if (!cart.length) {
