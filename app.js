@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  applyLang();
+  //applyLang();
 
   await loadCurrentDay();
   if (!currentBusinessDay) {
