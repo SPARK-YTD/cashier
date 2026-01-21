@@ -28,7 +28,9 @@ function subscribeToOrders() {
         table: "orders"
       },
       () => {
-        if (!currentBusinessDay) return; // ✅ حماية
+        console.log("Realtime update received"); // ✅ هنا بالضبط
+
+        if (!currentBusinessDay) return;
         loadActiveOrders();
       }
     )
