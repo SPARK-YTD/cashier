@@ -463,6 +463,7 @@ loadActiveOrders();
   });
 
   editingOrderId = null;
+  loadActiveOrders(); // ✅ تحديث الطلبات الجارية فورًا
 }
     /* ===============================
        🆕 طلب جديد
