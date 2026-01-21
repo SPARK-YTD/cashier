@@ -10,6 +10,22 @@ let editingItemId = null;
 ================================ */
 document.addEventListener("DOMContentLoaded", () => {
   applyLang();
+
+  // 👇 هذا هو الكود الجديد
+  const typeRadios = document.querySelectorAll('input[name="itemType"]');
+  const variantsBox = document.getElementById("variantsBox");
+
+  typeRadios.forEach(radio => {
+    radio.addEventListener("change", () => {
+      const type = radio.value;
+
+      if (type === "normal") {
+        variantsBox.style.display = "none";
+      } else {
+        variantsBox.style.display = "block";
+      }
+    });
+  });
 });
 
 /* ===============================
@@ -148,27 +164,37 @@ if (editingItemId) {
       const variants = [];
 
       // 🍔 برقر (عادي / وجبة)
-      if (itemType === "burger") {
-        if (!isNaN(priceSmall)) {
-          variants.push({ product_id: product.id, label: "عادي", price: priceSmall, active: true });
-        }
-        if (!isNaN(priceMedium)) {
-          variants.push({ product_id: product.id, label: "وجبة", price: priceMedium, active: true });
-        }
-      }
+if (itemType === "burger") {
+  if (!isNaN(priceSmall)) {
+    variants.push({
+      product_id: product.id,
+      label: "عادي",
+      price: priceSmall,
+      active: true
+    });
+  }
 
+  if (!isNaN(priceMedium)) {
+    variants.push({
+      product_id: product.id,
+      label: "وجبة",
+      price: priceMedium,
+      active: true
+    });
+  }
+}
       // 📦 أحجام
       if (itemType === "sizes") {
-        if (!isNaN(priceSmall)) {
-          variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
-        }
-        if (!isNaN(priceMedium)) {
-          variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
-        }
-        if (!isNaN(priceLarge)) {
-          variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
-        }
-      }
+  if (!isNaN(priceSmall)) {
+    variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
+  }
+  if (!isNaN(priceMedium)) {
+    variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
+  }
+  if (!isNaN(priceLarge)) {
+    variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
+  }
+}
 
       if (variants.length) {
         const { error: vErr } = await supabase
