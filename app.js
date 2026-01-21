@@ -93,17 +93,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  applyLang();
-
+  // 1️⃣ حمّل يوم العمل أولاً
   await loadCurrentDay();
   if (!currentBusinessDay) {
-    alert("❌ فشل تحميل يوم العمل");
+    alert("فشل تحميل يوم العمل");
     return;
   }
 
+  // 2️⃣ حمّل البيانات
   loadItems("food");
   loadActiveOrders();
+
+  // 3️⃣ بعدها فقط شغّل Realtime
   subscribeToOrders();
+
+});
 
   document
     .getElementById("paid")
