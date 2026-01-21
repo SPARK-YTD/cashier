@@ -13,6 +13,7 @@ let cart = [];
 let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
+let currentInvoiceNo = null;
 
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
@@ -473,15 +474,17 @@ window.completeOrder = async function () {
     else {
 
       const { data: order, error } = await supabase
-        .from("orders")
-        .insert({
-          total,
-          status: "active",
-          business_day_id: currentBusinessDay.id,
-          timer_started_at: new Date().toISOString()
-        })
-        .select("id")
-        .single();
+  .from("orders")
+  .insert({
+    total,
+    status: "active",
+    business_day_id: currentBusinessDay.id,
+    timer_started_at: new Date().toISOString()
+  })
+  .select("id, invoice_no")
+  .single();
+
+currentInvoiceNo = order.invoice_no;
 
       if (error || !order) {
         throw new Error("فشل إنشاء الطلب");
@@ -503,9 +506,11 @@ window.completeOrder = async function () {
     /* ===============================
        🧹 تنظيف بعد الحفظ
     ================================ */
-    cart = [];
-    renderCart();
-    loadActiveOrders();
+    function clearForNewOrder() {
+  cart = [];
+  currentInvoiceNo = null;
+  renderCart();
+}
 
     const paidInput = document.getElementById("paid");
     if (paidInput) paidInput.value = "";
@@ -607,6 +612,14 @@ window.editOrder = async function (orderId) {
   editingOrderId = orderId;
   cart = [];
 
+  // ✅ جلب رقم الفاتورة (مهم للطباعة)
+  const { data: order } = await supabase
+    .from("orders")
+    .select("invoice_no")
+    .eq("id", orderId)
+    .single();
+
+  currentInvoiceNo = order?.invoice_no || null;
   const { data } = await supabase
     .from("order_items")
     .select("qty, price, item_name, product_id, variant_id, extras_removed")
@@ -730,7 +743,7 @@ window.printReceipt = function () {
     return;
   }
 
-const invoiceNo = currentInvoiceNo || "—";
+  const invoiceNo = currentInvoiceNo || "—";
 
   const itemsHTML = cart.map(item => `
     <div class="item">
@@ -743,6 +756,8 @@ const invoiceNo = currentInvoiceNo || "—";
       }
     </div>
   `).join("");
+
+  const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
   const win = window.open("", "", "width=300,height=600");
 
@@ -760,12 +775,12 @@ const invoiceNo = currentInvoiceNo || "—";
     padding: 10px;
   }
   h1 {
-    font-size: 24px;
-    margin: 5px 0;
+    font-size: 26px;
+    margin: 10px 0 5px;
   }
   .invoice-no {
-    font-size: 16px;
-    margin-bottom: 12px;
+    font-size: 15px;
+    margin-bottom: 10px;
   }
   hr {
     border: none;
@@ -773,29 +788,43 @@ const invoiceNo = currentInvoiceNo || "—";
     margin: 10px 0;
   }
   .item {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
+    text-align: right;
   }
   .name {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: bold;
   }
   .qty {
-    font-size: 16px;
+    font-size: 15px;
+    margin-right: 5px;
   }
   .extras {
     font-size: 14px;
-    margin-top: 4px;
+    color: #444;
+    margin-top: 3px;
+  }
+  .total {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 15px;
   }
 </style>
 </head>
 <body>
 
-<h1>عربة خذ لك بريك</h1>
+<h1>خذلك بريك</h1>
 <div class="invoice-no">فاتورة رقم: ${invoiceNo}</div>
 
 <hr>
 
 ${itemsHTML}
+
+<hr>
+
+<div class="total">
+  الإجمالي: ${total.toFixed(3)} د.ب
+</div>
 
 </body>
 </html>
