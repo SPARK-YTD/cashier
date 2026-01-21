@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   loadItems("food");        // بدون await (غير حاجز)
   loadActiveOrders();       // بدون await
-
+  subscribeToOrders();
   document
     .getElementById("paid")
     ?.addEventListener("input", calculateChange);
@@ -513,7 +513,26 @@ clearForNewOrder();
   // 🔓 فتح القفل
   isSavingOrder = false;
 };
-
+/* ===============================
+   REALTIME – الطلبات الجارية
+================================ */
+function subscribeToOrders() {
+  supabase
+    .channel("orders-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "orders"
+      },
+      () => {
+        // 🔥 أي تغيير على الطلبات
+        loadActiveOrders();
+      }
+    )
+    .subscribe();
+}
 /* ===============================
    الطلبات الجارية
 ================================ */
