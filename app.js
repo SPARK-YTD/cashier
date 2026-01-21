@@ -489,47 +489,46 @@ loadActiveOrders();
     else {
 
       const { data: order, error } = await supabase
-  .from("orders")
-  .insert({
-    total,
-    status: "active",
-    business_day_id: currentBusinessDay.id,
-    timer_started_at: new Date().toISOString()
-  })
-  .select("id, invoice_no")
-  .single();
+    .from("orders")
+    .insert({
+      total,
+      status: "active",
+      business_day_id: currentBusinessDay.id,
+      timer_started_at: new Date().toISOString()
+    })
+    .select("id, invoice_no")
+    .single();
 
-currentInvoiceNo = order.invoice_no;
-
-      if (error || !order) {
-        throw new Error("فشل إنشاء الطلب");
-      }
-
-      await supabase.from("order_items").insert(
-        cart.map(i => ({
-          order_id: order.id,
-          product_id: i.id,
-          variant_id: i.variant_id || null,
-          item_name: i.name,
-          qty: i.qty,
-          price: i.price,
-          extras_removed: i.extras_removed || []
-        }))
-      );
-    }
-
-    /* ===============================
-       🧹 تنظيف بعد الحفظ
-    ================================ */
-
-clearForNewOrder();
-  } catch (err) {
-    console.error(err);
-    alert("❌ حصل خطأ أثناء حفظ الطلب");
+  if (error || !order) {
+    throw new Error("فشل إنشاء الطلب");
   }
 
-  // 🔓 فتح القفل
-  isSavingOrder = false;
+  currentInvoiceNo = order.invoice_no;
+
+  // إدخال الأصناف
+  await supabase.from("order_items").insert(
+    cart.map(i => ({
+      order_id: order.id,
+      product_id: i.id,
+      variant_id: i.variant_id || null,
+      item_name: i.name,
+      qty: i.qty,
+      price: i.price,
+      extras_removed: i.extras_removed || []
+    }))
+  );
+
+  // ✅ هذا المهم
+  loadActiveOrders();   // 1
+  clearForNewOrder();  // 2
+  loadActiveOrders();   // 3
+
+} catch (err) {
+  console.error(err);
+  alert("❌ حصل خطأ أثناء حفظ الطلب");
+}
+
+isSavingOrder = false;
 };
 
 /* ===============================
