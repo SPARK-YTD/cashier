@@ -1,3 +1,4 @@
+
 import { supabase } from "./supabase.js";
 import { applyLang, setLang } from "./i18n.js";
 import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
@@ -13,25 +14,7 @@ let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
 let currentInvoiceNo = null;
-/* ===============================
-   REALTIME – الطلبات الجارية
-================================ */
-function subscribeToOrders() {
-  supabase
-    .channel("orders-realtime")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "orders"
-      },
-      () => {
-        loadActiveOrders(); // تحديث فوري بدون رفرش
-      }
-    )
-    .subscribe();
-}
+
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
 ================================ */
@@ -72,6 +55,7 @@ async function loadCurrentDay() {
   currentBusinessDay = newDay;
 }
 
+
 /* ===============================
    INIT
 ================================ */
@@ -93,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🚀 واجهة فورية
   applyLang();
   renderCart();
-  subscribeToOrders();
+
   // 📦 تحميل البيانات بعد التأكد من الدخول
   await loadCurrentDay();
 
@@ -160,11 +144,11 @@ function renderItems() {
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "item";
-    div.innerHTML = 
-${item.image_url ? <img src="${cleanImageUrl(item.image_url)}" class="cashier-item-img"> : ""}
+    div.innerHTML = `
+${item.image_url ? `<img src="${cleanImageUrl(item.image_url)}" class="cashier-item-img">` : ""}
       <strong>${item.name}</strong>
       <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
-    ;
+    `;
     div.onclick = () => handleItemClick(item);
     container.appendChild(div);
   });
@@ -212,7 +196,7 @@ function showVariantsPopup(item, variants) {
     <div class="variant-box">
       <h3>${item.name}</h3>
 
-      ${variants.map(v => 
+      ${variants.map(v => `
         <button class="variant-btn"
           onclick="selectVariant(
             '${item.id}',
@@ -223,7 +207,7 @@ function showVariantsPopup(item, variants) {
           )">
           ${v.label} — ${v.price.toFixed(3)} د.ب
         </button>
-      ).join("")}
+      `).join("")}
 
       <button class="variant-cancel">إلغاء</button>
     </div>
@@ -250,12 +234,12 @@ function showExtrasPopup(item) {
       </p>
 
       <div style="text-align:right;max-height:200px;overflow:auto">
-${(Array.isArray(item.extras) ? item.extras : []).map(extra => 
+${(Array.isArray(item.extras) ? item.extras : []).map(extra => `
   <label style="display:block;margin-bottom:6px">
     <input type="checkbox" value="${extra}" checked>
     ${extra}
   </label>
-).join("")}
+`).join("")}
       </div>
 
       <button class="variant-btn" id="confirmExtras">إضافة للسلة</button>
@@ -277,7 +261,7 @@ ${(Array.isArray(item.extras) ? item.extras : []).map(extra =>
     let nameWithExtras = item.name;
 
     if (unchecked.length > 0) {
-      nameWithExtras +=  (بدون: ${unchecked.join("، ")});
+      nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
     }
 
     addToCart({
@@ -292,20 +276,21 @@ ${(Array.isArray(item.extras) ? item.extras : []).map(extra =>
   };
 }
 
+
 window.selectVariant = function (productId, name, variantId, label, price) {
   const baseItem = items.find(i => i.id === productId);
 
 if (baseItem?.extras?.length) {
   showExtrasPopup({
     ...baseItem,
-    name: ${name} (${label}),
+    name: `${name} (${label})`,
     price,
     variant_id: variantId
   });
 } else {
   addToCart({
     id: productId,
-    name: ${name} (${label}),
+    name: `${name} (${label})`,
     price,
     variant_id: variantId
   });
@@ -345,6 +330,7 @@ function addToCart(item) {
    استخراج الإضافات من الاسم
 ================================ */
 
+
 function renderCart() {
   const tbody = document.getElementById("cart");
   if (!tbody) return;
@@ -355,7 +341,7 @@ function renderCart() {
   cart.forEach((item, i) => {
     const sum = item.qty * item.price;
     total += sum;
-    tbody.innerHTML += 
+    tbody.innerHTML += `
       <tr>
         <td>${item.name}</td>
         <td>
@@ -366,7 +352,7 @@ function renderCart() {
         <td>${sum.toFixed(3)} د.ب</td>
         <td><button onclick="removeItem(${i})">🗑</button></td>
       </tr>
-    ;
+    `;
   });
 
   document.getElementById("total").textContent = total.toFixed(3) + " د.ب";
@@ -588,7 +574,7 @@ const createdAt = new Date(baseTime).getTime();
     div.className = "order-box";
 
     if (bgColor) div.style.background = bgColor;
-    if (borderColor) div.style.borderLeft = 6px solid ${borderColor};
+    if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
 
     div.innerHTML = `
       <strong>فاتورة رقم ${order.invoice_no}</strong><br>
@@ -598,8 +584,8 @@ const createdAt = new Date(baseTime).getTime();
 
       ${
         order.is_paid
-          ? <span style="color:#166534;font-weight:800;">✔ مدفوعة</span>
-          : <button onclick="markPaid('${order.id}')">💰 تم الدفع</button>
+          ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
+          : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
       }
 
       <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
@@ -694,21 +680,22 @@ window.viewOrder = async function (orderId) {
       <h3>🧾 تفاصيل الفاتورة</h3>
 
       <div style="text-align:right;max-height:300px;overflow:auto">
-        ${items.map(i => 
+        ${items.map(i => `
           <div style="border-bottom:1px dashed #ddd;padding:8px 0">
             <strong>${i.item_name}</strong>
             ${
               i.extras_removed?.length
-                ? <div style="font-size:13px;color:#555">
+                ? `<div style="font-size:13px;color:#555">
                      بدون: ${i.extras_removed.join("، ")}
-                   </div>
+                   </div>`
                 : ""
             }
             الكمية: ${i.qty}<br>
             السعر: ${(i.price * i.qty).toFixed(3)} د.ب
           </div>
-        ).join("")}
+        `).join("")}
       </div>
+
 
       <button class="variant-cancel" style="margin-top:10px">إغلاق</button>
     </div>
@@ -758,17 +745,17 @@ window.printReceipt = function () {
 
   const invoiceNo = currentInvoiceNo || "—";
 
-  const itemsHTML = cart.map(item => 
+  const itemsHTML = cart.map(item => `
     <div class="item">
       <div class="name">${item.name}</div>
       <div class="qty">× ${item.qty}</div>
       ${
         item.extras_removed?.length
-          ? <div class="extras">بدون: ${item.extras_removed.join("، ")}</div>
+          ? `<div class="extras">بدون: ${item.extras_removed.join("، ")}</div>`
           : ""
       }
     </div>
-  ).join("");
+  `).join("");
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 
