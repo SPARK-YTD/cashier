@@ -80,6 +80,12 @@ async function uploadImage(file) {
 ================================ */
 window.addItem = async function () {
   try {
+
+    // ✅ أضف هذا هنا بالضبط
+    const cleanNumber = (v) => {
+      return typeof v === "number" && !isNaN(v) ? v : null;
+    };
+
     const itemType =
       document.querySelector('input[name="itemType"]:checked')?.value || "normal";
 
@@ -107,9 +113,14 @@ window.addItem = async function () {
       return alert("أدخل السعر");
     }
 
-    if (hasVariants && isNaN(priceSmall) && isNaN(priceMedium) && isNaN(priceLarge)) {
-      return alert("أدخل سعر واحد على الأقل");
-    }
+    if (
+  hasVariants &&
+  cleanNumber(priceSmall) === null &&
+  cleanNumber(priceMedium) === null &&
+  cleanNumber(priceLarge) === null
+) {
+  return alert("أدخل سعر واحد على الأقل");
+}
 
     let image_url = null;
     if (imageFile) {
@@ -127,7 +138,7 @@ if (editingItemId) {
     .update({
       name,
       category,
-      price: hasVariants ? null : priceNormal,
+      price: hasVariants ? null : cleanNumber(priceNormal),
       has_variants: hasVariants,
       image_url,
       extras_list: extras.join("\n")
@@ -140,7 +151,7 @@ if (editingItemId) {
     .insert({
       name,
       category,
-      price: hasVariants ? null : priceNormal,
+      price: hasVariants ? null : cleanNumber(priceNormal),
       has_variants: hasVariants,
       image_url,
       extras_list: extras.join("\n"),
@@ -165,7 +176,7 @@ if (editingItemId) {
 
       // 🍔 برقر (عادي / وجبة)
 if (itemType === "burger") {
-  if (!isNaN(priceSmall)) {
+  if (cleanNumber(priceSmall) !== null) {
     variants.push({
       product_id: product.id,
       label: "عادي",
@@ -174,7 +185,7 @@ if (itemType === "burger") {
     });
   }
 
-  if (!isNaN(priceMedium)) {
+  if (cleanNumber(priceMedium) !== null) {
     variants.push({
       product_id: product.id,
       label: "وجبة",
@@ -185,14 +196,31 @@ if (itemType === "burger") {
 }
       // 📦 أحجام
       if (itemType === "sizes") {
-  if (!isNaN(priceSmall)) {
-    variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
+  if (cleanNumber(priceSmall) !== null) {
+    variants.push({
+      product_id: product.id,
+      label: "Small",
+      price: priceSmall,
+      active: true
+    });
   }
-  if (!isNaN(priceMedium)) {
-    variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
+
+  if (cleanNumber(priceMedium) !== null) {
+    variants.push({
+      product_id: product.id,
+      label: "Medium",
+      price: priceMedium,
+      active: true
+    });
   }
-  if (!isNaN(priceLarge)) {
-    variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
+
+  if (cleanNumber(priceLarge) !== null) {
+    variants.push({
+      product_id: product.id,
+      label: "Large",
+      price: priceLarge,
+      active: true
+    });
   }
 }
 
