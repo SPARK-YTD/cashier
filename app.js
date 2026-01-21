@@ -86,35 +86,28 @@ async function loadCurrentDay() {
 ================================ */
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // 🔐 تحقق سريع من الجلسة (أسرع من getSession)
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
-
+  const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     location.href = "login.html";
     return;
   }
 
-  // 🚀 واجهة فورية
-applyLang();
-renderCart();
+  applyLang();
 
-await loadCurrentDay();          // 1️⃣ لازم أول شي
-if (!currentBusinessDay) {
-  alert("❌ فشل تحميل يوم العمل");
-  return;
-}
+  await loadCurrentDay();
+  if (!currentBusinessDay) {
+    alert("❌ فشل تحميل يوم العمل");
+    return;
+  }
 
-loadItems("food");               // 2️⃣
-loadActiveOrders();              // 3️⃣ تحميل أولي
-subscribeToOrders();             // 4️⃣ realtime آخر شي
+  loadItems("food");
+  loadActiveOrders();
+  subscribeToOrders();
 
   document
     .getElementById("paid")
     ?.addEventListener("input", calculateChange);
 
-  // تحديث الطلبات كل دقيقة
   setInterval(loadActiveOrders, 60000);
 });
 window.addEventListener("online", async () => {
