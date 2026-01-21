@@ -50,17 +50,21 @@ window.login = async function () {
 ================================ */
 async function uploadImage(file) {
   try {
-    const ext = file.name.split(".").pop();
-    const path = `products/${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${ext}`;
+    // ⛔ منع أي ملف غير صورة
+    if (!file.type.startsWith("image/")) {
+      alert("❌ الملف لازم يكون صورة");
+      return null;
+    }
+
+    const ext = file.name.split(".").pop().toLowerCase();
+    const path = `products/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const { error } = await supabase.storage
       .from("products")
       .upload(path, file, {
         cacheControl: "3600",
         upsert: false,
-        contentType: file.type || "image/png"
+        contentType: file.type || "image/jpeg"
       });
 
     if (error) throw error;
