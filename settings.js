@@ -34,6 +34,9 @@ window.login = async function () {
 ================================ */
 async function uploadImage(file) {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("SESSION:", session);
+
     const ext = file.name.split(".").pop();
     const path = `products/${Date.now()}-${Math.random()
       .toString(36)
