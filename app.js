@@ -14,7 +14,25 @@ let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
 let currentInvoiceNo = null;
-
+/* ===============================
+   REALTIME – الطلبات الجارية
+================================ */
+function subscribeToOrders() {
+  supabase
+    .channel("orders-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "orders"
+      },
+      () => {
+        loadActiveOrders(); // تحديث فوري بدون رفرش
+      }
+    )
+    .subscribe();
+}
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
 ================================ */
@@ -77,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🚀 واجهة فورية
   applyLang();
   renderCart();
-
+  subscribeToOrders();
   // 📦 تحميل البيانات بعد التأكد من الدخول
   await loadCurrentDay();
 
