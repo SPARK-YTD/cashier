@@ -84,6 +84,7 @@ async function loadCurrentDay() {
 /* ===============================
    INIT (OPTIMIZED)
 ================================ */
+console.log("JS Loaded");
 document.addEventListener("DOMContentLoaded", async () => {
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -543,6 +544,8 @@ async function loadActiveOrders() {
 }
 function renderActiveOrders() {
   const box = document.getElementById("activeOrders");
+  if (!box) return; // ✅ حماية مهمة جدًا
+
   box.innerHTML = "";
 
   const now = Date.now();
