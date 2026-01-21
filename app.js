@@ -499,7 +499,8 @@ currentInvoiceNo = order.invoice_no;
         }))
       );
     }
-
+     await loadActiveOrders(); // ✅ تحديث فوري للطلبات الجارية
+     clearForNewOrder();
     /* ===============================
        🧹 تنظيف بعد الحفظ
     ================================ */
