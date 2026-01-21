@@ -18,6 +18,8 @@ let currentInvoiceNo = null;
    REALTIME – الطلبات الجارية
 ================================ */
 function subscribeToOrders() {
+  if (!currentBusinessDay) return; // حماية
+
   supabase
     .channel("orders-realtime")
     .on(
@@ -28,8 +30,6 @@ function subscribeToOrders() {
         table: "orders"
       },
       () => {
-        console.log("Realtime update received"); // ✅ هنا بالضبط
-
         if (!currentBusinessDay) return;
         loadActiveOrders();
       }
