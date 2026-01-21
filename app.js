@@ -93,12 +93,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 🚀 واجهة فورية
-  applyLang();
-  renderCart();
-  subscribeToOrders();
-  // 📦 تحميل البيانات بعد التأكد من الدخول
-  await loadCurrentDay();
+applyLang();
+renderCart();
 
+await loadCurrentDay();   // ✅ أول شي نجيب يوم العمل
+subscribeToOrders();     // ✅ بعدها نشغل الـ realtime
+loadActiveOrders();      // ✅ تحميل أولي
   if (!currentBusinessDay) {
     alert("❌ فشل تحميل يوم العمل");
     return;
