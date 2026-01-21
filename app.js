@@ -505,7 +505,6 @@ currentInvoiceNo = order.invoice_no;
        🧹 تنظيف بعد الحفظ
     ================================ */
 
-clearForNewOrder();
   } catch (err) {
     console.error(err);
     alert("❌ حصل خطأ أثناء حفظ الطلب");
