@@ -63,155 +63,127 @@ async function uploadImage(file) {
    إضافة صنف (نهائي + مضمون)
 ================================ */
 window.addItem = async function () {
-  try {const itemType = document.querySelector('input[name="itemType"]:checked')?.value;
+  try {
+    const itemType =
+      document.querySelector('input[name="itemType"]:checked')?.value || "normal";
+
     const name = document.getElementById("itemName").value.trim();
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
-    const hasVariants = document.getElementById("hasVariants").checked;
 
     const priceNormal = parseFloat(document.getElementById("itemPrice").value);
     const priceSmall  = parseFloat(document.getElementById("priceSmall").value);
     const priceMedium = parseFloat(document.getElementById("priceMedium").value);
     const priceLarge  = parseFloat(document.getElementById("priceLarge").value);
-    const sortOrder = editingItemId
-  ? null
-  : Date.now(); // ترتيب تلقائي للصنف الجديد
+
+    const extrasRaw = document.getElementById("itemExtras")?.value || "";
+    const extras = extrasRaw
+      .split("\n")
+      .map(e => e.trim())
+      .filter(Boolean);
 
     if (!name) return alert("أدخل اسم الصنف");
 
-    if (!hasVariants && isNaN(priceNormal))
-      return alert("أدخل السعر");
+    // === تحديد نوع الصنف ===
+    const hasVariants = itemType !== "normal";
 
-    if (
-      hasVariants &&
-      isNaN(priceSmall) &&
-      isNaN(priceMedium) &&
-      isNaN(priceLarge)
-    )
-      return alert("أدخل سعر واحد على الأقل للأحجام");
+    if (!hasVariants && isNaN(priceNormal)) {
+      return alert("أدخل السعر");
+    }
+
+    if (hasVariants && isNaN(priceSmall) && isNaN(priceMedium) && isNaN(priceLarge)) {
+      return alert("أدخل سعر واحد على الأقل");
+    }
 
     let image_url = null;
     if (imageFile) {
       image_url = await uploadImage(imageFile);
       if (!image_url) return;
     }
-// ===== قراءة الإضافات الداخلية =====
-const extrasRaw = document.getElementById("itemExtras")?.value || "";
 
-const extras = extrasRaw
-  .split("\n")
-  .map(e => e.trim())
-  .filter(e => e.length > 0);
-  
-    /* === إدخال الصنف === */
-const query = editingItemId
-  ? supabase.from("products").update({
-      name,
-      category,
-      price: hasVariants ? null : priceNormal,
-      has_variants: hasVariants,
-      image_url,
-      extras
-    }).eq("id", editingItemId)
-    : supabase.from("products").insert({
-      name,
-      category,
-      price: hasVariants ? null : priceNormal,
-      has_variants: hasVariants,
-      image_url,
-      extras,
-      sort_order: sortOrder,
-      active: true
-    });
+    /* === حفظ الصنف === */
+    let query;
 
-const { data: product, error } = await query.select().single();
+    if (editingItemId) {
+      query = supabase
+        .from("products")
+        .update({
+          name,
+          category,
+          price: hasVariants ? null : priceNormal,
+          has_variants: hasVariants,
+          image_url,
+          extras
+        })
+        .eq("id", editingItemId);
+    } else {
+      query = supabase.from("products").insert({
+        name,
+        category,
+        price: hasVariants ? null : priceNormal,
+        has_variants: hasVariants,
+        image_url,
+        extras,
+        active: true,
+        sort_order: Date.now()
+      });
+    }
+
+    const { data: product, error } = await query.select().single();
     if (error) throw error;
 
-/* === إدخال الأحجام === */
-if (hasVariants) {
+    /* === الأحجام / الوجبات === */
+    if (hasVariants) {
+      if (editingItemId) {
+        await supabase
+          .from("product_variants")
+          .delete()
+          .eq("product_id", product.id);
+      }
 
-  if (editingItemId) {
-    await supabase
-      .from("product_variants")
-      .delete()
-      .eq("product_id", product.id);
+      const variants = [];
+
+      // 🍔 برقر (عادي / وجبة)
+      if (itemType === "burger") {
+        if (!isNaN(priceSmall)) {
+          variants.push({ product_id: product.id, label: "عادي", price: priceSmall, active: true });
+        }
+        if (!isNaN(priceMedium)) {
+          variants.push({ product_id: product.id, label: "وجبة", price: priceMedium, active: true });
+        }
+      }
+
+      // 📦 أحجام
+      if (itemType === "sizes") {
+        if (!isNaN(priceSmall)) {
+          variants.push({ product_id: product.id, label: "Small", price: priceSmall, active: true });
+        }
+        if (!isNaN(priceMedium)) {
+          variants.push({ product_id: product.id, label: "Medium", price: priceMedium, active: true });
+        }
+        if (!isNaN(priceLarge)) {
+          variants.push({ product_id: product.id, label: "Large", price: priceLarge, active: true });
+        }
+      }
+
+      if (variants.length) {
+        const { error: vErr } = await supabase
+          .from("product_variants")
+          .insert(variants);
+        if (vErr) throw vErr;
+      }
+    }
+
+    clearForm();
+    await loadItems();
+    editingItemId = null;
+    alert("✅ تم إضافة الصنف بنجاح");
+
+  } catch (err) {
+    console.error("ADD ITEM ERROR:", err);
+    alert("❌ فشل إضافة الصنف");
   }
-
-  const variants = [];
-
-  // 🍔 برقر
-  if (itemType === "burger") {
-
-    if (!isNaN(priceSmall)) {
-      variants.push({
-        product_id: product.id,
-        label: "عادي",
-        price: priceSmall,
-        active: true
-      });
-    }
-
-    if (!isNaN(priceMedium)) {
-      variants.push({
-        product_id: product.id,
-        label: "وجبة",
-        price: priceMedium,
-        active: true
-      });
-    }
-
-  } 
-  // 🍝 باقي الأصناف
-  else {
-
-    if (!isNaN(priceSmall)) {
-      variants.push({
-        product_id: product.id,
-        label: "Small",
-        price: priceSmall,
-        active: true
-      });
-    }
-
-    if (!isNaN(priceMedium)) {
-      variants.push({
-        product_id: product.id,
-        label: "Medium",
-        price: priceMedium,
-        active: true
-      });
-    }
-
-    if (!isNaN(priceLarge)) {
-      variants.push({
-        product_id: product.id,
-        label: "Large",
-        price: priceLarge,
-        active: true
-      });
-    }
-  }
-
-  if (variants.length > 0) {
-    const { error: vErr } = await supabase
-      .from("product_variants")
-      .insert(variants);
-
-    if (vErr) throw vErr;
-  }
-}
-
-/* ✅ هذا كله داخل addItem */
-clearForm();
-await loadItems();
-editingItemId = null;
-alert("✅ تم إضافة الصنف بنجاح");
-
-} catch (err) {
-  console.error("ADD ITEM ERROR:", err);
-  alert("❌ فشل إضافة الصنف (تحقق من الصلاحيات)");
-}
-}; // ✅ هذا القوس كان ناقص
+};
 
 /* ===============================
    عرض الأصناف
@@ -286,25 +258,76 @@ window.deleteItem = async function (id) {
   loadItems();
 };
 window.editItem = async function (id) {
-  const { data: item } = await supabase
+  const { data: item, error } = await supabase
     .from("products")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (!item) return alert("فشل تحميل الصنف");
+  if (error || !item) {
+    alert("فشل تحميل الصنف");
+    return;
+  }
 
   editingItemId = id;
 
+  // تعبئة البيانات الأساسية
   document.getElementById("itemName").value = item.name;
   document.getElementById("itemCategory").value = item.category;
   document.getElementById("itemPrice").value = item.price || "";
-  document.getElementById("hasVariants").checked = item.has_variants;
+  document.getElementById("itemExtras").value =
+    (item.extras || []).join("\n");
+
+  // ===== تحديد نوع الصنف (normal / burger / sizes) =====
+  let itemType = "normal";
+
+  if (item.has_variants) {
+    const { data: variants } = await supabase
+      .from("product_variants")
+      .select("label")
+      .eq("product_id", item.id);
+
+    if (variants?.some(v => v.label === "وجبة" || v.label === "عادي")) {
+      itemType = "burger";
+    } else {
+      itemType = "sizes";
+    }
+  }
+
+  // تفعيل الراديو الصحيح
+  const radio = document.querySelector(
+    `input[name="itemType"][value="${itemType}"]`
+  );
+  if (radio) radio.checked = true;
+
+  // إظهار / إخفاء الأحجام
   document.getElementById("variantsBox").style.display =
     item.has_variants ? "block" : "none";
 
-  document.getElementById("itemExtras").value =
-    (item.extras || []).join("\n");
+  // تنظيف أسعار الأحجام (لمنع بقايا قديمة)
+  document.getElementById("priceSmall").value = "";
+  document.getElementById("priceMedium").value = "";
+  document.getElementById("priceLarge").value = "";
+
+  // تحميل أسعار الأحجام إذا موجودة
+  if (item.has_variants) {
+    const { data: variants } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", item.id);
+
+    variants?.forEach(v => {
+      if (v.label === "عادي" || v.label === "Small") {
+        document.getElementById("priceSmall").value = v.price;
+      }
+      if (v.label === "وجبة" || v.label === "Medium") {
+        document.getElementById("priceMedium").value = v.price;
+      }
+      if (v.label === "Large") {
+        document.getElementById("priceLarge").value = v.price;
+      }
+    });
+  }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -312,10 +335,10 @@ window.editItem = async function (id) {
    أدوات
 ================================ */
 function clearForm() {
+  document.querySelector('input[name="itemType"][value="normal"]').checked = true;
   document.getElementById("itemName").value = "";
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemImage").value = "";
-  document.getElementById("hasVariants").checked = false;
   document.getElementById("variantsBox").style.display = "none";
   document.getElementById("priceSmall").value = "";
   document.getElementById("priceMedium").value = "";
