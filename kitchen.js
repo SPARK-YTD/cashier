@@ -1,13 +1,15 @@
 import { supabase } from "./supabase.js";
 
 /* ===============================
-   عناصر الصفحة
+   INIT
 ================================ */
-const ordersBox = document.getElementById("kitchenOrders");
-const overlay = document.getElementById("overlay");
+document.addEventListener("DOMContentLoaded", () => {
+  loadKitchenOrders();
+  subscribeKitchenOrders();
+});
 
 /* ===============================
-   تحميل الطلبات الجارية
+   تحميل طلبات المطبخ
 ================================ */
 async function loadKitchenOrders() {
   const { data, error } = await supabase
@@ -17,7 +19,7 @@ async function loadKitchenOrders() {
       invoice_no,
       created_at,
       timer_started_at,
-      kitchen_ready,
+      kitchen_status,
       order_items (
         qty,
         item_name,
@@ -25,129 +27,89 @@ async function loadKitchenOrders() {
       )
     `)
     .eq("status", "active")
+    .in("kitchen_status", ["new", "preparing"])
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Kitchen load error:", error);
+    console.error(error);
     return;
   }
 
-  renderOrders(data || []);
+  renderKitchenOrders(data || []);
 }
 
 /* ===============================
    رسم الطلبات
 ================================ */
-function renderOrders(orders) {
-  ordersBox.innerHTML = "";
+function renderKitchenOrders(orders) {
+  const box = document.getElementById("kitchenOrders");
+  box.innerHTML = "";
 
   const now = Date.now();
 
   orders.forEach(order => {
-    if (order.kitchen_ready) return; // ❌ لا نعرض الجاهز
-
     const baseTime = order.timer_started_at || order.created_at;
     const diffMin = Math.floor((now - new Date(baseTime)) / 60000);
 
-    const card = document.createElement("div");
-    card.className = "order-card";
+    const div = document.createElement("div");
+    div.className = "kitchen-order";
 
-    card.innerHTML = `
-      <div class="order-header">
-        <span>فاتورة #${order.invoice_no}</span>
-        <span class="timer">⏱ ${diffMin} د</span>
+    div.innerHTML = `
+      <div class="kitchen-header">
+        <strong>فاتورة #${order.invoice_no}</strong>
+        <span>${diffMin} دقيقة</span>
       </div>
 
-      <div class="items">
+      <div class="kitchen-items">
         ${order.order_items.map(i => `
-          <span>• ${i.item_name} ×${i.qty}</span>
-          ${
-            i.extras_removed?.length
-              ? `<span>  بدون: ${i.extras_removed.join("، ")}</span>`
-              : ""
-          }
-        `).join("")}
-      </div>
-
-      <div class="actions">
-        <button class="view-btn" onclick="viewOrder('${order.id}')">👁 عرض</button>
-        <button class="ready-btn" onclick="markReady('${order.id}')">✅ جاهز</button>
-      </div>
-    `;
-
-    ordersBox.appendChild(card);
-  });
-}
-
-/* ===============================
-   عرض الفاتورة (Overlay)
-================================ */
-window.viewOrder = async function (orderId) {
-  const { data, error } = await supabase
-    .from("order_items")
-    .select("qty, item_name, extras_removed")
-    .eq("order_id", orderId);
-
-  if (error || !data) return;
-
-  overlay.innerHTML = `
-    <div class="overlay-box">
-      <h3>🧾 تفاصيل الطلب</h3>
-
-      <div class="overlay-items">
-        ${data.map(i => `
-          <div>
-            ${i.item_name} ×${i.qty}
-            ${
-              i.extras_removed?.length
-                ? `<div>بدون: ${i.extras_removed.join("، ")}</div>`
-                : ""
-            }
+          <div class="k-item">
+            <strong>${i.item_name}</strong>
+            ${i.extras_removed?.length
+              ? `<div class="extras">بدون: ${i.extras_removed.join("، ")}</div>`
+              : ""}
+            <div class="qty">× ${i.qty}</div>
           </div>
         `).join("")}
       </div>
 
-      <button class="close-btn" onclick="closeOverlay()">إغلاق</button>
-    </div>
-  `;
+      <div class="kitchen-actions">
+        ${
+          order.kitchen_status === "new"
+            ? `<button onclick="startPreparing('${order.id}')">▶️ بدء التحضير</button>`
+            : `<button onclick="markReady('${order.id}')">✅ جاهز</button>`
+        }
+      </div>
+    `;
 
-  overlay.classList.add("show");
-};
-
-window.closeOverlay = function () {
-  overlay.classList.remove("show");
-};
+    box.appendChild(div);
+  });
+}
 
 /* ===============================
-   جاهز (مطبخ فقط)
+   أزرار المطبخ
 ================================ */
-window.markReady = async function (orderId) {
-  await supabase
-    .from("orders")
-    .update({ kitchen_ready: true })
-    .eq("id", orderId);
+window.startPreparing = async id => {
+  await supabase.from("orders")
+    .update({ kitchen_status: "preparing" })
+    .eq("id", id);
+};
 
-  loadKitchenOrders(); // تحديث مباشر
+window.markReady = async id => {
+  await supabase.from("orders")
+    .update({ kitchen_status: "ready" })
+    .eq("id", id);
 };
 
 /* ===============================
    REALTIME
 ================================ */
-function subscribeKitchen() {
+function subscribeKitchenOrders() {
   supabase
     .channel("kitchen-orders")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
-      () => {
-        loadKitchenOrders();
-      }
+      loadKitchenOrders
     )
     .subscribe();
 }
-
-/* ===============================
-   INIT
-================================ */
-loadKitchenOrders();
-subscribeKitchen();
