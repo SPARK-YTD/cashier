@@ -1,1 +1,184 @@
-g
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍳 شاشة المطبخ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    header {
+      background: #020617;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      border-bottom: 2px solid #1e293b;
+    }
+
+    main {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .order-card {
+      background: #020617;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .timer {
+      font-size: 14px;
+      color: #38bdf8;
+    }
+
+    .items {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .items span {
+      display: block;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .view-btn {
+      background: #334155;
+      color: #f8fafc;
+    }
+
+    .ready-btn {
+      background: #16a34a;
+      color: white;
+      font-weight: bold;
+    }
+
+    /* ===== Overlay ===== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .overlay-box {
+      background: #020617;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 420px;
+      padding: 16px;
+      border: 2px solid #334155;
+    }
+
+    .overlay-box h3 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .overlay-items {
+      margin-top: 12px;
+      line-height: 1.7;
+    }
+
+    .close-btn {
+      margin-top: 16px;
+      width: 100%;
+      background: #dc2626;
+      color: white;
+      font-size: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  🍳 شاشة المطبخ
+</header>
+
+<main id="kitchenOrders">
+  <!-- بطاقة طلب (مثال فقط – بينحذف لاحقًا) -->
+  <div class="order-card">
+    <div class="order-header">
+      <span>فاتورة #21</span>
+      <span class="timer">⏱ 6 د</span>
+    </div>
+
+    <div class="items">
+      <span>• برجر دجاج ×2</span>
+      <span>  بدون: خس</span>
+      <span>• بطاطس ×1</span>
+    </div>
+
+    <div class="actions">
+      <button class="view-btn">👁 عرض</button>
+      <button class="ready-btn">✅ جاهز</button>
+    </div>
+  </div>
+</main>
+
+<!-- ===== Overlay عرض الفاتورة ===== -->
+<div id="overlay" class="overlay">
+  <div class="overlay-box">
+    <h3>🧾 تفاصيل الفاتورة</h3>
+
+    <div class="overlay-items">
+      <div>برجر دجاج ×2</div>
+      <div>بدون: خس</div>
+      <div>بطاطس ×1</div>
+    </div>
+
+    <button class="close-btn">إغلاق</button>
+  </div>
+</div>
+
+<!-- لاحقًا -->
+<script src="kitchen.js"></script>
+
+</body>
+</html>
