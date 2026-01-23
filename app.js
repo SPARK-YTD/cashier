@@ -513,7 +513,11 @@ currentInvoiceNo = order.invoice_no;
    REALTIME – الطلبات الجارية
 ================================ */
 function subscribeToOrders() {
-  supabase
+  if (ordersChannel) {
+    supabase.removeChannel(ordersChannel);
+  }
+
+  ordersChannel = supabase
     .channel("orders-cashier-realtime")
     .on(
       "postgres_changes",
@@ -522,9 +526,7 @@ function subscribeToOrders() {
         schema: "public",
         table: "orders"
       },
-      () => {
-        loadActiveOrders();
-      }
+      () => loadActiveOrders()
     )
     .on(
       "postgres_changes",
@@ -533,12 +535,11 @@ function subscribeToOrders() {
         schema: "public",
         table: "orders"
       },
-      () => {
-        loadActiveOrders();
-      }
+      () => loadActiveOrders()
     )
     .subscribe();
 }
+
 /* ===============================
    الطلبات الجارية
 ================================ */
