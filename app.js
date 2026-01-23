@@ -75,13 +75,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyLang();
   renderCart();
 
-  // 📦 تحميل البيانات بعد التأكد من الدخول
-  await loadCurrentDay();
+// 📦 تحميل البيانات بعد التأكد من الدخول
+currentBusinessDay = await getOrCreateBusinessDay();
 
-  if (!currentBusinessDay) {
-    alert("❌ فشل تحميل يوم العمل");
-    return;
-  }
+if (!currentBusinessDay) {
+  alert("❌ خطأ في إنشاء يوم العمل");
+  return;
+}
+
+
 
   loadItems("food");        // بدون await (غير حاجز)
   loadActiveOrders();       // بدون await
