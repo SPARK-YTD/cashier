@@ -1,16 +1,116 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>المطبخ</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>شاشة المطبخ</title>
+
+  <!-- موبايل / آيباد -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- نفس ستايل المشروع -->
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 28px;
+    }
+
+    #kitchenOrders {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 15px;
+      padding: 15px;
+    }
+
+    .kitchen-card {
+      background: #020617;
+      border: 2px solid #334155;
+      border-radius: 14px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .k-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .k-invoice {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .k-time {
+      background: #1e293b;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+    }
+
+    .k-items {
+      flex: 1;
+      margin-bottom: 10px;
+    }
+
+    .k-item {
+      border-bottom: 1px dashed #334155;
+      padding: 8px 0;
+    }
+
+    .k-name {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .k-qty {
+      font-size: 16px;
+      color: #e5e7eb;
+    }
+
+    .k-extras {
+      font-size: 14px;
+      color: #f87171;
+      margin-top: 3px;
+    }
+
+    .k-ready-btn {
+      margin-top: 10px;
+      padding: 14px;
+      font-size: 20px;
+      border: none;
+      border-radius: 10px;
+      background: #22c55e;
+      color: #052e16;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .k-ready-btn:active {
+      transform: scale(0.97);
+    }
+  </style>
 </head>
+
 <body>
 
-<h1 style="text-align:center">👨‍🍳 شاشة المطبخ</h1>
+  <h1>👨‍🍳 شاشة المطبخ</h1>
 
-<div id="kitchenOrders"></div>
+  <div id="kitchenOrders"></div>
 
-<script type="module" src="kitchen.js"></script>
+  <script type="module" src="kitchen.js"></script>
+
 </body>
 </html>
