@@ -14,6 +14,7 @@ let activeOrders = [];
 let currentBusinessDay = null;
 let editingOrderId = null;
 let currentInvoiceNo = null;
+let ordersChannel; 
 
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
