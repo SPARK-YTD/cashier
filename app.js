@@ -520,22 +520,42 @@ function subscribeToOrders() {
 
   ordersChannel = supabase
     .channel("orders-cashier-realtime")
+
+    // 🟢 طلب جديد
     .on(
       "postgres_changes",
-      {
-        event: "*",          // 👈 نراقب كل الأحداث
-        schema: "public",
-        table: "orders"
-      },
+      { event: "INSERT", schema: "public", table: "orders" },
       (payload) => {
-        console.log("🔥 REALTIME EVENT:", payload);
-        loadActiveOrders();
+        console.log("🟢 NEW ORDER:", payload.new);
+
+        activeOrders.unshift(payload.new); // إضافة فورية
+        renderActiveOrders();              // رسم مباشر
       }
     )
+
+    // 🟡 تحديث الطلب (جاهز / مدفوع / مكتمل)
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "orders" },
+      (payload) => {
+        console.log("🟡 UPDATE ORDER:", payload.new);
+
+        const index = activeOrders.findIndex(
+          o => o.id === payload.new.id
+        );
+
+        if (index !== -1) {
+          activeOrders[index] = payload.new;
+          renderActiveOrders();
+        }
+      }
+    )
+
     .subscribe((status) => {
-      console.log("📡 CHANNEL STATUS:", status);
+      console.log("🔵 CHANNEL STATUS:", status);
     });
 }
+
 
 
 /* ===============================
