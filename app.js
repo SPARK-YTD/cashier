@@ -523,23 +523,20 @@ function subscribeToOrders() {
     .on(
       "postgres_changes",
       {
-        event: "INSERT",
+        event: "*",          // 👈 نراقب كل الأحداث
         schema: "public",
         table: "orders"
       },
-      () => loadActiveOrders()
+      (payload) => {
+        console.log("🔥 REALTIME EVENT:", payload);
+        loadActiveOrders();
+      }
     )
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "orders"
-      },
-      () => loadActiveOrders()
-    )
-    .subscribe();
+    .subscribe((status) => {
+      console.log("📡 CHANNEL STATUS:", status);
+    });
 }
+
 
 /* ===============================
    الطلبات الجارية
