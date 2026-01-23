@@ -565,3 +565,22 @@ hr {
 #printArea {
   display: none;
 }
+/* ===============================
+   PRINT – REPORT FIX
+================================ */
+@media print {
+
+  /* تقرير الإقفال */
+  body.report-page * {
+    visibility: visible !important;
+  }
+
+  body.report-page {
+    background: white;
+  }
+
+  body.report-page .no-print {
+    display: none !important;
+  }
+
+}
