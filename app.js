@@ -523,15 +523,18 @@ function subscribeToOrders() {
 
     // 🟢 طلب جديد
     .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "orders" },
-      (payload) => {
-        console.log("🟢 NEW ORDER:", payload.new);
+  "postgres_changes",
+  { event: "INSERT", schema: "public", table: "orders" },
+  (payload) => {
+    const exists = activeOrders.some(o => o.id === payload.new.id);
+    if (exists) return; // ⛔️ يمنع التكرار
 
-        activeOrders.unshift(payload.new); // إضافة فورية
-        renderActiveOrders();              // رسم مباشر
-      }
-    )
+    console.log("🟢 NEW ORDER:", payload.new);
+
+    activeOrders.unshift(payload.new); // إضافة فورية
+    renderActiveOrders();               // رسم مباشر
+  }
+)
 
     // 🟡 تحديث الطلب (جاهز / مدفوع / مكتمل)
     .on(
