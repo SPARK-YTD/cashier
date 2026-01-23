@@ -52,20 +52,7 @@ async function getOrCreateBusinessDay() {
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
 ================================ */
-async function loadCurrentDay() {
-  const { data, error } = await supabase
-    .from("business_days")
-    .select("*")
-    .eq("is_open", true)
-    .order("opened_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
-  // ✅ إذا فيه يوم مفتوح
-  if (data) {
-    currentBusinessDay = data;
-    return;
-  }
 
   // 🟡 إذا ما فيه يوم مفتوح → نفتح يوم جديد تلقائي
   const today = new Date().toISOString().slice(0, 10);
