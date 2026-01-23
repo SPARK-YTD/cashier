@@ -96,22 +96,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   /* ===============================
      معاينة اليوم المفتوح
   ================================ */
-  const { data: openDay, error: openDayError } = await supabase
-    .from("business_days")
-    .select("*")
-    .eq("is_open", true)
-    .single();
+const { data: openDay, error: openDayError } = await supabase
+  .from("business_days")
+  .select("*")
+  .eq("is_open", true)
+  .order("opened_at", { ascending: false })
+  .limit(1)
+  .maybeSingle();
 
-  if (openDayError) {
-    console.error("❌ خطأ جلب اليوم المفتوح:", openDayError);
-  }
+if (openDayError) {
+  console.error("❌ خطأ جلب اليوم المفتوح:", openDayError);
+}
 
-  currentBusinessDay = openDay;
+currentBusinessDay = openDay;
 
-  if (!currentBusinessDay) {
-    closeTimeEl.textContent = "❌ لا يوجد يوم مفتوح";
-    return;
-  }
+if (!currentBusinessDay) {
+  closeTimeEl.textContent = "❌ لا يوجد يوم مفتوح";
+  return;
+}
+
 
   const { data: orders, error: ordersError } = await supabase
     .from("orders")
