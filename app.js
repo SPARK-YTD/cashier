@@ -55,10 +55,6 @@ async function loadCurrentDay() {
   currentBusinessDay = newDay;
 }
 
-
-/* ===============================
-   INIT
-================================ */
 /* ===============================
    INIT (OPTIMIZED)
 ================================ */
@@ -94,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ?.addEventListener("input", calculateChange);
 
   // تحديث الطلبات كل دقيقة
-  setInterval(loadActiveOrders, 60000);
+ // setInterval(loadActiveOrders, 60000);
 });
 window.addEventListener("online", async () => {
   await syncOfflineOrders(currentBusinessDay?.id);
