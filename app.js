@@ -518,16 +518,26 @@ currentInvoiceNo = order.invoice_no;
 ================================ */
 function subscribeToOrders() {
   supabase
-    .channel("orders-realtime")
+    .channel("orders-cashier-realtime")
     .on(
       "postgres_changes",
       {
-        event: "*",
+        event: "INSERT",
         schema: "public",
         table: "orders"
       },
       () => {
-        // 🔥 أي تغيير على الطلبات
+        loadActiveOrders();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "orders"
+      },
+      () => {
         loadActiveOrders();
       }
     )
@@ -538,11 +548,12 @@ function subscribeToOrders() {
 ================================ */
 async function loadActiveOrders() {
   const { data } = await supabase
-  .from("orders")
-  .select("id, total, invoice_no, created_at, timer_started_at, is_paid")
-  .eq("status", "active")
-  .eq("business_day_id", currentBusinessDay.id)
-  .order("created_at", { ascending: false });
+    .from("orders")
+    .select("id, total, invoice_no, created_at, timer_started_at, is_paid, kitchen_ready")
+    .eq("status", "active")
+    .eq("business_day_id", currentBusinessDay.id)
+    .order("created_at", { ascending: false });
+
   activeOrders = data || [];
   renderActiveOrders();
 }
@@ -596,20 +607,27 @@ const createdAt = new Date(baseTime).getTime();
     if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
 
     div.innerHTML = `
-      <strong>فاتورة رقم ${order.invoice_no}</strong><br>
-      ${order.total.toFixed(3)} د.ب<br>
-<button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
-      <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+  <strong>فاتورة رقم ${order.invoice_no}</strong><br>
 
-      ${
-        order.is_paid
-          ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
-          : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
-      }
+  ${order.kitchen_ready 
+    ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>` 
+    : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
+  }
 
-      <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-      <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-    `;
+  ${order.total.toFixed(3)} د.ب<br>
+
+  <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
+  <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+
+  ${
+    order.is_paid
+      ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
+      : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+  }
+
+  <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+  <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+`;
 
     box.appendChild(div);
   });
