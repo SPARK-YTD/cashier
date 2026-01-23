@@ -49,32 +49,7 @@ async function getOrCreateBusinessDay() {
   console.log("🟢 New business day created");
   return newDay;
 }
-/* ===============================
-   تحميل اليوم المفتوح (مُصحح)
-================================ */
 
-
-  // 🟡 إذا ما فيه يوم مفتوح → نفتح يوم جديد تلقائي
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: newDay, error: createError } = await supabase
-    .from("business_days")
-    .insert({
-      day_date: today,
-      is_open: true,
-      opened_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-
-  if (createError) {
-    console.error("FAILED TO CREATE BUSINESS DAY:", createError);
-    currentBusinessDay = null;
-    return;
-  }
-
-  currentBusinessDay = newDay;
-}
 
 /* ===============================
    INIT (OPTIMIZED)
