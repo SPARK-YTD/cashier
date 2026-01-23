@@ -15,7 +15,40 @@ let currentBusinessDay = null;
 let editingOrderId = null;
 let currentInvoiceNo = null;
 let ordersChannel; 
+/* ===============================
+   Business Day Helper
+================================ */
+async function getOrCreateBusinessDay() {
+  const { data } = await supabase
+    .from("business_days")
+    .select("*")
+    .eq("is_open", true)
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
+  if (data) return data;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: newDay, error } = await supabase
+    .from("business_days")
+    .insert({
+      day_date: today,
+      is_open: true,
+      opened_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("❌ Failed to create business day", error);
+    return null;
+  }
+
+  console.log("🟢 New business day created");
+  return newDay;
+}
 /* ===============================
    تحميل اليوم المفتوح (مُصحح)
 ================================ */
@@ -82,6 +115,7 @@ if (!currentBusinessDay) {
   alert("❌ خطأ في إنشاء يوم العمل");
   return;
 }
+console.log("📅 Current Business Day:", currentBusinessDay);
 
 
 
