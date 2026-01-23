@@ -118,11 +118,28 @@ window.markKitchenReady = async function (orderId) {
 ================================ */
 function subscribeKitchenOrders() {
   supabase
-    .channel("kitchen-realtime")
+    .channel("kitchen-orders")
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "orders" },
-      loadKitchenOrders
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "orders"
+      },
+      () => {
+        loadKitchenOrders();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "orders"
+      },
+      () => {
+        loadKitchenOrders();
+      }
     )
     .subscribe();
 }
