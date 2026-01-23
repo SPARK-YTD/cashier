@@ -106,12 +106,13 @@ window.markKitchenReady = async function (orderId) {
     .update({ kitchen_ready: true })
     .eq("id", orderId);
 
-  if (error) {
+  if (!error) {
+    loadKitchenOrders(); // 🔥 تحديث فوري مضمون
+  } else {
     alert("❌ فشل تحديث حالة المطبخ");
     console.error(error);
   }
 };
-
 /* ===============================
    REALTIME – بدون رفرش
 ================================ */
