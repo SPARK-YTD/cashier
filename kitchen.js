@@ -3,7 +3,14 @@ import { supabase } from "./supabase.js";
 /* ===============================
    INIT
 ================================ */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // 🔐 تأكد من تسجيل الدخول
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.href = "login.html";
+    return;
+  }
+
   loadKitchenOrders();
   subscribeKitchenOrders();
 });
@@ -19,7 +26,7 @@ async function loadKitchenOrders() {
       invoice_no,
       created_at,
       timer_started_at,
-      kitchen_status,
+      kitchen_ready,
       order_items (
         qty,
         item_name,
@@ -27,11 +34,11 @@ async function loadKitchenOrders() {
       )
     `)
     .eq("status", "active")
-    .in("kitchen_status", ["new", "preparing"])
+    .eq("kitchen_ready", false)
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error(error);
+    console.error("Kitchen load error:", error);
     return;
   }
 
@@ -39,46 +46,51 @@ async function loadKitchenOrders() {
 }
 
 /* ===============================
-   رسم الطلبات
+   رسم الطلبات (عرض احترافي)
 ================================ */
 function renderKitchenOrders(orders) {
   const box = document.getElementById("kitchenOrders");
+  if (!box) return;
+
   box.innerHTML = "";
 
   const now = Date.now();
+
+  if (orders.length === 0) {
+    box.innerHTML = `<p style="text-align:center;font-size:18px">لا توجد طلبات حاليًا</p>`;
+    return;
+  }
 
   orders.forEach(order => {
     const baseTime = order.timer_started_at || order.created_at;
     const diffMin = Math.floor((now - new Date(baseTime)) / 60000);
 
     const div = document.createElement("div");
-    div.className = "kitchen-order";
+    div.className = "kitchen-card";
 
     div.innerHTML = `
-      <div class="kitchen-header">
-        <strong>فاتورة #${order.invoice_no}</strong>
-        <span>${diffMin} دقيقة</span>
+      <div class="k-header">
+        <div class="k-invoice">فاتورة #${order.invoice_no}</div>
+        <div class="k-time">${diffMin} دقيقة</div>
       </div>
 
-      <div class="kitchen-items">
-        ${order.order_items.map(i => `
+      <div class="k-items">
+        ${order.order_items.map(item => `
           <div class="k-item">
-            <strong>${i.item_name}</strong>
-            ${i.extras_removed?.length
-              ? `<div class="extras">بدون: ${i.extras_removed.join("، ")}</div>`
-              : ""}
-            <div class="qty">× ${i.qty}</div>
+            <div class="k-name">${item.item_name}</div>
+            <div class="k-qty">× ${item.qty}</div>
+            ${
+              item.extras_removed?.length
+                ? `<div class="k-extras">بدون: ${item.extras_removed.join("، ")}</div>`
+                : ""
+            }
           </div>
         `).join("")}
       </div>
 
-      <div class="kitchen-actions">
-        ${
-          order.kitchen_status === "new"
-            ? `<button onclick="startPreparing('${order.id}')">▶️ بدء التحضير</button>`
-            : `<button onclick="markReady('${order.id}')">✅ جاهز</button>`
-        }
-      </div>
+      <button class="k-ready-btn" onclick="markKitchenReady('${order.id}')">
+        ✅ جاهز
+      </button>
     `;
 
     box.appendChild(div);
@@ -86,26 +98,26 @@ function renderKitchenOrders(orders) {
 }
 
 /* ===============================
-   أزرار المطبخ
+   زر جاهز (يحذف من المطبخ فقط)
 ================================ */
-window.startPreparing = async id => {
-  await supabase.from("orders")
-    .update({ kitchen_status: "preparing" })
-    .eq("id", id);
-};
+window.markKitchenReady = async function (orderId) {
+  const { error } = await supabase
+    .from("orders")
+    .update({ kitchen_ready: true })
+    .eq("id", orderId);
 
-window.markReady = async id => {
-  await supabase.from("orders")
-    .update({ kitchen_status: "ready" })
-    .eq("id", id);
+  if (error) {
+    alert("❌ فشل تحديث حالة المطبخ");
+    console.error(error);
+  }
 };
 
 /* ===============================
-   REALTIME
+   REALTIME – بدون رفرش
 ================================ */
 function subscribeKitchenOrders() {
   supabase
-    .channel("kitchen-orders")
+    .channel("kitchen-realtime")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
