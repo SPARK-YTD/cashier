@@ -61,7 +61,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const totalSalesEl  = document.getElementById("totalSales");
   const itemsReportEl = document.getElementById("itemsReport");
   const topItemEl     = document.getElementById("topItem");
-
+  const cashTotalEl   = document.getElementById("cashTotal");
+  const benefitTotalEl = document.getElementById("benefitTotal");
   const params = new URLSearchParams(window.location.search);
   const reportId = params.get("id");
 
