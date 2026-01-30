@@ -13,14 +13,23 @@ let ordersCache = [];
 ================================ */
 function calculateReportData(orders) {
   let totalSales = 0;
+  let cashTotal = 0;
+  let benefitTotal = 0;
   const itemsMap = {};
 
   orders.forEach(o => {
+    // 💳 طريقة الدفع
+    if (o.payment_method === "cash") {
+      cashTotal += o.total;
+    } else if (o.payment_method === "benefit") {
+      benefitTotal += o.total;
+    }
+
+    totalSales += o.total;
+
     o.order_items.forEach(i => {
       const name = i.products.name;
       const itemTotal = i.qty * i.price;
-
-      totalSales += itemTotal;
 
       itemsMap[name] ??= { qty: 0, total: 0 };
       itemsMap[name].qty += i.qty;
@@ -34,6 +43,8 @@ function calculateReportData(orders) {
 
   return {
     totalSales,
+    cashTotal,
+    benefitTotal,
     itemsMap,
     topItem
   };
@@ -116,18 +127,21 @@ if (!currentBusinessDay) {
 }
 
 
-  const { data: orders, error: ordersError } = await supabase
-    .from("orders")
-    .select(`
-      order_items (
-        qty,
-        price,
-        products ( name )
-      )
-    `)
-    .eq("status", "completed")
-    .eq("business_day_id", currentBusinessDay.id);
-
+const { data: orders, error: ordersError } = await supabase
+  .from("orders")
+  .select(`
+    id,
+    total,
+    payment_method,
+    order_items (
+      qty,
+      price,
+      products ( name )
+    )
+  `)
+  .eq("status", "completed")
+  .eq("business_day_id", currentBusinessDay.id);
+  
   if (ordersError) {
     console.error("❌ خطأ جلب الطلبات:", ordersError);
   }
