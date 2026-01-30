@@ -89,6 +89,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     ordersCountEl.textContent = report.orders_count;
     totalSalesEl.textContent =
       Number(report.total_sales).toFixed(3) + " د.ب";
+      cashTotalEl.textContent =
+  Number(report.cash_total || 0).toFixed(3) + " د.ب";
+
+benefitTotalEl.textContent =
+  Number(report.benefit_total || 0).toFixed(3) + " د.ب";
     topItemEl.textContent = report.top_item || "—";
 
     itemsReportEl.innerHTML = "";
@@ -159,8 +164,13 @@ const { data: orders, error: ordersError } = await supabase
     return;
   }
 
-  const { totalSales, itemsMap, topItem } =
-    calculateReportData(ordersCache);
+  const {
+  totalSales,
+  cashTotal,
+  benefitTotal,
+  itemsMap,
+  topItem
+} = calculateReportData(ordersCache);
 
   closeTimeEl.textContent =
     "🕒 معاينة تقرير يوم: " + currentBusinessDay.day_date;
@@ -193,17 +203,24 @@ window.startNewDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 
-  const { totalSales, itemsMap, topItem } =
-    calculateReportData(ordersCache);
+const {
+  totalSales,
+  cashTotal,
+  benefitTotal,
+  itemsMap,
+  topItem
+} = calculateReportData(ordersCache);
 
-  const insertPayload = {
-    business_day_id: currentBusinessDay.id,
-    report_date: currentBusinessDay.day_date,
-    orders_count: ordersCache.length,
-    total_sales: totalSales,
-    top_item: topItem,
-    items: itemsMap
-  };
+const insertPayload = {
+  business_day_id: currentBusinessDay.id,
+  report_date: currentBusinessDay.day_date,
+  orders_count: ordersCache.length,
+  total_sales: totalSales,
+  cash_total: cashTotal,
+  benefit_total: benefitTotal,
+  top_item: topItem,
+  items: itemsMap
+};
 
   const { error } = await supabase
     .from("daily_reports")
