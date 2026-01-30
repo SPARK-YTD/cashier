@@ -178,7 +178,12 @@ const { data: orders, error: ordersError } = await supabase
   ordersCountEl.textContent = ordersCache.length;
   totalSalesEl.textContent = totalSales.toFixed(3) + " د.ب";
   topItemEl.textContent = topItem;
+  cashTotalEl.textContent =
+    cashTotal.toFixed(3) + " د.ب";
 
+  benefitTotalEl.textContent =
+    benefitTotal.toFixed(3) + " د.ب";
+  
   itemsReportEl.innerHTML = "";
   Object.entries(itemsMap).forEach(([name, item]) => {
     const tr = document.createElement("tr");
