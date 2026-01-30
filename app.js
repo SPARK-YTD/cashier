@@ -685,15 +685,60 @@ window.editOrder = async function (orderId) {
   renderCart();
 };
 
-/* ✅ مكتمل */
-window.markCompleted = async id => {
-  await supabase.from("orders").update({
-    status: "completed",
-    closed_at: new Date().toISOString()
-  }).eq("id", id);
+/* ✅ مكتمل (اختيار طريقة الدفع) */
+window.markCompleted = async function (orderId) {
 
-  loadActiveOrders();
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:320px">
+      <h3>طريقة الدفع</h3>
+
+      <button class="variant-btn" id="pay-cash">💵 كاش</button>
+      <button class="variant-btn" id="pay-benefit">💳 بنفت</button>
+
+      <button class="variant-cancel">رجوع</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+
+  overlay.querySelector("#pay-cash").onclick = () =>
+    confirmComplete(orderId, "cash", overlay);
+
+  overlay.querySelector("#pay-benefit").onclick = () =>
+    confirmComplete(orderId, "benefit", overlay);
 };
+
+async function confirmComplete(orderId, method, overlay) {
+
+  if (!confirm(`تأكيد إغلاق الفاتورة كـ ${method === "cash" ? "كاش" : "بنفت"}؟`)) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "completed",
+      is_paid: true,
+      payment_method: method,
+      paid_at: new Date().toISOString(),
+      closed_at: new Date().toISOString()
+    })
+    .eq("id", orderId);
+
+  if (error) {
+    alert("❌ فشل إغلاق الفاتورة");
+    console.error(error);
+    return;
+  }
+
+  overlay.remove();
+  loadActiveOrders();
+}
 /* 💰 تم الدفع */
 window.markPaid = async id => {
   await supabase.from("orders").update({
