@@ -845,28 +845,28 @@ window.viewOrder = async function (orderId) {
 // ===============================
 window.openEmployeeMeals = async function () {
   // 1️⃣ رقم الموظف
-  const employeeId = prompt("👨‍🍳 أدخل رقم الموظف:");
-  if (!employeeId) return;
+  const employeeCode = prompt("👨‍🍳 أدخل رقم الموظف:");
+  if (!employeeCode) return;
 
   // 2️⃣ رقم المدير
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
-// 3️⃣ التحقق من المدير من جدول الموظفين
-const { data: manager, error: managerError } = await supabase
-  .from("employees")
-  .select("id")
-  .eq("manager_pin", managerPin)
-  .eq("is_manager", true)
-  .single();
+  // 3️⃣ التحقق من المدير
+  const { data: manager, error: managerError } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("manager_pin", managerPin)
+    .eq("is_manager", true)
+    .single();
 
-if (managerError || !manager) {
-  alert("❌ رقم المدير غير صحيح");
-  return;
-}
+  if (managerError || !manager) {
+    alert("❌ رقم المدير غير صحيح");
+    return;
+  }
 
-  // 4️⃣ جلب كوبون الموظف لهذا الشهر
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  // 4️⃣ جلب كوبون الموظف
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
   const { data: coupon, error: couponError } = await supabase
     .from("employee_coupons")
@@ -885,15 +885,13 @@ if (managerError || !manager) {
     return;
   }
 
-  // 5️⃣ نجاح 🎉
   alert(
     `✅ تم الدخول لوضع وجبات الموظفين\n` +
-    `الموظف: ${employeeId}\n` +
+    `رقم الموظف: ${employeeCode}\n` +
     `الرصيد المتبقي: ${coupon.remaining_amount.toFixed(3)} د.ب`
   );
-
-  // 🔜 لاحقًا هنا ندخل وضع الكاشير الخاص بالموظف
 };
+
 /* ===============================
    NAV
 ================================ */
