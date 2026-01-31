@@ -15,6 +15,7 @@ let currentBusinessDay = null;
 let editingOrderId = null;
 let currentInvoiceNo = null;
 let ordersChannel; 
+let employeeMode = null;
 /* ===============================
    Business Day Helper
 ================================ */
@@ -890,6 +891,14 @@ window.openEmployeeMeals = async function () {
     `رقم الموظف: ${employeeCode}\n` +
     `الرصيد المتبقي: ${coupon.remaining_amount.toFixed(3)} د.ب`
   );
+  
+  employeeMode = {
+  employee_code: employeeCode,
+  remaining: coupon.remaining_amount
+};
+
+console.log("👨‍🍳 Employee Mode ON:", employeeMode);
+  
 };
 
 /* ===============================
