@@ -208,14 +208,15 @@ window.startNewDay = async function () {
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
 // 🔍 فحص الطلبات غير المكتملة
-const { data: openOrders, error } = await supabase
+const { data: openOrders, error: checkError } = await supabase
   .from("orders")
   .select("id")
   .eq("business_day_id", currentBusinessDay.id)
   .neq("status", "completed");
 
-if (error) {
+if (checkError) {
   alert("❌ خطأ أثناء فحص الطلبات");
+  console.error(checkError);
   return;
 }
 
@@ -243,20 +244,25 @@ const insertPayload = {
   items: itemsMap
 };
 
-  const { error } = await supabase
-    .from("daily_reports")
-    .insert(insertPayload);
+  const { error: reportError } = await supabase
+  .from("daily_reports")
+  .insert(insertPayload);
 
-  if (error) {
-    alert("❌ فشل حفظ التقرير");
-    console.error(error);
-    return;
-  }
+if (reportError) {
+  alert("❌ فشل حفظ التقرير");
+  console.error(reportError);
+  return;
+}
+  const { error: closeDayError } = await supabase
+  .from("business_days")
+  .update({ is_open: false, closed_at: new Date().toISOString() })
+  .eq("id", currentBusinessDay.id);
 
-  await supabase
-    .from("business_days")
-    .update({ is_open: false, closed_at: new Date().toISOString() })
-    .eq("id", currentBusinessDay.id);
+if (closeDayError) {
+  alert("❌ فشل إقفال اليوم");
+  console.error(closeDayError);
+  return;
+}
 
   await supabase.from("business_days").insert({
     day_date: new Date().toISOString().slice(0, 10),
