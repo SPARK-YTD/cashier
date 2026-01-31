@@ -431,7 +431,12 @@ loadActiveOrders();
   }
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
-
+// ❌ منع تجاوز رصيد الموظف
+if (employeeMode && total > employeeMode.remaining) {
+  alert("❌ المبلغ يتجاوز رصيد الموظف");
+  isSavingOrder = false;
+  return;
+}
   try {
 
     /* ===============================
@@ -488,12 +493,16 @@ const invoiceNo = dayData.invoice_counter;
 const { data: order, error } = await supabase
   .from("orders")
   .insert({
-    total,
-    status: "active",
-    business_day_id: currentBusinessDay.id,
-    invoice_no: invoiceNo,
-    timer_started_at: new Date().toISOString()
-  })
+  total,
+  status: "active",
+  business_day_id: currentBusinessDay.id,
+  invoice_no: invoiceNo,
+  timer_started_at: new Date().toISOString(),
+
+  // 👇 أضف هذول
+  is_employee_order: employeeMode ? true : false,
+  employee_code: employeeMode ? employeeMode.employee_code : null
+})
   .select("id, invoice_no")
   .single();
 
@@ -528,6 +537,21 @@ currentInvoiceNo = order.invoice_no;
       );
     }
      await loadActiveOrders(); // ✅ تحديث فوري للطلبات الجارية
+// خصم رصيد الموظف + الخروج من الوضع
+if (employeeMode) {
+  await supabase
+    .from("employee_coupons")
+    .update({
+      remaining_amount: employeeMode.remaining - total
+    })
+    .eq("employee_code", employeeMode.employee_code)
+    .eq("month", new Date().toISOString().slice(0, 7));
+
+  employeeMode = null;
+
+  const banner = document.getElementById("employeeBanner");
+  if (banner) banner.style.display = "none";
+}
      clearForNewOrder();
     /* ===============================
        🧹 تنظيف بعد الحفظ
@@ -896,7 +920,14 @@ window.openEmployeeMeals = async function () {
   employee_code: employeeCode,
   remaining: coupon.remaining_amount
 };
+// إظهار شريط وضع الموظف
+const banner = document.getElementById("employeeBanner");
+const balanceSpan = document.getElementById("employeeBalance");
 
+if (banner && balanceSpan) {
+  banner.style.display = "block";
+  balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
+}
 console.log("👨‍🍳 Employee Mode ON:", employeeMode);
   
 };
