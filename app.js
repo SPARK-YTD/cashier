@@ -627,8 +627,9 @@ async function loadActiveOrders() {
     .from("orders")
     .select("id, total, invoice_no, created_at, timer_started_at, is_paid, kitchen_ready")
     .or(
-  "status.eq.active,and(is_employee_order.eq.true,kitchen_ready.eq.false)"
+  "status.eq.active,and(is_employee_order.eq.true,status.neq.completed)"
 )
+  
     .eq("business_day_id", currentBusinessDay.id)
     .order("created_at", { ascending: false });
 
@@ -637,6 +638,7 @@ async function loadActiveOrders() {
 }
 
 function renderActiveOrders() {
+  
   const box = document.getElementById("activeOrders");
   box.innerHTML = "";
 
@@ -689,13 +691,28 @@ div.innerHTML = `
   <strong>فاتورة رقم ${order.invoice_no}</strong><br>
 
   ${
-    order.is_employee_order
-      ? `<div style="color:#7c3aed;font-weight:800">🧑‍🍳 طلب موظف</div>
-         <div style="color:#16a34a;font-weight:800">✔ مكتمل</div>`
-      : order.kitchen_ready
-        ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>`
-        : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
-  }
+  order.is_employee_order
+    ? `
+      <div style="color:#7c3aed;font-weight:900">🧑‍🍳 طلب موظف</div>
+      <div style="color:#16a34a;font-weight:800">✔ مدفوع</div>
+      <button
+        onclick="markEmployeeDone('${order.id}')"
+        style="
+          margin-top:6px;
+          background:#7c3aed;
+          color:white;
+          border:none;
+          padding:6px 10px;
+          border-radius:6px;
+          font-weight:700;
+        ">
+        ✅ مكتمل
+      </button>
+    `
+    : order.kitchen_ready
+      ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>`
+      : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
+}
 
   ${order.total.toFixed(3)} د.ب<br>
 
@@ -715,27 +732,22 @@ div.innerHTML = `
       `
   }
 `;
-// 👨‍🍳 زر المطبخ لطلبات الموظفين فقط
-if (order.is_employee_order && !order.kitchen_ready) {
-  const btn = document.createElement("button");
-  btn.textContent = "👨‍🍳 جاهز";
-  btn.style.marginTop = "6px";
 
-  btn.onclick = async () => {
-    await supabase
-      .from("orders")
-      .update({ kitchen_ready: true })
-      .eq("id", order.id);
-
-    loadActiveOrders();
-  };
-
-  div.appendChild(btn);
-}
     box.appendChild(div);
   });
 }
+// ✅ إخفاء طلب الموظف من الجارية
+window.markEmployeeDone = async function (orderId) {
+  await supabase
+    .from("orders")
+    .update({
+      status: "completed",
+      kitchen_ready: true
+    })
+    .eq("id", orderId);
 
+  loadActiveOrders();
+};
 /* ✏️ تحميل الفاتورة للتعديل */
 window.editOrder = async function (orderId) {
   editingOrderId = orderId;
