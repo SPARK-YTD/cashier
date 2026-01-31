@@ -207,7 +207,23 @@ window.startNewDay = async function () {
 
   const pass = prompt("🔒 أدخل كلمة المرور:");
   if (pass !== "1234") return alert("❌ كلمة المرور غير صحيحة");
+// 🔍 فحص الطلبات غير المكتملة
+const { data: openOrders, error } = await supabase
+  .from("orders")
+  .select("id")
+  .eq("business_day_id", currentBusinessDay.id)
+  .neq("status", "completed");
 
+if (error) {
+  alert("❌ خطأ أثناء فحص الطلبات");
+  return;
+}
+
+if (openOrders.length > 0) {
+  alert(`❌ لا يمكن إقفال اليوم
+يوجد ${openOrders.length} طلب غير مكتمل`);
+  return;
+}
 const {
   totalSales,
   cashTotal,
