@@ -844,11 +844,54 @@ window.viewOrder = async function (orderId) {
 // 👨‍🍳 وجبات الموظفين (الدخول)
 // ===============================
 window.openEmployeeMeals = async function () {
+  // 1️⃣ رقم الموظف
   const employeeId = prompt("👨‍🍳 أدخل رقم الموظف:");
-
   if (!employeeId) return;
 
-  alert("تم إدخال رقم الموظف: " + employeeId);
+  // 2️⃣ رقم المدير
+  const managerPin = prompt("🔐 أدخل رقم المدير:");
+  if (!managerPin) return;
+
+  // 3️⃣ التحقق من المدير
+  const { data: manager, error: managerError } = await supabase
+    .from("managers")
+    .select("id")
+    .eq("pin", managerPin)
+    .single();
+
+  if (managerError || !manager) {
+    alert("❌ رقم المدير غير صحيح");
+    return;
+  }
+
+  // 4️⃣ جلب كوبون الموظف لهذا الشهر
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+  const { data: coupon, error: couponError } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .eq("month", currentMonth)
+    .single();
+
+  if (couponError || !coupon) {
+    alert("❌ لا يوجد رصيد لهذا الموظف هذا الشهر");
+    return;
+  }
+
+  if (coupon.remaining_amount <= 0) {
+    alert("❌ رصيد الموظف منتهي");
+    return;
+  }
+
+  // 5️⃣ نجاح 🎉
+  alert(
+    `✅ تم الدخول لوضع وجبات الموظفين\n` +
+    `الموظف: ${employeeId}\n` +
+    `الرصيد المتبقي: ${coupon.remaining_amount.toFixed(3)} د.ب`
+  );
+
+  // 🔜 لاحقًا هنا ندخل وضع الكاشير الخاص بالموظف
 };
 /* ===============================
    NAV
