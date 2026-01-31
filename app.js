@@ -852,17 +852,18 @@ window.openEmployeeMeals = async function () {
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
-  // 3️⃣ التحقق من المدير
-  const { data: manager, error: managerError } = await supabase
-    .from("managers")
-    .select("id")
-    .eq("pin", managerPin)
-    .single();
+  // 3️⃣ التحقق من المدير// 3️⃣ التحقق من المدير من جدول الموظفين
+const { data: manager, error: managerError } = await supabase
+  .from("employees")
+  .select("id")
+  .eq("manager_pin", managerPin)
+  .eq("is_manager", true)
+  .single();
 
-  if (managerError || !manager) {
-    alert("❌ رقم المدير غير صحيح");
-    return;
-  }
+if (managerError || !manager) {
+  alert("❌ رقم المدير غير صحيح");
+  return;
+}
 
   // 4️⃣ جلب كوبون الموظف لهذا الشهر
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
