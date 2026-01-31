@@ -465,16 +465,48 @@ loadActiveOrders();
     ================================ */
     else {
 
-      const { data: order, error } = await supabase
+ // 1️⃣ زيادة عدّاد الفواتير لليوم الحالي
+const { data: dayData, error: dayErr } = await supabase
+  .from("business_days")
+  .update({
+    invoice_counter: currentBusinessDay.invoice_counter + 1
+  })
+  .eq("id", currentBusinessDay.id)
+  .select("invoice_counter")
+  .single();
+
+if (dayErr) {
+  alert("❌ خطأ في عدّاد الفواتير");
+  isSavingOrder = false;
+  return;
+}
+
+const invoiceNo = dayData.invoice_counter;
+
+// 2️⃣ إنشاء الطلب برقم الفاتورة الجديد
+const { data: order, error } = await supabase
   .from("orders")
   .insert({
     total,
     status: "active",
     business_day_id: currentBusinessDay.id,
+    invoice_no: invoiceNo,
     timer_started_at: new Date().toISOString()
   })
   .select("id, invoice_no")
   .single();
+
+if (error) {
+  alert("❌ فشل إنشاء الطلب");
+  isSavingOrder = false;
+  return;
+}
+
+// 3️⃣ تخزين رقم الفاتورة للاستخدام (عرض / طباعة)
+currentInvoiceNo = order.invoice_no;
+
+// 4️⃣ تحديث اليوم الحالي بالواجهة
+currentBusinessDay.invoice_counter = invoiceNo;
 
 currentInvoiceNo = order.invoice_no;
 
