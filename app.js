@@ -494,7 +494,7 @@ const { data: order, error } = await supabase
   .from("orders")
   .insert({
     total,
-    status: employeeMode ? "completed" : "active",
+    status: "active",
     business_day_id: currentBusinessDay.id,
     invoice_no: invoiceNo,
     timer_started_at: new Date().toISOString(),
@@ -950,7 +950,8 @@ window.openEmployeeMeals = async function () {
   employee_code: employeeCode,
   remaining: coupon.remaining_amount
 };
-// إظهار شريط وضع الموظف
+
+// 🟢 تحديث شريط الموظف
 const banner = document.getElementById("employeeBanner");
 const balanceSpan = document.getElementById("employeeBalance");
 
@@ -958,6 +959,7 @@ if (banner && balanceSpan) {
   banner.style.display = "block";
   balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
 }
+
 console.log("👨‍🍳 Employee Mode ON:", employeeMode);
   
 };
@@ -1090,4 +1092,12 @@ ${itemsHTML}
     win.print();
     win.close();
   }, 500);
+};
+window.exitEmployeeMode = function () {
+  employeeMode = null;
+
+  const banner = document.getElementById("employeeBanner");
+  if (banner) banner.style.display = "none";
+
+  alert("🚪 تم الخروج من وضع الموظف");
 };
