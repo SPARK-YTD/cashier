@@ -839,6 +839,17 @@ window.viewOrder = async function (orderId) {
   };
 };
 
+
+// ===============================
+// 👨‍🍳 وجبات الموظفين (الدخول)
+// ===============================
+window.openEmployeeMeals = async function () {
+  const employeeId = prompt("👨‍🍳 أدخل رقم الموظف:");
+
+  if (!employeeId) return;
+
+  alert("تم إدخال رقم الموظف: " + employeeId);
+};
 /* ===============================
    NAV
 ================================ */
