@@ -852,7 +852,7 @@ window.openEmployeeMeals = async function () {
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
-  // 3️⃣ التحقق من المدير// 3️⃣ التحقق من المدير من جدول الموظفين
+// 3️⃣ التحقق من المدير من جدول الموظفين
 const { data: manager, error: managerError } = await supabase
   .from("employees")
   .select("id")
