@@ -43,7 +43,23 @@
   font-weight:bold;
   text-align:center;
 ">
-  👨‍🍳 وضع الموظف — الرصيد: <span id="employeeBalance"></span> د.ب
+  👨‍🍳 موظف: <span id="employeeName">—</span>
+  | الرصيد: <span id="employeeBalance"></span> د.ب
+
+  <button
+    onclick="exitEmployeeMode()"
+    style="
+      margin-right:10px;
+      background:#dc2626;
+      color:white;
+      border:none;
+      padding:4px 8px;
+      border-radius:6px;
+      cursor:pointer;
+    "
+  >
+    ❌ خروج
+  </button>
 </div>
   <!-- الأصناف -->
   <section class="card products">
