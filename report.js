@@ -146,8 +146,9 @@ const { data: orders, error: ordersError } = await supabase
     )
   `)
   .eq("status", "completed")
+  .eq("is_employee_order", false)   // ✅ إخفاء طلبات الموظفين
   .eq("business_day_id", currentBusinessDay.id);
-  
+
   if (ordersError) {
     console.error("❌ خطأ جلب الطلبات:", ordersError);
   }
