@@ -871,7 +871,7 @@ if (managerError || !manager) {
   const { data: coupon, error: couponError } = await supabase
     .from("employee_coupons")
     .select("*")
-    .eq("employee_id", employeeId)
+    .eq("employee_code", employeeCode)
     .eq("month", currentMonth)
     .single();
 
