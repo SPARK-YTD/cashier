@@ -493,16 +493,19 @@ const invoiceNo = dayData.invoice_counter;
 const { data: order, error } = await supabase
   .from("orders")
   .insert({
-  total,
-  status: "active",
-  business_day_id: currentBusinessDay.id,
-  invoice_no: invoiceNo,
-  timer_started_at: new Date().toISOString(),
+    total,
+    status: employeeMode ? "completed" : "active",
+    business_day_id: currentBusinessDay.id,
+    invoice_no: invoiceNo,
+    timer_started_at: new Date().toISOString(),
 
-  // 👇 أضف هذول
-  is_employee_order: employeeMode ? true : false,
-  employee_code: employeeMode ? employeeMode.employee_code : null
-})
+    is_employee_order: employeeMode ? true : false,
+    employee_code: employeeMode ? employeeMode.employee_code : null,
+
+    // 👇 مهم
+    is_paid: employeeMode ? true : false,
+    payment_method: employeeMode ? "employee" : null
+  })
   .select("id, invoice_no")
   .single();
 
@@ -623,7 +626,9 @@ async function loadActiveOrders() {
   const { data } = await supabase
     .from("orders")
     .select("id, total, invoice_no, created_at, timer_started_at, is_paid, kitchen_ready")
-    .eq("status", "active")
+    .or(
+  "status.eq.active,and(is_employee_order.eq.true,kitchen_ready.eq.false)"
+)
     .eq("business_day_id", currentBusinessDay.id)
     .order("created_at", { ascending: false });
 
@@ -679,29 +684,54 @@ const createdAt = new Date(baseTime).getTime();
     if (bgColor) div.style.background = bgColor;
     if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
 
-    div.innerHTML = `
+div.innerHTML = `
+
   <strong>فاتورة رقم ${order.invoice_no}</strong><br>
 
-  ${order.kitchen_ready 
-    ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>` 
-    : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
+  ${
+    order.is_employee_order
+      ? `<div style="color:#7c3aed;font-weight:800">🧑‍🍳 طلب موظف</div>
+         <div style="color:#16a34a;font-weight:800">✔ مكتمل</div>`
+      : order.kitchen_ready
+        ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>`
+        : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
   }
 
   ${order.total.toFixed(3)} د.ب<br>
 
-  <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
-  <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-
   ${
-    order.is_paid
-      ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
-      : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+    order.is_employee_order
+      ? ""
+      : `
+        <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
+        <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+        ${
+          order.is_paid
+            ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
+            : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+        }
+        <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+        <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+      `
   }
-
-  <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-  <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
 `;
+// 👨‍🍳 زر المطبخ لطلبات الموظفين فقط
+if (order.is_employee_order && !order.kitchen_ready) {
+  const btn = document.createElement("button");
+  btn.textContent = "👨‍🍳 جاهز";
+  btn.style.marginTop = "6px";
 
+  btn.onclick = async () => {
+    await supabase
+      .from("orders")
+      .update({ kitchen_ready: true })
+      .eq("id", order.id);
+
+    loadActiveOrders();
+  };
+
+  div.appendChild(btn);
+}
     box.appendChild(div);
   });
 }
