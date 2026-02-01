@@ -59,6 +59,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 10px;
     }
 
     th, td {
@@ -69,6 +70,10 @@
 
     th {
       background: #f1f5f9;
+    }
+
+    .manager {
+      background: #eef2ff;
     }
 
     .danger {
@@ -82,41 +87,51 @@
 </head>
 <body>
 
-  <h1>👨‍💼 لوحة الإدارة</h1>
+<h1>👨‍💼 لوحة الإدارة</h1>
 
-  <!-- إضافة / تحديث كوبون -->
-  <div class="box">
-    <h3>➕ إضافة / تحديث كوبون موظف</h3>
+<!-- إضافة موظف -->
+<div class="box">
+  <h3>➕ إضافة موظف</h3>
 
-    <label>رقم الموظف</label>
-    <input id="employeeCode" placeholder="مثال: 123" />
+  <label>اسم الموظف</label>
+  <input id="empName" />
 
-    <label>الشهر (YYYY-MM)</label>
-    <input id="month" placeholder="2026-02" />
+  <label>رقم الموظف</label>
+  <input id="empCode" />
 
-    <label>المبلغ الشهري</label>
-    <input id="amount" type="number" step="0.001" />
+  <label>
+    <input type="checkbox" id="isManager" /> مدير
+  </label>
 
-    <button onclick="saveCoupon()">💾 حفظ</button>
-  </div>
+  <label>رقم المدير (إن وجد)</label>
+  <input id="empPin" />
 
-  <!-- جدول الموظفين -->
-  <div class="box">
-    <h3>📋 كوبونات الموظفين</h3>
+  <button onclick="addEmployee()">💾 حفظ الموظف</button>
+</div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>رقم الموظف</th>
-          <th>الشهر</th>
-          <th>الإجمالي</th>
-          <th>المتبقي</th>
-          <th>إجراء</th>
-        </tr>
-      </thead>
-      <tbody id="couponsTable"></tbody>
-    </table>
-  </div>
+<!-- قائمة الموظفين -->
+<div class="box">
+  <h3>👥 الموظفون</h3>
+  <div id="employeesList"></div>
+</div>
+
+<!-- إدارة الكوبونات -->
+<div class="box">
+  <h3>🎟️ كوبون الموظف (شهري)</h3>
+
+  <label>رقم الموظف</label>
+  <input id="couponEmpCode" />
+
+  <label>المبلغ الشهري</label>
+  <input id="couponAmount" type="number" step="0.001" />
+
+  <button onclick="setCoupon()">💾 حفظ الكوبون</button>
+</div>
+
+<!-- أزرار -->
+<div class="box">
+  <button onclick="backToCashier()">⬅️ رجوع للكاشير</button>
+</div>
 
 </body>
 </html>
