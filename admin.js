@@ -1,6 +1,17 @@
 import { supabase } from "./supabase.js";
 
 /* ===============================
+   عناصر الصفحة
+================================ */
+const empName = document.getElementById("empName");
+const empCode = document.getElementById("empCode");
+const empPin  = document.getElementById("empPin");
+const isManager = document.getElementById("isManager");
+
+const couponEmpCode = document.getElementById("couponEmpCode");
+const couponAmount  = document.getElementById("couponAmount");
+
+/* ===============================
    تحميل الموظفين
 ================================ */
 async function loadEmployees() {
@@ -16,6 +27,7 @@ async function loadEmployees() {
     const div = document.createElement("div");
     div.style.padding = "8px";
     div.style.borderBottom = "1px dashed #ccc";
+    if (e.is_manager) div.classList.add("manager");
 
     div.innerHTML = `
       <strong>${e.name}</strong>
@@ -34,10 +46,27 @@ window.addEmployee = async function () {
   const name = empName.value.trim();
   const code = empCode.value.trim();
   const pin  = empPin.value.trim();
-  const isManager = isManager.checked;
+  const manager = isManager.checked;
 
   if (!name || !code) {
     alert("❌ الاسم ورقم الموظف مطلوبين");
+    return;
+  }
+
+  if (manager && !pin) {
+    alert("❌ أدخل رقم سري للمدير");
+    return;
+  }
+
+  // منع التكرار
+  const { data: exists } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("employee_code", code)
+    .maybeSingle();
+
+  if (exists) {
+    alert("❌ رقم الموظف موجود مسبقًا");
     return;
   }
 
@@ -46,8 +75,8 @@ window.addEmployee = async function () {
     .insert({
       name,
       employee_code: code,
-      manager_pin: isManager ? pin : null,
-      is_manager: isManager
+      manager_pin: manager ? pin : null,
+      is_manager: manager
     });
 
   if (error) {
@@ -64,7 +93,7 @@ window.addEmployee = async function () {
 };
 
 /* ===============================
-   إنشاء / تحديث كوبون
+   إنشاء / تحديث كوبون شهري
 ================================ */
 window.setCoupon = async function () {
   const code = couponEmpCode.value.trim();
@@ -77,14 +106,13 @@ window.setCoupon = async function () {
 
   const month = new Date().toISOString().slice(0, 7);
 
-  // حذف القديم (إن وجد)
+  // حذف القديم
   await supabase
     .from("employee_coupons")
     .delete()
     .eq("employee_code", code)
     .eq("month", month);
 
-  // إنشاء جديد
   const { error } = await supabase
     .from("employee_coupons")
     .insert({
