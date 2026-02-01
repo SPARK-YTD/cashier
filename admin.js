@@ -266,3 +266,93 @@ async function loadCoupons() {
     box.appendChild(div);
   });
 }
+/* ===============================
+   📊 تقرير شهري للكوبونات
+================================ */
+
+// فتح التقرير
+window.openCouponsReport = function () {
+  document.getElementById("couponsReportPanel")?.classList.add("open");
+  document.getElementById("panelOverlay")?.classList.add("show");
+
+  const monthInput = document.getElementById("reportMonth");
+  if (monthInput && !monthInput.value) {
+    monthInput.value = new Date().toISOString().slice(0, 7);
+  }
+};
+
+// إغلاق التقرير
+window.closeCouponsReport = function () {
+  document.getElementById("couponsReportPanel")?.classList.remove("open");
+  document.getElementById("panelOverlay")?.classList.remove("show");
+};
+
+// تحميل التقرير
+window.loadCouponsReport = async function () {
+  const month = document.getElementById("reportMonth")?.value;
+  const box = document.getElementById("couponsReportResult");
+
+  if (!month) {
+    alert("❌ اختر الشهر");
+    return;
+  }
+
+  box.innerHTML = "⏳ جاري تحميل التقرير...";
+
+  const { data, error } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("month", month)
+    .order("employee_code");
+
+  if (error || !data || data.length === 0) {
+    box.innerHTML = "<div>❌ لا توجد بيانات لهذا الشهر</div>";
+    return;
+  }
+
+  let totalAll = 0;
+  let remainingAll = 0;
+
+  box.innerHTML = "";
+
+  data.forEach(c => {
+    const used = c.total_amount - c.remaining_amount;
+    totalAll += c.total_amount;
+    remainingAll += c.remaining_amount;
+
+    const status =
+      c.remaining_amount <= 0
+        ? "🔴 منتهي"
+        : c.remaining_amount < c.total_amount * 0.25
+        ? "🟠 قرب يخلص"
+        : "🟢 طبيعي";
+
+    const div = document.createElement("div");
+    div.style.borderBottom = "1px dashed #ccc";
+    div.style.padding = "10px 0";
+
+    div.innerHTML = `
+      <strong>👤 موظف: ${c.employee_code}</strong><br>
+      💳 الكوبون: ${c.total_amount.toFixed(3)} د.ب<br>
+      🔻 المستخدم: ${used.toFixed(3)} د.ب<br>
+      🟢 المتبقي: ${c.remaining_amount.toFixed(3)} د.ب<br>
+      ⚠️ الحالة: ${status}
+    `;
+
+    box.appendChild(div);
+  });
+
+  const summary = document.createElement("div");
+  summary.style.marginTop = "15px";
+  summary.style.paddingTop = "10px";
+  summary.style.borderTop = "2px solid #000";
+
+  summary.innerHTML = `
+    <strong>📊 ملخص الشهر</strong><br>
+    💳 إجمالي الكوبونات: ${totalAll.toFixed(3)} د.ب<br>
+    🔻 المصروف: ${(totalAll - remainingAll).toFixed(3)} د.ب<br>
+    🟢 المتبقي: ${remainingAll.toFixed(3)} د.ب
+  `;
+
+  box.appendChild(summary);
+};
