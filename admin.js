@@ -1,76 +1,99 @@
 import { supabase } from "./supabase.js";
 
 /* ===============================
-   تحميل الموظفين
+   تحميل البيانات
 ================================ */
-async function loadEmployees() {
+async function loadCoupons() {
   const { data, error } = await supabase
-    .from("employees")
+    .from("employee_coupons")
     .select("*")
-    .order("id", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
-    alert("❌ خطأ تحميل الموظفين");
+    alert("❌ خطأ في جلب البيانات");
     console.error(error);
     return;
   }
 
-  const box = document.getElementById("employeesList");
-  box.innerHTML = "";
+  const tbody = document.getElementById("couponsTable");
+  tbody.innerHTML = "";
 
-  data.forEach(emp => {
-    const div = document.createElement("div");
-    div.style.border = "1px solid #ddd";
-    div.style.padding = "8px";
-    div.style.marginBottom = "6px";
-
-    div.innerHTML = `
-      <strong>${emp.name}</strong><br>
-      رقم الموظف: ${emp.employee_code}<br>
-      ${emp.is_manager ? "👑 مدير" : "👤 موظف"}
+  data.forEach(c => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c.employee_code}</td>
+      <td>${c.month}</td>
+      <td>${Number(c.total_amount).toFixed(3)}</td>
+      <td>${Number(c.remaining_amount).toFixed(3)}</td>
+      <td>
+        <button class="danger" onclick="resetCoupon('${c.id}')">
+          تصفير
+        </button>
+      </td>
     `;
-
-    box.appendChild(div);
+    tbody.appendChild(tr);
   });
 }
 
 /* ===============================
-   إضافة موظف
+   حفظ كوبون
 ================================ */
-window.addEmployee = async function () {
-  const name = document.getElementById("empName").value;
-  const code = document.getElementById("empCode").value;
-  const pin  = document.getElementById("empPin").value || null;
-  const isManager = document.getElementById("isManager").checked;
+window.saveCoupon = async function () {
+  const employeeCode = document.getElementById("employeeCode").value.trim();
+  const month = document.getElementById("month").value.trim();
+  const amount = parseFloat(document.getElementById("amount").value);
 
-  if (!name || !code) {
-    alert("❌ الاسم ورقم الموظف مطلوبين");
+  if (!employeeCode || !month || !amount) {
+    alert("❌ جميع الحقول مطلوبة");
     return;
   }
 
-  const { error } = await supabase.from("employees").insert({
-    name,
-    employee_code: code,
-    manager_pin: isManager ? pin : null,
-    is_manager: isManager
-  });
+  // هل موجود؟
+  const { data: existing } = await supabase
+    .from("employee_coupons")
+    .select("id")
+    .eq("employee_code", employeeCode)
+    .eq("month", month)
+    .maybeSingle();
 
-  if (error) {
-    alert("❌ فشل إضافة الموظف");
-    console.error(error);
-    return;
+  if (existing) {
+    // تحديث
+    await supabase
+      .from("employee_coupons")
+      .update({
+        total_amount: amount,
+        remaining_amount: amount
+      })
+      .eq("id", existing.id);
+  } else {
+    // إضافة
+    await supabase.from("employee_coupons").insert({
+      employee_code: employeeCode,
+      month,
+      total_amount: amount,
+      remaining_amount: amount
+    });
   }
 
-  alert("✅ تم إضافة الموظف");
-  loadEmployees();
+  alert("✅ تم الحفظ");
+  loadCoupons();
 };
 
 /* ===============================
-   خروج
+   تصفير الرصيد
 ================================ */
-window.logout = async function () {
-  sessionStorage.removeItem("admin_auth");
-  location.href = "index.html";
+window.resetCoupon = async function (id) {
+  if (!confirm("تأكيد تصفير الرصيد؟")) return;
+
+  await supabase
+    .from("employee_coupons")
+    .update({ remaining_amount: 0 })
+    .eq("id", id);
+
+  loadCoupons();
 };
 
-document.addEventListener("DOMContentLoaded", loadEmployees);
+/* ===============================
+   INIT
+================================ */
+document.addEventListener("DOMContentLoaded", loadCoupons);
