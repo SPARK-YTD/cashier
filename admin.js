@@ -185,7 +185,7 @@ window.editEmployee = async function (id, oldName, isManager) {
 /* ===============================
    حذف موظف
 ================================ */
-window.deleteEmployee = async function (id, isManager) {
+window.deleteEmployee = async function (id, employeeCode, isManager) {
   if (isManager) {
     const pin = prompt("⚠️ هذا مدير\nأدخل رقم المدير للحذف:");
     if (!pin) return;
@@ -205,11 +205,18 @@ window.deleteEmployee = async function (id, isManager) {
 
   if (!confirm("❗ هل أنت متأكد من حذف الموظف؟")) return;
 
-  const { error } = await supabase
-    .from("employees")
-    .delete()
-    .eq("id", id);
+  // 1️⃣ حذف الكوبونات أولاً
+await supabase
+  .from("employee_coupons")
+  .delete()
+  .eq("employee_code", employeeCode);
 
+// 2️⃣ حذف الموظف
+const { error } = await supabase
+  .from("employees")
+  .delete()
+  .eq("id", id);
+  
   if (error) {
     alert("❌ فشل حذف الموظف");
     console.error(error);
