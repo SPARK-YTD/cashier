@@ -582,7 +582,7 @@ if (employeeMode) {
 
 
 // 🔓 فتح القفل
-f (completeBtn) completeBtn.disabled = false;
+if (completeBtn) completeBtn.disabled = false;
 isSavingOrder = false;
 };
 
