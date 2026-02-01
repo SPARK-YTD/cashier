@@ -147,9 +147,10 @@ window.setCoupon = async function () {
     return;
   }
 
-  alert("✅ تم حفظ الكوبون");
-  couponEmpCode.value = "";
-  couponAmount.value = "";
+alert("✅ تم حفظ الكوبون");
+couponEmpCode.value = "";
+couponAmount.value = "";
+loadCoupons(); // 👈 هذا السطر فقط
 };
 
 /* ===============================
