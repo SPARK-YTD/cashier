@@ -25,16 +25,28 @@ async function loadEmployees() {
 
   (data || []).forEach(e => {
     const div = document.createElement("div");
-    div.style.padding = "8px";
+    div.style.padding = "10px";
     div.style.borderBottom = "1px dashed #ccc";
-    if (e.is_manager) div.classList.add("manager");
 
     div.innerHTML = `
       <strong>${e.name}</strong>
-      <div>رقم: ${e.employee_code}</div>
+      <div>رقم الموظف: ${e.employee_code}</div>
       <div>${e.is_manager ? "🛡️ مدير" : "👤 موظف"}</div>
-    `;
 
+      <div style="margin-top:8px">
+        <button onclick="editEmployee('${e.id}', ${JSON.stringify(e.name)}, ${e.is_manager})">
+          ✏️ تعديل
+        </button>
+
+        <button
+          class="danger"
+          onclick="deleteEmployee('${e.id}', ${e.is_manager})"
+          style="margin-top:6px"
+        >
+          🗑 حذف
+        </button>
+      </div>
+    `;
     box.appendChild(div);
   });
 }
@@ -58,7 +70,6 @@ window.addEmployee = async function () {
     return;
   }
 
-  // منع التكرار
   const { data: exists } = await supabase
     .from("employees")
     .select("id")
@@ -70,14 +81,12 @@ window.addEmployee = async function () {
     return;
   }
 
-  const { error } = await supabase
-    .from("employees")
-    .insert({
-      name,
-      employee_code: code,
-      manager_pin: manager ? pin : null,
-      is_manager: manager
-    });
+  const { error } = await supabase.from("employees").insert({
+    name,
+    employee_code: code,
+    manager_pin: manager ? pin : null,
+    is_manager: manager
+  });
 
   if (error) {
     alert("❌ فشل إضافة الموظف");
@@ -88,7 +97,6 @@ window.addEmployee = async function () {
   alert("✅ تم إضافة الموظف");
   empName.value = empCode.value = empPin.value = "";
   isManager.checked = false;
-
   loadEmployees();
 };
 
@@ -104,9 +112,20 @@ window.setCoupon = async function () {
     return;
   }
 
+  // تحقق أن الموظف موجود
+  const { data: emp } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("employee_code", code)
+    .maybeSingle();
+
+  if (!emp) {
+    alert("❌ رقم الموظف غير موجود");
+    return;
+  }
+
   const month = new Date().toISOString().slice(0, 7);
 
-  // حذف القديم
   await supabase
     .from("employee_coupons")
     .delete()
@@ -129,14 +148,79 @@ window.setCoupon = async function () {
   }
 
   alert("✅ تم حفظ الكوبون");
-  couponEmpCode.value = couponAmount.value = "";
+  couponEmpCode.value = "";
+  couponAmount.value = "";
+};
+
+/* ===============================
+   تعديل موظف
+================================ */
+window.editEmployee = async function (id, oldName, isManager) {
+  const name = prompt("✏️ اسم الموظف:", oldName);
+  if (!name) return;
+
+  let updateData = { name };
+
+  if (isManager) {
+    const pin = prompt("🔐 رقم المدير (اتركه فارغ بدون تغيير):");
+    if (pin) updateData.manager_pin = pin;
+  }
+
+  const { error } = await supabase
+    .from("employees")
+    .update(updateData)
+    .eq("id", id);
+
+  if (error) {
+    alert("❌ فشل تعديل الموظف");
+    console.error(error);
+    return;
+  }
+
+  alert("✅ تم تعديل الموظف");
+  loadEmployees();
+};
+
+/* ===============================
+   حذف موظف
+================================ */
+window.deleteEmployee = async function (id, isManager) {
+  if (isManager) {
+    const pin = prompt("⚠️ هذا مدير\nأدخل رقم المدير للحذف:");
+    if (!pin) return;
+
+    const { data } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("id", id)
+      .eq("manager_pin", pin)
+      .maybeSingle();
+
+    if (!data) {
+      alert("❌ الرقم السري غير صحيح");
+      return;
+    }
+  }
+
+  if (!confirm("❗ هل أنت متأكد من حذف الموظف؟")) return;
+
+  const { error } = await supabase
+    .from("employees")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("❌ فشل حذف الموظف");
+    console.error(error);
+    return;
+  }
+
+  alert("🗑 تم حذف الموظف");
+  loadEmployees();
 };
 
 /* ===============================
    أدوات
 ================================ */
-window.backToCashier = () => {
-  location.href = "index.html";
-};
-
+window.backToCashier = () => location.href = "index.html";
 document.addEventListener("DOMContentLoaded", loadEmployees);
