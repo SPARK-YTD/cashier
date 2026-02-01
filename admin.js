@@ -223,4 +223,37 @@ window.deleteEmployee = async function (id, isManager) {
    أدوات
 ================================ */
 window.backToCashier = () => location.href = "index.html";
-document.addEventListener("DOMContentLoaded", loadEmployees);
+document.addEventListener("DOMContentLoaded", () => {
+  loadEmployees();
+  loadCoupons(); // 👈 هذا المهم
+});
+
+async function loadCoupons() {
+  const { data, error } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .order("month", { ascending: false });
+
+  const box = document.getElementById("couponsList");
+  box.innerHTML = "";
+
+  if (error || !data || data.length === 0) {
+    box.innerHTML = "<div>لا توجد كوبونات</div>";
+    return;
+  }
+
+  data.forEach(c => {
+    const div = document.createElement("div");
+    div.style.borderBottom = "1px dashed #ccc";
+    div.style.padding = "8px 0";
+
+    div.innerHTML = `
+      <strong>👤 موظف: ${c.employee_code}</strong><br>
+      📅 الشهر: ${c.month}<br>
+      💳 الإجمالي: ${c.total_amount.toFixed(3)} د.ب<br>
+      🟢 المتبقي: ${c.remaining_amount.toFixed(3)} د.ب
+    `;
+
+    box.appendChild(div);
+  });
+}
