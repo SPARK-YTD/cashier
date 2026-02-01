@@ -34,7 +34,7 @@ async function loadEmployees() {
       <div>${e.is_manager ? "🛡️ مدير" : "👤 موظف"}</div>
 
       <div style="margin-top:8px">
-        <button onclick="editEmployee('${e.id}', ${JSON.stringify(e.name)}, ${e.is_manager})">
+<button onclick="editEmployee('${e.id}', '${e.name.replace(/'/g, "\\'")}', ${e.is_manager})">
           ✏️ تعديل
         </button>
 
