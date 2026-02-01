@@ -1,14 +1,8 @@
 import { supabase } from "./supabase.js";
 
 (async () => {
-  // ✅ إذا المدير مصادق من قبل
-  if (sessionStorage.getItem("admin_auth") === "true") {
-    return;
-  }
-
-  const pin = prompt("🔐 أدخل رقم المدير:");
+  const pin = prompt("🔐 أدخل رمز الإدارة:");
   if (!pin) {
-    alert("❌ تم الإلغاء");
     location.href = "index.html";
     return;
   }
@@ -21,11 +15,10 @@ import { supabase } from "./supabase.js";
     .single();
 
   if (error || !data) {
-    alert("❌ رقم المدير غير صحيح");
+    alert("❌ رمز الإدارة غير صحيح");
     location.href = "index.html";
     return;
   }
 
-  // ✅ حفظ المصادقة
-  sessionStorage.setItem("admin_auth", "true");
+  // ✅ مسموح له يكمل
 })();
