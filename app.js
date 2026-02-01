@@ -543,12 +543,13 @@ currentInvoiceNo = order.invoice_no;
 // خصم رصيد الموظف + الخروج من الوضع
 if (employeeMode) {
   await supabase
-    .from("employee_coupons")
-    .update({
-      remaining_amount: employeeMode.remaining - total
-    })
-    .eq("employee_code", employeeMode.employee_code)
-    .eq("month", new Date().toISOString().slice(0, 7));
+  .from("employee_coupons")
+  .update({
+    remaining_amount: employeeMode.remaining - total
+  })
+  .eq("employee_code", employeeMode.employee_code)
+  .eq("month", new Date().toISOString().slice(0, 7))
+  .limit(1);
 
   employeeMode = null;
 
@@ -951,39 +952,71 @@ window.openEmployeeMeals = async function () {
     return;
   }
 
-  // 5️⃣ جلب كوبون الموظف
-  const currentMonth = new Date().toISOString().slice(0, 7);
+// 5️⃣ جلب / إنشاء كوبون الموظف الشهري (ثابت)
+const month = new Date().toISOString().slice(0, 7);
 
-  const { data: coupon, error: couponError } = await supabase
+// 🔍 آخر كوبون ثابت للموظف
+const { data: lastCoupon } = await supabase
+  .from("employee_coupons")
+  .select("total_amount")
+  .eq("employee_code", employeeCode)
+  .order("month", { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+if (!lastCoupon) {
+  alert("❌ لا يوجد كوبون ثابت لهذا الموظف");
+  return;
+}
+
+// 🔍 كوبون الشهر الحالي
+let { data: coupon } = await supabase
+  .from("employee_coupons")
+  .select("*")
+  .eq("employee_code", employeeCode)
+  .eq("month", month)
+  .maybeSingle();
+
+// 🆕 إنشاء كوبون جديد للشهر تلقائيًا
+if (!coupon) {
+  const { data: newCoupon, error } = await supabase
     .from("employee_coupons")
-    .select("*")
-    .eq("employee_code", employeeCode)
-    .eq("month", currentMonth)
+    .insert({
+      employee_code: employeeCode,
+      month,
+      total_amount: lastCoupon.total_amount,
+      remaining_amount: lastCoupon.total_amount
+    })
+    .select()
     .single();
 
-  if (couponError || !coupon) {
-    alert("❌ لا يوجد رصيد لهذا الموظف هذا الشهر");
+  if (error) {
+    alert("❌ فشل إنشاء كوبون الشهر");
     return;
   }
 
-  if (coupon.remaining_amount <= 0) {
-    alert("❌ رصيد الموظف منتهي");
-    return;
-  }
+  coupon = newCoupon;
+}
 
-  // 6️⃣ تفعيل وضع الموظف
-  employeeMode = {
-    employee_code: employeeCode,
-    remaining: coupon.remaining_amount
-  };
+// ❌ رصيد منتهي
+if (coupon.remaining_amount <= 0) {
+  alert("❌ رصيد الموظف منتهي لهذا الشهر");
+  return;
+}
 
-  const banner = document.getElementById("employeeBanner");
-  const balanceSpan = document.getElementById("employeeBalance");
+// ✅ تفعيل وضع الموظف
+employeeMode = {
+  employee_code: employeeCode,
+  remaining: coupon.remaining_amount
+};
 
-  if (banner && balanceSpan) {
-    banner.style.display = "block";
-    balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
-  }
+const banner = document.getElementById("employeeBanner");
+const balanceSpan = document.getElementById("employeeBalance");
+
+if (banner && balanceSpan) {
+  banner.style.display = "block";
+  balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
+}
 
   alert("✅ تم الدخول لوضع وجبات الموظفين بموافقة المدير");
 };
