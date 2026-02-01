@@ -911,11 +911,18 @@ window.viewOrder = async function (orderId) {
 // 👨‍🍳 وجبات الموظفين (الدخول)
 // ===============================
 window.openEmployeeMeals = async function () {
+
+  // 🔒 منع الدخول مرتين
+  if (employeeMode) {
+    alert("⚠️ أنت بالفعل في وضع الموظف");
+    return;
+  }
+
   // 1️⃣ رقم الموظف
   const employeeCode = prompt("👨‍🍳 أدخل رقم الموظف:");
   if (!employeeCode) return;
 
-  // 2️⃣ رقم المدير
+  // 2️⃣ رقم المدير (إجباري)
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
@@ -932,7 +939,19 @@ window.openEmployeeMeals = async function () {
     return;
   }
 
-  // 4️⃣ جلب كوبون الموظف
+  // 4️⃣ التحقق من الموظف
+  const { data: employee, error: empError } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("employee_code", employeeCode)
+    .single();
+
+  if (empError || !employee) {
+    alert("❌ رقم الموظف غير موجود");
+    return;
+  }
+
+  // 5️⃣ جلب كوبون الموظف
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const { data: coupon, error: couponError } = await supabase
@@ -952,29 +971,23 @@ window.openEmployeeMeals = async function () {
     return;
   }
 
-  alert(
-    `✅ تم الدخول لوضع وجبات الموظفين\n` +
-    `رقم الموظف: ${employeeCode}\n` +
-    `الرصيد المتبقي: ${coupon.remaining_amount.toFixed(3)} د.ب`
-  );
-  
+  // 6️⃣ تفعيل وضع الموظف
   employeeMode = {
-  employee_code: employeeCode,
-  remaining: coupon.remaining_amount
+    employee_code: employeeCode,
+    remaining: coupon.remaining_amount
+  };
+
+  const banner = document.getElementById("employeeBanner");
+  const balanceSpan = document.getElementById("employeeBalance");
+
+  if (banner && balanceSpan) {
+    banner.style.display = "block";
+    balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
+  }
+
+  alert("✅ تم الدخول لوضع وجبات الموظفين بموافقة المدير");
 };
 
-// 🟢 تحديث شريط الموظف
-const banner = document.getElementById("employeeBanner");
-const balanceSpan = document.getElementById("employeeBalance");
-
-if (banner && balanceSpan) {
-  banner.style.display = "block";
-  balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
-}
-
-console.log("👨‍🍳 Employee Mode ON:", employeeMode);
-  
-};
 
 /* ===============================
    NAV
