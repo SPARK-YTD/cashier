@@ -136,6 +136,10 @@
 
   <!-- Top Bar -->
   <div class="topbar">
+    <!-- 📊 زر تقرير الكوبونات -->
+<button id="openCouponsReport" class="side-report-btn">
+  📊 تقرير الكوبونات
+</button>
     <h1>👨‍💼 لوحة الإدارة</h1>
     <button onclick="backToCashier()">⬅️ الرجوع للكاشير</button>
   </div>
@@ -184,6 +188,28 @@
 </div>
 
   </div>
+<!-- 📊 Panel تقرير الكوبونات -->
+<div id="couponsReportPanel" class="side-panel">
+  <div class="side-panel-header">
+    <h3>📊 تقرير الكوبونات الشهرية</h3>
+    <button onclick="closeCouponsReport()">✖</button>
+  </div>
 
+  <div class="side-panel-body">
+    <label>الشهر</label>
+    <input type="month" id="reportMonth">
+
+    <button class="action" onclick="loadCouponsReport()">
+      🔍 عرض التقرير
+    </button>
+
+    <hr>
+
+    <div id="couponsReportResult"></div>
+  </div>
+</div>
+
+<!-- خلفية -->
+<div id="panelOverlay" class="panel-overlay" onclick="closeCouponsReport()"></div>
 </body>
 </html>
