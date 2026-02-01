@@ -224,7 +224,8 @@ const { error } = await supabase
   }
 
   alert("🗑 تم حذف الموظف");
-  loadEmployees();
+loadEmployees();
+loadCoupons(); 
 };
 
 /* ===============================
