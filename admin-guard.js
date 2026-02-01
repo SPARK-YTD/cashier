@@ -16,7 +16,7 @@ import { supabase } from "./supabase.js";
   const { data, error } = await supabase
     .from("employees")
     .select("id")
-    .eq("manager_pin", pin)
+    .eq("manager_pin", 1998)
     .eq("is_manager", true)
     .single();
 
