@@ -982,6 +982,29 @@ console.log("👨‍🍳 Employee Mode ON:", employeeMode);
 window.closeDay = () => location.href = "report.html";
 window.goToReports = () => location.href = "reports.html";
 window.goToSettings = () => location.href = "settings.html";
+
+// ===============================
+// 🔐 دخول الإدارة
+// ===============================
+window.openAdmin = async function () {
+  const pin = prompt("🔐 أدخل رمز الإدارة:");
+  if (!pin) return;
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("manager_pin", pin)
+    .eq("is_manager", true)
+    .single();
+
+  if (error || !data) {
+    alert("❌ رمز الإدارة غير صحيح");
+    return;
+  }
+
+  // دخول صفحة الإدارة
+  location.href = "admin.html";
+};
 // ===============================
 // تسجيل الخروج
 // ===============================
