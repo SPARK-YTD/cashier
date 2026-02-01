@@ -986,8 +986,11 @@ window.goToSettings = () => location.href = "settings.html";
 // ===============================
 // 🔐 دخول الإدارة
 // ===============================
+window.openAdmin = function () {
+  // نمسح أي دخول قديم
+  sessionStorage.removeItem("admin_auth");
 
-  // دخول صفحة الإدارة
+  // نفتح صفحة الإدارة
   location.href = "admin.html";
 };
 // ===============================
