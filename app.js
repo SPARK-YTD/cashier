@@ -383,11 +383,20 @@ function calculateChange() {
 
 let isSavingOrder = false; // 🔒 قفل الحفظ
 
+window.addEventListener("beforeunload", (e) => {
+  if (isSavingOrder) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
 window.completeOrder = async function () {
 
   // 🛑 منع الضغط المتكرر
   if (isSavingOrder) return;
   isSavingOrder = true;
+const completeBtn = document.getElementById("completeOrderBtn");
+if (completeBtn) completeBtn.disabled = true;
   // 📴 إذا ما فيه إنترنت → حفظ محلي
   if (!navigator.onLine) {
     const offlineOrder = {
@@ -420,20 +429,23 @@ loadActiveOrders();
       console.error(e);
     }
 
-    isSavingOrder = false;
+if (completeBtn) completeBtn.disabled = false;
+isSavingOrder = false;
     return;
   }
   // 🧺 الفاتورة فاضية
   if (!cart.length) {
-    editingOrderId = null;
-    isSavingOrder = false;
-    return alert("الفاتورة فارغة");
-  }
+  editingOrderId = null;
+  if (completeBtn) completeBtn.disabled = false;
+  isSavingOrder = false;
+  return alert("الفاتورة فارغة");
+}
 
   const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
 // ❌ منع تجاوز رصيد الموظف
 if (employeeMode && total > employeeMode.remaining) {
   alert("❌ المبلغ يتجاوز رصيد الموظف");
+  if (completeBtn) completeBtn.disabled = false;
   isSavingOrder = false;
   return;
 }
@@ -483,6 +495,7 @@ const { data: dayData, error: dayErr } = await supabase
 
 if (dayErr) {
   alert("❌ خطأ في عدّاد الفواتير");
+  if (completeBtn) completeBtn.disabled = false;
   isSavingOrder = false;
   return;
 }
@@ -511,6 +524,7 @@ const { data: order, error } = await supabase
 
 if (error) {
   alert("❌ فشل إنشاء الطلب");
+  if (completeBtn) completeBtn.disabled = false;
   isSavingOrder = false;
   return;
 }
@@ -566,9 +580,10 @@ if (employeeMode) {
     alert("❌ حصل خطأ أثناء حفظ الطلب");
   }
 
-  // 🔓 فتح القفل
-  isSavingOrder = false;
-};
+
+// 🔓 فتح القفل
+if (completeBtn) completeBtn.disabled = false;
+isSavingOrder = false;
 /* ===============================
    REALTIME – الطلبات الجارية
 ================================ */
@@ -1043,6 +1058,13 @@ window.openAdmin = function () {
 // تسجيل الخروج
 // ===============================
 window.logout = async function () {
+  if (isSavingOrder) {
+    alert("⏳ انتظر حفظ الطلب قبل تسجيل الخروج");
+    return;
+  }
+
+  if (!confirm("هل أنت متأكد من تسجيل الخروج؟")) return;
+
   await supabase.auth.signOut();
   location.href = "login.html";
 };
