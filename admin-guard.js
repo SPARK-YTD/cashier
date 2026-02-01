@@ -1,6 +1,11 @@
-import { supabase } from "./supabase.js";
+// admin-guard.js
+const ADMIN_PIN = "8899";
 
-(async () => {
+(function () {
+  const authed = sessionStorage.getItem("admin_auth");
+
+  if (authed === "true") return;
+
   const pin = prompt("🔐 أدخل رمز الإدارة:");
   if (!pin) {
     alert("❌ تم الإلغاء");
@@ -8,23 +13,11 @@ import { supabase } from "./supabase.js";
     return;
   }
 
-  const { data, error } = await supabase
-    .from("system_settings")
-    .select("value")
-    .eq("key", "admin_pin")
-    .single();
-
-  if (error || !data) {
-    alert("❌ فشل التحقق من الرمز");
-    location.href = "index.html";
-    return;
-  }
-
-  if (pin !== data.value) {
+  if (pin !== ADMIN_PIN) {
     alert("❌ رمز الإدارة غير صحيح");
     location.href = "index.html";
     return;
   }
 
-  console.log("✅ Admin authenticated");
+  sessionStorage.setItem("admin_auth", "true");
 })();
