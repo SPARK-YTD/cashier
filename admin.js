@@ -40,7 +40,7 @@ async function loadEmployees() {
 
         <button
           class="danger"
-          onclick="deleteEmployee('${e.id}', ${e.is_manager})"
+          onclick="deleteEmployee('${e.id}', '${e.employee_code}', ${e.is_manager})"
           style="margin-top:6px"
         >
           🗑 حذف
