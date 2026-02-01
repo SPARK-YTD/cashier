@@ -582,8 +582,10 @@ if (employeeMode) {
 
 
 // 🔓 فتح القفل
-if (completeBtn) completeBtn.disabled = false;
+f (completeBtn) completeBtn.disabled = false;
 isSavingOrder = false;
+};
+
 /* ===============================
    REALTIME – الطلبات الجارية
 ================================ */
