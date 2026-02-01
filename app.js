@@ -986,21 +986,6 @@ window.goToSettings = () => location.href = "settings.html";
 // ===============================
 // 🔐 دخول الإدارة
 // ===============================
-window.openAdmin = async function () {
-  const pin = prompt("🔐 أدخل رمز الإدارة:");
-  if (!pin) return;
-
-  const { data, error } = await supabase
-    .from("employees")
-    .select("id")
-    .eq("manager_pin", pin)
-    .eq("is_manager", true)
-    .single();
-
-  if (error || !data) {
-    alert("❌ رمز الإدارة غير صحيح");
-    return;
-  }
 
   // دخول صفحة الإدارة
   location.href = "admin.html";
