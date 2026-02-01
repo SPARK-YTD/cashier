@@ -1,36 +1,36 @@
 import { supabase } from "./supabase.js";
 
 (async () => {
-  // إذا سبق التحقق في هذه الجلسة
-  if (sessionStorage.getItem("admin_auth") === "true") {
-    return;
-  }
-
-  const pin = prompt("🔐 أدخل رمز الإدارة:");
-  if (!pin) {
+  // يطلب الرمز كل مرة (أمان أعلى)
+  const inputPin = prompt("🔐 أدخل رمز الإدارة:");
+  if (!inputPin) {
     alert("❌ تم الإلغاء");
     location.href = "index.html";
     return;
   }
 
+  // جلب رمز الإدارة من الإعدادات
   const { data, error } = await supabase
     .from("system_settings")
     .select("value")
     .eq("key", "admin_pin")
-    .single();
+    .limit(1);
 
-  if (error || !data) {
-    alert("❌ خطأ في إعدادات النظام");
+  if (error || !data || data.length === 0) {
+    alert("❌ فشل التحقق من رمز الإدارة");
+    console.error(error);
     location.href = "index.html";
     return;
   }
 
-  if (pin !== data.value) {
+  const realPin = data[0].value;
+
+  if (inputPin !== realPin) {
     alert("❌ رمز الإدارة غير صحيح");
     location.href = "index.html";
     return;
   }
 
-  // ✅ نجاح
-  sessionStorage.setItem("admin_auth", "true");
+  // ✅ مصادقة ناجحة
+  console.log("✅ Admin authenticated");
 })();
