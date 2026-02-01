@@ -4,54 +4,119 @@
   <meta charset="UTF-8" />
   <title>لوحة الإدارة</title>
 
-  <!-- 🛡️ حماية -->
+  <!-- حماية الإدارة -->
   <script type="module" src="admin-guard.js"></script>
 
-  <link rel="stylesheet" href="style.css" />
-</head>
+  <!-- منطق الصفحة -->
+  <script type="module" src="admin.js"></script>
 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .box {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #f1f5f9;
+    }
+
+    .danger {
+      background: #dc2626;
+    }
+
+    .danger:hover {
+      background: #991b1b;
+    }
+  </style>
+</head>
 <body>
 
-<header class="topbar">
-  <h2>👨‍💼 لوحة الإدارة</h2>
-  <button onclick="logout()">🚪 خروج</button>
-</header>
+  <h1>👨‍💼 لوحة الإدارة</h1>
 
-<main style="padding:20px">
+  <!-- إضافة / تحديث كوبون -->
+  <div class="box">
+    <h3>➕ إضافة / تحديث كوبون موظف</h3>
 
-  <!-- إضافة موظف -->
-  <section class="card">
-    <h3>➕ إضافة موظف</h3>
+    <label>رقم الموظف</label>
+    <input id="employeeCode" placeholder="مثال: 123" />
 
-    <input id="empName" placeholder="اسم الموظف" />
-    <input id="empCode" placeholder="رقم الموظف" />
-    <input id="empPin" placeholder="PIN المدير (اختياري)" />
+    <label>الشهر (YYYY-MM)</label>
+    <input id="month" placeholder="2026-02" />
 
-    <label>
-      <input type="checkbox" id="isManager" />
-      مدير
-    </label>
+    <label>المبلغ الشهري</label>
+    <input id="amount" type="number" step="0.001" />
 
-    <button onclick="addEmployee()">حفظ</button>
-  </section>
+    <button onclick="saveCoupon()">💾 حفظ</button>
+  </div>
 
-  <!-- قائمة الموظفين -->
-  <section class="card">
-    <h3>👥 الموظفين</h3>
-    <div id="employeesList"></div>
-  </section>
+  <!-- جدول الموظفين -->
+  <div class="box">
+    <h3>📋 كوبونات الموظفين</h3>
 
-</main>
+    <table>
+      <thead>
+        <tr>
+          <th>رقم الموظف</th>
+          <th>الشهر</th>
+          <th>الإجمالي</th>
+          <th>المتبقي</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody id="couponsTable"></tbody>
+    </table>
+  </div>
 
-<script type="module" src="admin.js"></script>
 </body>
 </html>
-
-<section class="card">
-  <h3>🎟️ كوبونات الموظفين</h3>
-
-  <select id="couponEmployee"></select>
-  <input id="couponAmount" type="number" step="0.001" placeholder="المبلغ الشهري" />
-
-  <button onclick="setCoupon()">💾 حفظ / تحديث</button>
-</section>
