@@ -6,11 +6,17 @@
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
-html, body {
+html {
   margin: 0;
   background: #F8FAFC;
+}
+
+body {
+  margin: 0;
+  background: transparent;
   color: #0F172A;
   touch-action: manipulation;
+  position: relative;
 }
 /* ===============================
    TOP BAR
@@ -659,11 +665,15 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: url("assets/logo.png"); /* مسار اللوقو */
+  background-image: url("assets/logo.png");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 420px;
-  opacity: 0.04; /* مهم جدًا */
+  opacity: 0.04;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
+}
+body > * {
+  position: relative;
+  z-index: 1;
 }
