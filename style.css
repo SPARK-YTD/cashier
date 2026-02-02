@@ -636,3 +636,21 @@ hr {
 .side-panel {
   transition: right 0.35s cubic-bezier(.4,0,.2,1);
 }
+/* ===== Employee Mode Banner ===== */
+#employeeBanner {
+  position: fixed;
+  top: 60px; /* تحت الـ topbar مباشرة */
+  right: 0;
+  left: 0;
+  z-index: 1500;
+  background: #14532d;
+  color: #fff;
+  padding: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* نزّل المحتوى تحت البانر */
+.employee-mode main {
+  margin-top: 60px;
+}
