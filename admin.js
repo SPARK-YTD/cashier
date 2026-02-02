@@ -112,26 +112,38 @@ window.setCoupon = async function () {
     return;
   }
 
-  // تحقق أن الموظف موجود
-  const { data: emp } = await supabase
+  // 🔐 طلب الرقم السري
+  const pin = prompt("🔐 أدخل الرقم السري للمدير:");
+  if (!pin) return;
+
+  // 🔍 جلب الموظف والتحقق من الرقم السري
+  const { data: emp, error: empErr } = await supabase
     .from("employees")
-    .select("id")
+    .select("id, manager_pin")
     .eq("employee_code", code)
     .maybeSingle();
 
-  if (!emp) {
+  if (empErr || !emp) {
     alert("❌ رقم الموظف غير موجود");
     return;
   }
 
+  if (!emp.manager_pin || emp.manager_pin !== pin) {
+    alert("❌ الرقم السري غير صحيح");
+    return;
+  }
+
+  // 📅 الشهر الحالي
   const month = new Date().toISOString().slice(0, 7);
 
+  // 🔄 حذف كوبون الشهر (إن وجد)
   await supabase
     .from("employee_coupons")
     .delete()
     .eq("employee_code", code)
     .eq("month", month);
 
+  // ➕ إنشاء الكوبون
   const { error } = await supabase
     .from("employee_coupons")
     .insert({
@@ -147,10 +159,10 @@ window.setCoupon = async function () {
     return;
   }
 
-alert("✅ تم حفظ الكوبون");
-couponEmpCode.value = "";
-couponAmount.value = "";
-loadCoupons(); // 👈 هذا السطر فقط
+  alert("✅ تم حفظ الكوبون");
+  couponEmpCode.value = "";
+  couponAmount.value = "";
+  loadCoupons();
 };
 
 /* ===============================
