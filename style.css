@@ -650,15 +650,16 @@ hr {
 body::before {
   content: "";
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 45%;
-  height: 100%;
+  top: 50%;
+  left: -80px;              /* يطلع شوي خارج الشاشة */
+  transform: translateY(-50%);
+  width: 260px;
+  height: 260px;
   background-image: url("assets/logo.png");
   background-repeat: no-repeat;
-  background-position: left center;
-  background-size: 380px;
-  opacity: 0.06;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.05;            /* خفيف جدًا */
   pointer-events: none;
   z-index: 0;
 }
@@ -668,12 +669,11 @@ body > * {
   z-index: 1;
 }
 
-/* مخصص للجوال */
-@media (max-width: 768px) {
+/* مخصص للجوال @media (max-width: 768px) {
   body::before {
-    width: 100%;
-    background-position: center top;
-    background-size: 240px;
+    width: 180px;
+    height: 180px;
+    left: -60px;
     opacity: 0.04;
   }
 }
