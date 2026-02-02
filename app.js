@@ -653,7 +653,7 @@ async function loadActiveOrders() {
   kitchen_ready,
   is_employee_order,
   employee_code,
-  employees(name)
+  employees:employees!orders_employee_code_fkey(name)
 `)
     .or(
   "status.eq.active,and(is_employee_order.eq.true,status.neq.completed)"
