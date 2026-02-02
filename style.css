@@ -269,13 +269,6 @@ html, body {
 /* ===============================
    OVERLAY
 ================================ */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  display: none;
-  z-index: 2500;
-}
 
 .overlay.show {
   display: block;
@@ -638,4 +631,8 @@ hr {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 700;
+}
+
+.side-panel {
+  transition: right 0.35s cubic-bezier(.4,0,.2,1);
 }
