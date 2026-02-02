@@ -826,6 +826,20 @@ window.editOrder = async function (orderId) {
 /* ✅ مكتمل (اختيار طريقة الدفع) */
 window.markCompleted = async function (orderId) {
 
+  const order = activeOrders.find(o => o.id === orderId);
+
+  // ✅ إذا مدفوع مسبقًا → سكّر مباشرة
+if (order?.is_paid) {
+  await supabase.from("orders").update({
+    status: "completed",
+    closed_at: new Date().toISOString(),
+    kitchen_ready: true
+  }).eq("id", orderId);
+
+  loadActiveOrders();
+  return;
+}
+
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
 
@@ -878,12 +892,37 @@ async function confirmComplete(orderId, method, overlay) {
   loadActiveOrders();
 }
 /* 💰 تم الدفع */
-window.markPaid = async id => {
+window.markPaid = async function (orderId) {
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:320px">
+      <h3>طريقة الدفع</h3>
+
+      <button class="variant-btn" onclick="confirmPaid('${orderId}','cash',this)">💵 كاش</button>
+      <button class="variant-btn" onclick="confirmPaid('${orderId}','benefit',this)">💳 بنفت</button>
+      <button class="variant-btn" onclick="confirmPaid('${orderId}','mixed',this)">💵 + 💳 نص بنص</button>
+
+      <button class="variant-cancel">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+};
+window.confirmPaid = async function (orderId, method, btn) {
+  if (!confirm("تأكيد تسجيل الفاتورة كمدفوعة؟")) return;
+
+  const overlay = btn.closest(".variant-overlay");
+
   await supabase.from("orders").update({
     is_paid: true,
+    payment_method: method,
     paid_at: new Date().toISOString()
-  }).eq("id", id);
+  }).eq("id", orderId);
 
+  overlay.remove();
   loadActiveOrders();
 };
 /* 🗑 حذف */
