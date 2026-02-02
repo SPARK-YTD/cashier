@@ -254,7 +254,18 @@ html, body {
   margin-top: 6px;
   margin-left: 4px;
 }
+/* ===== Overlay (إغلاق القائمة عند الضغط خارجها) ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2500;      /* تحت القائمة وفوق المحتوى */
+  display: none;
+}
 
+.overlay.show {
+  display: block;
+}
 /* ===============================
    SIDE MENU
 ================================ */
