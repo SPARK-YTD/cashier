@@ -691,8 +691,7 @@ hr {
     font-size: 18px;
   }
 
-  .topbar-logo {
-    width: 22px;
-    height: 22px;
-  }
+ .topbar-logo {
+  height: 40px;   
+  width: auto;   
 }
