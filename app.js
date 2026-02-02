@@ -643,7 +643,18 @@ function subscribeToOrders() {
 async function loadActiveOrders() {
   const { data } = await supabase
     .from("orders")
-    .select("id, total, invoice_no, created_at, timer_started_at, is_paid, kitchen_ready")
+    .select(`
+  id,
+  total,
+  invoice_no,
+  created_at,
+  timer_started_at,
+  is_paid,
+  kitchen_ready,
+  is_employee_order,
+  employee_code,
+  employees(name)
+`)
     .or(
   "status.eq.active,and(is_employee_order.eq.true,status.neq.completed)"
 )
@@ -708,21 +719,31 @@ div.innerHTML = `
 
   <strong>فاتورة رقم ${order.invoice_no}</strong><br>
 
-  ${
+${
   order.is_employee_order
     ? `
       <div style="color:#7c3aed;font-weight:900">🧑‍🍳 طلب موظف</div>
-      <div style="color:#16a34a;font-weight:800">✔ مدفوع</div>
+
+      <div style="font-size:13px;margin-top:4px">
+        ${order.employees?.name || "—"}
+        (ID: ${order.employee_code || "—"})
+      </div>
+
+      <div style="color:#16a34a;font-weight:800;margin-top:6px">
+        ✔ مدفوع
+      </div>
+
       <button
         onclick="markEmployeeDone('${order.id}')"
         style="
-          margin-top:6px;
+          margin-top:8px;
           background:#7c3aed;
           color:white;
           border:none;
           padding:6px 10px;
           border-radius:6px;
           font-weight:700;
+          cursor:pointer;
         ">
         ✅ مكتمل
       </button>
