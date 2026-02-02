@@ -17,31 +17,37 @@ html, body {
 ================================ */
 .topbar {
   background: linear-gradient(135deg, #0F172A, #1E293B);
-  color: #FBBF24;
-  padding: 16px;
-  font-size: 20px;
-  font-weight: 800;
+  height: 64px;
   position: sticky;
   top: 0;
   z-index: 2000;
   box-shadow: 0 6px 18px rgba(0,0,0,.25);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
 }
+
+/* العنوان بالنص */
 .topbar-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: 800;
+  color: #FBBF24;
+  white-space: nowrap;
 }
 
+/* اللوقو يسار */
 .topbar-logo {
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
   object-fit: contain;
 }
+
+/* زر القائمة يمين */
 .menu-btn {
   position: absolute;
   right: 16px;
@@ -52,7 +58,6 @@ html, body {
   border: none;
   color: #FBBF24;
   cursor: pointer;
-  z-index: 2100;
 }
 /* ===============================
    LAYOUT
