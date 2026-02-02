@@ -356,3 +356,9 @@ window.loadCouponsReport = async function () {
 
   box.appendChild(summary);
 };
+// ربط زر تقرير الكوبونات
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .getElementById("openCouponsReport")
+    ?.addEventListener("click", openCouponsReport);
+});
