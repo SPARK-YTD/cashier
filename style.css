@@ -18,7 +18,7 @@ html, body {
 .topbar {
   background: linear-gradient(135deg, #0F172A, #1E293B);
   color: #FBBF24;
-  padding: 14px 16px;
+  padding: 16px;
   font-size: 20px;
   font-weight: 800;
   position: sticky;
@@ -29,6 +29,18 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 /* ===============================
    LAYOUT
