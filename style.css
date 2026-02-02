@@ -657,20 +657,14 @@ hr {
 .employee-mode main {
   margin-top: 60px;
 }
-
-/* ===== Logo Background ===== */
-
-
-/* مخصص للجوال @media (max-width: 768px) {
-  body::before {
-    width: 180px;
-    height: 180px;
-    left: -60px;
-    opacity: 0.04;
-  }
-}
 @media (max-width: 768px) {
-  body::before {
-    display: none;
+  .topbar {
+    padding: 12px;
+    font-size: 18px;
+  }
+
+  .topbar-logo {
+    width: 22px;
+    height: 22px;
   }
 }
