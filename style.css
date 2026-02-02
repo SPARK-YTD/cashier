@@ -259,12 +259,14 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  z-index: 2500;      /* أقل من popup */
+  z-index: 2500;
   display: none;
+  pointer-events: none;
 }
 
 .overlay.show {
   display: block;
+  pointer-events: auto;
 }
 /* ===============================
    SIDE MENU
