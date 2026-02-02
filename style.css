@@ -674,3 +674,7 @@ body > * {
   position: relative;
   z-index: 1;
 }
+
+body {
+  background: red !important;
+}
