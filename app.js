@@ -925,6 +925,7 @@ window.viewOrder = async function (orderId) {
 };
 
 
+
 // ===============================
 // 👨‍🍳 وجبات الموظفين (الدخول)
 // ===============================
@@ -940,36 +941,14 @@ window.openEmployeeMeals = async function () {
   const employeeCode = prompt("👨‍🍳 أدخل رقم الموظف:");
   if (!employeeCode) return;
 
-  // 2️⃣ رقم المدير (إجباري)
+  // 2️⃣ رقم المدير
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
-// 3️⃣ التحقق من الموظف + رقم المدير المرتبط به
-const { data: employee, error: empError } = await supabase
-  .from("employees")
-  .select("employee_code, manager_pin")
-  .eq("employee_code", employeeCode)
-  .single();
-
-if (empError || !employee) {
-  alert("❌ رقم الموظف غير موجود");
-  return;
-}
-
-if (!employee.manager_pin) {
-  alert("❌ هذا الموظف غير مرتبط بمدير");
-  return;
-}
-
-if (employee.manager_pin !== managerPin) {
-  alert("❌ رقم المدير غير صحيح لهذا الموظف");
-  return;
-}
-
-  // 4️⃣ التحقق من الموظف
+  // 3️⃣ جلب الموظف والتحقق من الرقم السري المرتبط به
   const { data: employee, error: empError } = await supabase
     .from("employees")
-    .select("id")
+    .select("employee_code, name, manager_pin")
     .eq("employee_code", employeeCode)
     .single();
 
@@ -978,74 +957,87 @@ if (employee.manager_pin !== managerPin) {
     return;
   }
 
-// 5️⃣ جلب / إنشاء كوبون الموظف الشهري (ثابت)
-const month = new Date().toISOString().slice(0, 7);
-
-// 🔍 آخر كوبون ثابت للموظف
-const { data: lastCoupon } = await supabase
-  .from("employee_coupons")
-  .select("total_amount")
-  .eq("employee_code", employeeCode)
-  .order("month", { ascending: false })
-  .limit(1)
-  .maybeSingle();
-
-if (!lastCoupon) {
-  alert("❌ لا يوجد كوبون ثابت لهذا الموظف");
-  return;
-}
-
-// 🔍 كوبون الشهر الحالي
-let { data: coupon } = await supabase
-  .from("employee_coupons")
-  .select("*")
-  .eq("employee_code", employeeCode)
-  .eq("month", month)
-  .maybeSingle();
-
-// 🆕 إنشاء كوبون جديد للشهر تلقائيًا
-if (!coupon) {
-  const { data: newCoupon, error } = await supabase
-    .from("employee_coupons")
-    .insert({
-      employee_code: employeeCode,
-      month,
-      total_amount: lastCoupon.total_amount,
-      remaining_amount: lastCoupon.total_amount
-    })
-    .select()
-    .single();
-
-  if (error) {
-    alert("❌ فشل إنشاء كوبون الشهر");
+  if (!employee.manager_pin) {
+    alert("❌ هذا الموظف غير مرتبط بمدير");
     return;
   }
 
-  coupon = newCoupon;
-}
+  if (employee.manager_pin !== managerPin) {
+    alert("❌ رقم المدير غير صحيح لهذا الموظف");
+    return;
+  }
 
-// ❌ رصيد منتهي
-if (coupon.remaining_amount <= 0) {
-  alert("❌ رصيد الموظف منتهي لهذا الشهر");
-  return;
-}
+  // 4️⃣ جلب / إنشاء كوبون الشهر
+  const month = new Date().toISOString().slice(0, 7);
 
-// ✅ تفعيل وضع الموظف
-employeeMode = {
-  employee_code: employeeCode,
-  remaining: coupon.remaining_amount
+  const { data: lastCoupon } = await supabase
+    .from("employee_coupons")
+    .select("total_amount")
+    .eq("employee_code", employeeCode)
+    .order("month", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lastCoupon) {
+    alert("❌ لا يوجد كوبون ثابت لهذا الموظف");
+    return;
+  }
+
+  let { data: coupon } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("employee_code", employeeCode)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (!coupon) {
+    const { data: newCoupon, error } = await supabase
+      .from("employee_coupons")
+      .insert({
+        employee_code: employeeCode,
+        month,
+        total_amount: lastCoupon.total_amount,
+        remaining_amount: lastCoupon.total_amount
+      })
+      .select()
+      .single();
+
+    if (error) {
+      alert("❌ فشل إنشاء كوبون الشهر");
+      return;
+    }
+
+    coupon = newCoupon;
+  }
+
+  if (coupon.remaining_amount <= 0) {
+    alert("❌ رصيد الموظف منتهي لهذا الشهر");
+    return;
+  }
+
+  // 5️⃣ تفعيل وضع الموظف
+  employeeMode = {
+    employee_code: employee.employee_code,
+    employee_name: employee.name,
+    remaining: coupon.remaining_amount
+  };
+
+  // 🎨 تحديث البانر
+  const banner = document.getElementById("employeeBanner");
+  const nameSpan = document.getElementById("employeeName");
+  const balanceSpan = document.getElementById("employeeBalance");
+
+  if (banner && nameSpan && balanceSpan) {
+    banner.style.display = "block";
+    nameSpan.textContent =
+      `${employee.name} (ID: ${employee.employee_code})`;
+    balanceSpan.textContent =
+      coupon.remaining_amount.toFixed(3);
+  }
+
+  alert("✅ تم الدخول لوضع وجبات الموظفين");
 };
 
-const banner = document.getElementById("employeeBanner");
-const balanceSpan = document.getElementById("employeeBalance");
-
-if (banner && balanceSpan) {
-  banner.style.display = "block";
-  balanceSpan.textContent = coupon.remaining_amount.toFixed(3);
-}
-
-  alert("✅ تم الدخول لوضع وجبات الموظفين بموافقة المدير");
-};
 
 
 /* ===============================
