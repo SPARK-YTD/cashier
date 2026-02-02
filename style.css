@@ -42,6 +42,18 @@ html, body {
   height: 28px;
   object-fit: contain;
 }
+.menu-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  background: none;
+  border: none;
+  color: #FBBF24;
+  cursor: pointer;
+  z-index: 2100;
+}
 /* ===============================
    LAYOUT
 ================================ */
