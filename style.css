@@ -654,3 +654,16 @@ hr {
 .employee-mode main {
   margin-top: 60px;
 }
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("assets/logo.png"); /* مسار اللوقو */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 420px;
+  opacity: 0.04; /* مهم جدًا */
+  pointer-events: none;
+  z-index: -1;
+}
