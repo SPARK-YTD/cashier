@@ -15,12 +15,14 @@
 
 <!-- ===== Top Bar ===== -->
 <header class="topbar">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+
   <div class="topbar-title">
-    <img src="assets/logo.png" alt="logo" class="topbar-logo">
+    <img src="assets/logo.png" class="topbar-logo" alt="logo">
     <span data-i18n="app_title">كاشير خذ لك بريك</span>
   </div>
 
-  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <span id="dayStatus" style="font-size:14px"></span>
 </header>
 
 <!-- ===== Side Menu ===== -->
