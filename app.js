@@ -944,18 +944,27 @@ window.openEmployeeMeals = async function () {
   const managerPin = prompt("🔐 أدخل رقم المدير:");
   if (!managerPin) return;
 
-  // 3️⃣ التحقق من المدير
-  const { data: manager, error: managerError } = await supabase
-    .from("employees")
-    .select("id")
-    .eq("manager_pin", managerPin)
-    .eq("is_manager", true)
-    .single();
+// 3️⃣ التحقق من الموظف + رقم المدير المرتبط به
+const { data: employee, error: empError } = await supabase
+  .from("employees")
+  .select("employee_code, manager_pin")
+  .eq("employee_code", employeeCode)
+  .single();
 
-  if (managerError || !manager) {
-    alert("❌ رقم المدير غير صحيح");
-    return;
-  }
+if (empError || !employee) {
+  alert("❌ رقم الموظف غير موجود");
+  return;
+}
+
+if (!employee.manager_pin) {
+  alert("❌ هذا الموظف غير مرتبط بمدير");
+  return;
+}
+
+if (employee.manager_pin !== managerPin) {
+  alert("❌ رقم المدير غير صحيح لهذا الموظف");
+  return;
+}
 
   // 4️⃣ التحقق من الموظف
   const { data: employee, error: empError } = await supabase
