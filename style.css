@@ -659,19 +659,19 @@ hr {
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
   background-image: url("assets/logo.png");
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: 420px;
-  opacity: 0.04;
+  background-position: left center;
+  background-size: 380px;
+  opacity: 0.06;
   pointer-events: none;
   z-index: 0;
 }
-
-/* المحتوى فوق اللوقو */
 body > * {
   position: relative;
   z-index: 1;
 }
-
