@@ -1021,7 +1021,12 @@ window.openEmployeeMeals = async function () {
     employee_name: employee.name,
     remaining: coupon.remaining_amount
   };
+// ✅ تفعيل ستايل وضع الموظف
+document.body.classList.add("employee-mode");
 
+// ✅ إغلاق القائمة الجانبية إذا كانت مفتوحة
+document.getElementById("sideMenu")?.classList.remove("open");
+document.getElementById("overlay")?.classList.remove("show");
   // 🎨 تحديث البانر
   const banner = document.getElementById("employeeBanner");
   const nameSpan = document.getElementById("employeeName");
@@ -1189,6 +1194,9 @@ ${itemsHTML}
 };
 window.exitEmployeeMode = function () {
   employeeMode = null;
+
+  // ❌ إلغاء ستايل وضع الموظف
+  document.body.classList.remove("employee-mode");
 
   const banner = document.getElementById("employeeBanner");
   if (banner) banner.style.display = "none";
