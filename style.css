@@ -659,27 +659,7 @@ hr {
 }
 
 /* ===== Logo Background ===== */
-body::before {
-  content: "";
-  position: fixed;
-  top: 50%;
-  left: -80px;              /* يطلع شوي خارج الشاشة */
-  transform: translateY(-50%);
-  width: 260px;
-  height: 260px;
-  background-image: url("assets/logo.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  opacity: 0.05;            /* خفيف جدًا */
-  pointer-events: none;
-  z-index: 0;
-}
 
-body > * {
-  position: relative;
-  z-index: 1;
-}
 
 /* مخصص للجوال @media (max-width: 768px) {
   body::before {
