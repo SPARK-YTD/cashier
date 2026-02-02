@@ -692,7 +692,12 @@ hr {
   }
 
   .topbar-logo {
-    height: 45px;
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 42px;
     width: auto;
+    object-fit: contain;
   }
 }
