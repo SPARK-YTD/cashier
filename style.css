@@ -6,17 +6,11 @@
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
-html {
+html, body {
   margin: 0;
-  background: #F8FAFC;
-}
-
-body {
-  margin: 0;
-  background: transparent;
+  background: #F8FAFC;   /* الخلفية الأساسية */
   color: #0F172A;
   touch-action: manipulation;
-  position: relative;
 }
 /* ===============================
    TOP BAR
@@ -661,6 +655,7 @@ hr {
   margin-top: 60px;
 }
 
+/* ===== Logo Background ===== */
 body::before {
   content: "";
   position: fixed;
@@ -673,6 +668,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
+/* المحتوى فوق اللوقو */
 body > * {
   position: relative;
   z-index: 1;
