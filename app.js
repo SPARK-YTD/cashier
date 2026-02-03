@@ -828,27 +828,49 @@ window.markCompleted = async function (orderId) {
   const order = activeOrders.find(o => o.id === orderId);
   if (!order) return;
 
-  // 🔒 لا يدخل التقرير بدون دفع
   if (!order.is_paid) {
     alert("❌ لا يمكن إقفال الفاتورة بدون تسجيل الدفع");
     return;
   }
 
-  // ✅ تأكيد الإقفال
-  if (!confirm("⚠️ هل تريد إقفال الفاتورة وإدخالها في التقرير؟")) {
-    return;
+  try {
+    const { data: freshOrder, error } = await supabase
+      .from("orders")
+      .select("total, cash_amount, benefit_amount")
+      .eq("id", orderId)
+      .single();
+
+    if (error || !freshOrder) {
+      alert("❌ تعذر التحقق من بيانات الدفع");
+      return;
+    }
+
+    const paidSum =
+      Number(freshOrder.cash_amount || 0) +
+      Number(freshOrder.benefit_amount || 0);
+
+    if (paidSum.toFixed(3) !== Number(freshOrder.total).toFixed(3)) {
+      alert("❌ مبلغ الدفع لا يساوي إجمالي الفاتورة");
+      return;
+    }
+
+    if (!confirm("⚠️ هل تريد إقفال الفاتورة وإدخالها في التقرير؟")) return;
+
+    await supabase
+      .from("orders")
+      .update({
+        status: "completed",
+        closed_at: new Date().toISOString(),
+        kitchen_ready: true
+      })
+      .eq("id", orderId);
+
+    loadActiveOrders();
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ حصل خطأ أثناء إقفال الفاتورة");
   }
-
-  await supabase
-    .from("orders")
-    .update({
-      status: "completed",
-      closed_at: new Date().toISOString(),
-      kitchen_ready: true
-    })
-    .eq("id", orderId);
-
-  loadActiveOrders();
 };
 
 // 💰 فتح واجهة اختيار طريقة الدفع
