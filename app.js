@@ -847,7 +847,42 @@
   // ❌ إذا غير مدفوعة → نفتح اختيار طريقة الدفع
   window.markPaid(orderId);
 };
+// 💰 فتح واجهة اختيار طريقة الدفع
+window.markPaid = function (orderId) {
+  if (document.querySelector(".variant-overlay")) return;
+  const order = activeOrders.find(o => o.id === orderId);
+  if (!order) return;
 
+  // إذا مدفوعة مسبقًا
+  if (order.is_paid) {
+    alert("⚠️ الفاتورة مسجلة كمدفوعة");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:320px">
+      <h3>طريقة الدفع</h3>
+
+      <button class="variant-btn"
+        onclick="confirmSimplePay('${orderId}','cash',${order.total})">
+        💵 كاش
+      </button>
+
+      <button class="variant-btn"
+        onclick="confirmSimplePay('${orderId}','benefit',${order.total})">
+        💳 بنفت
+      </button>
+
+      <button class="variant-cancel">إلغاء</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+};
 window.confirmSimplePay = async function (orderId, method, total) {
   if (!confirm("تأكيد تسجيل الفاتورة كمدفوعة؟")) return;
 
@@ -874,7 +909,9 @@ window.confirmSimplePay = async function (orderId, method, total) {
 
   document.querySelector(".variant-overlay")?.remove();
   loadActiveOrders();
+alert("✅ تم تسجيل الدفع، اضغط (مكتمل) لإدخالها في التقرير");
 };
+
   /* 🗑 حذف */
   window.deleteOrder = async id => {
     if (!confirm("حذف الفاتورة نهائيًا؟")) return;
