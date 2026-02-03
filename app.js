@@ -470,7 +470,7 @@
       else {
   
    // 1️⃣ زيادة عدّاد الفواتير لليوم الحالي
-  const { data: dayData, error: dayErr } = await supabase
+ /*const { data: dayData, error: dayErr } = await supabase
     .from("business_days")
     .update({
       invoice_counter: currentBusinessDay.invoice_counter + 1
@@ -484,8 +484,20 @@
     if (completeBtn) completeBtn.disabled = false;
     isSavingOrder = false;
     return;
-  }
-  
+  } */
+      // استدعاء الدالة الآمنة لزيادة رقم الفاتورة
+    const { data: newInvoiceNo, error: rpcError } = await supabase
+      .rpc('increment_invoice_counter', { row_id: currentBusinessDay.id });
+
+    if (rpcError || !newInvoiceNo) {
+      alert("❌ خطأ في إنشاء رقم الفاتورة");
+      if (completeBtn) completeBtn.disabled = false;
+      isSavingOrder = false;
+      return;
+    }
+
+    const invoiceNo = newInvoiceNo;
+
   const invoiceNo = dayData.invoice_counter;
   
   // 2️⃣ إنشاء الطلب برقم الفاتورة الجديد
