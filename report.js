@@ -18,17 +18,9 @@ function calculateReportData(orders) {
   const itemsMap = {};
 
   orders.forEach(o => {
-    // 💳 طريقة الدفع
-    function calculateReportData(orders) {
-  let totalSales = 0;
-  let cashTotal = 0;
-  let benefitTotal = 0;
-  const itemsMap = {};
+    totalSales += Number(o.total || 0);
 
-  orders.forEach(o => {
-    totalSales += o.total;
-
-    // ✅ الحساب الصحيح
+    // ✅ المصدر الحقيقي للحساب
     cashTotal += Number(o.cash_amount || 0);
     benefitTotal += Number(o.benefit_amount || 0);
 
