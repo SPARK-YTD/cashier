@@ -898,6 +898,7 @@ window.openUnifiedPay = function (orderId, total) {
 
   let cash = 0;
   let benefit = 0;
+  let receivedCash = 0;
   let mode = "cash";
 
   const overlay = document.createElement("div");
@@ -931,12 +932,16 @@ window.openUnifiedPay = function (orderId, total) {
 
 function render() {
   const remaining = total - cash - benefit;
+  const change =
+    mode === "cash" && receivedCash > cash
+      ? receivedCash - cash
+      : 0;
 
   payBody.innerHTML = `
     <label>${mode === "cash" ? "💵 مبلغ الكاش" : "💳 مبلغ البنفت"}</label>
 
     <input type="number" step="0.001" min="0"
-      value="${mode === "cash" ? cash : benefit}"
+      value="${mode === "cash" ? receivedCash : benefit}"
       id="payInput"
     >
 
@@ -961,16 +966,27 @@ function render() {
 
     <div class="remaining" style="margin-top:6px;font-weight:700">
       المتبقي: ${remaining.toFixed(3)} د.ب
+      ${
+        change > 0
+          ? `<br><span style="color:#16a34a">💰 الباقي للزبون: ${change.toFixed(3)} د.ب</span>`
+          : ""
+      }
     </div>
   `;
 
   const input = payBody.querySelector("#payInput");
+
   input.oninput = e => {
     const v = Number(e.target.value || 0);
-    if (mode === "cash") cash = v;
-    else benefit = v;
 
-    if (cash + benefit > total) {
+    if (mode === "cash") {
+      receivedCash = v;
+      cash = Math.min(v, total - benefit);
+    } else {
+      benefit = v;
+    }
+
+    if (cash + benefit > total && mode !== "cash") {
       errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
     } else {
       errorEl.textContent = "";
