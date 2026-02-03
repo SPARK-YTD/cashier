@@ -940,11 +940,14 @@ function render() {
   payBody.innerHTML = `
     <label>${mode === "cash" ? "💵 مبلغ الكاش" : "💳 مبلغ البنفت"}</label>
 
-    <input type="number" step="0.001" min="0"
-      value="${mode === "cash" ? receivedCash : benefit}"
-      id="payInput"
-    >
-
+<input
+  type="text"
+  inputmode="decimal"
+  pattern="[0-9]*[.,]?[0-9]*"
+  placeholder="0.000"
+  value="${mode === "cash" ? receivedCash : benefit}"
+  id="payInput"
+/>
     ${
       mode === "benefit"
         ? `
@@ -975,24 +978,48 @@ function render() {
   `;
 
   const input = payBody.querySelector("#payInput");
+input.focus();
+input.setSelectionRange(input.value.length, input.value.length);
 
-  input.oninput = e => {
-    const v = Number(e.target.value || 0);
+ input.oninput = e => {
+  const raw = e.target.value.replace(",", ".");
 
+  // 🔒 منع أكثر من 3 منازل عشرية
+  if (raw.includes(".")) {
+    const [, dec] = raw.split(".");
+    if (dec.length > 3) return;
+  }
+
+  // حالات مؤقتة أثناء الكتابة (مهم للآيفون)
+  if (raw === "" || raw === "." || raw === "0.") {
     if (mode === "cash") {
-      receivedCash = v;
-      cash = Math.min(v, total - benefit);
+      receivedCash = raw;
+      cash = 0;
     } else {
-      benefit = v;
+      benefit = 0;
     }
+    errorEl.textContent = "";
+    return;
+  }
 
-    if (cash + benefit > total && mode !== "cash") {
-      errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
-    } else {
-      errorEl.textContent = "";
-      render();
-    }
-  };
+  const v = parseFloat(raw);
+  if (isNaN(v)) return;
+
+  if (mode === "cash") {
+    receivedCash = raw;
+    cash = Math.min(v, total - benefit);
+  } else {
+    benefit = v;
+  }
+
+  if (cash + benefit > total && mode !== "cash") {
+    errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
+  } else {
+    errorEl.textContent = "";
+  }
+
+  render();
+};
 
   const fillBtn = payBody.querySelector("#fillRemaining");
   if (fillBtn) {
@@ -1015,6 +1042,10 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   mode = "benefit";
   errorEl.textContent = "";
   render();
+  setTimeout(() => {
+  const input = overlay.querySelector("#payInput");
+  input?.focus();
+}, 0);
 };
 
   overlay.querySelector("#confirmPay").onclick = async () => {
