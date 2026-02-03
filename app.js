@@ -925,12 +925,15 @@ window.openMixedPay = function (orderId, total) {
     <div class="variant-box" style="max-width:360px">
       <h3>💵 + 💳 دفع مشترك</h3>
 
-      <label>مبلغ الكاش</label>
-      <input id="mixCash" type="number" step="0.001" placeholder="0.000">
+      <div class="pay-row">
+  <span>💵 كاش</span>
+  <input id="mixCash" type="number" step="0.001" placeholder="0.000">
+</div>
 
-      <label>مبلغ البنفت</label>
-      <input id="mixBenefit" type="number" step="0.001" placeholder="0.000">
-
+<div class="pay-row">
+  <span>💳 بنفت</span>
+  <input id="mixBenefit" type="number" step="0.001" placeholder="0.000">
+</div>
       <div style="margin-top:8px;font-weight:700">
         الإجمالي: ${total.toFixed(3)} د.ب
       </div>
