@@ -270,7 +270,6 @@
     };
   }
   
-  
   window.selectVariant = function (productId, name, variantId, label, price) {
     const baseItem = items.find(i => i.id === productId);
   
