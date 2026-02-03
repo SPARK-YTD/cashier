@@ -1018,16 +1018,32 @@ input.setSelectionRange(input.value.length, input.value.length);
     errorEl.textContent = "";
   }
 
-  render();
+  const remainingEl = payBody.querySelector(".remaining");
+
+const liveChange =
+  mode === "cash" && Number(receivedCash) > cash
+    ? Number(receivedCash) - cash
+    : 0;
+
+if (remainingEl) {
+  remainingEl.innerHTML = `
+    المتبقي: ${(total - cash - benefit).toFixed(3)} د.ب
+    ${
+      liveChange > 0
+        ? `<br><span style="color:#16a34a">💰 الباقي للزبون: ${liveChange.toFixed(3)} د.ب</span>`
+        : ""
+    }
+  `;
+}
 };
 
   const fillBtn = payBody.querySelector("#fillRemaining");
-  if (fillBtn) {
-    fillBtn.onclick = () => {
-      benefit = total - cash;
-      render();
-    };
-  }
+ if (fillBtn) {
+  fillBtn.onclick = () => {
+    benefit = +(total - cash).toFixed(3); // 🔒 تثبيت 3 منازل عشرية
+    render();
+  };
+}
 }
 
   render();
@@ -1040,16 +1056,18 @@ input.setSelectionRange(input.value.length, input.value.length);
 
 overlay.querySelector("#tabBenefit").onclick = () => {
   mode = "benefit";
+  receivedCash = 0;      // ✅ مهم: تصفير كاش النصي
   errorEl.textContent = "";
   render();
+
   setTimeout(() => {
-  const input = overlay.querySelector("#payInput");
-  input?.focus();
-}, 0);
+    const input = overlay.querySelector("#payInput");
+    input?.focus();
+  }, 0);
 };
 
   overlay.querySelector("#confirmPay").onclick = async () => {
-    if (cash + benefit !== total) {
+    if ((cash + benefit).toFixed(3) !== total.toFixed(3)) {
       errorEl.textContent = "❌ لم يتم سداد كامل المبلغ";
       return;
     }
