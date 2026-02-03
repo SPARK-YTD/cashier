@@ -1015,7 +1015,9 @@ ${
 
   const input = payBody.querySelector("#payInput");
 input.focus();
-input.setSelectionRange(input.value.length, input.value.length);
+if (input && input.setSelectionRange) {
+  input.setSelectionRange(input.value.length, input.value.length);
+}
 
  input.oninput = e => {
   const raw = e.target.value.replace(",", ".");
