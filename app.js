@@ -470,21 +470,23 @@
       else {
   
    // 1️⃣ زيادة عدّاد الفواتير لليوم الحالي
- const { data: dayData, error: dayErr } = await supabase
-    .from("business_days")
-    .update({
-      invoice_counter: currentBusinessDay.invoice_counter + 1
-    })
-    .eq("id", currentBusinessDay.id)
-    .select("invoice_counter")
-    .single();
-  
-  if (dayErr) {
-    alert("❌ خطأ في عدّاد الفواتير");
-    if (completeBtn) completeBtn.disabled = false;
-    isSavingOrder = false;
-    return;
-  } 
+const { data: dayData, error: dayErr } = await supabase
+  .from("business_days")
+  .update({
+    invoice_counter: currentBusinessDay.invoice_counter + 1
+  })
+  .eq("id", currentBusinessDay.id)
+  .select("invoice_counter")
+  .single();
+
+if (dayErr) {
+  alert("❌ خطأ في عدّاد الفواتير");
+  if (completeBtn) completeBtn.disabled = false;
+  isSavingOrder = false;
+  return;
+}
+
+const invoiceNo = dayData.invoice_counter; // ✅ هذا السطر المنقذ
       // استدعاء الدالة الآمنة لزيادة رقم الفاتورة
     /*const { data: newInvoiceNo, error: rpcError } = await supabase
       .rpc('increment_invoice_counter', { row_id: currentBusinessDay.id });
