@@ -948,6 +948,12 @@ function render() {
   value="${mode === "cash" ? receivedCash : benefit}"
   id="payInput"
 />
+${mode === "benefit" && cash > 0
+  ? `<div style="font-size:13px;color:#16a34a;margin-top:4px">
+       💵 مدفوع كاش: ${cash.toFixed(3)} د.ب
+     </div>`
+  : ""
+}
     ${
       mode === "benefit"
         ? `
