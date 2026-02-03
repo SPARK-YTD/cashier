@@ -925,16 +925,20 @@ window.openMixedPay = function (orderId, total) {
     <div class="variant-box" style="max-width:360px">
       <h3>💵 + 💳 دفع مشترك</h3>
 
-      <div class="pay-row">
-  <span>💵 كاش</span>
-  <input id="mixCash" type="number" step="0.001" placeholder="0.000">
-</div>
+      <label>💵 مبلغ الكاش</label>
+      <input
+        id="mixCash"
+        type="number"
+        step="0.001"
+        min="0"
+        placeholder="0.000"
+      >
 
-<div class="pay-row">
-  <span>💳 بنفت</span>
-  <input id="mixBenefit" type="number" step="0.001" placeholder="0.000">
-</div>
       <div style="margin-top:8px;font-weight:700">
+        💳 البنفت: <span id="autoBenefit">${total.toFixed(3)}</span> د.ب
+      </div>
+
+      <div style="margin-top:6px;font-weight:700">
         الإجمالي: ${total.toFixed(3)} د.ب
       </div>
 
@@ -942,7 +946,7 @@ window.openMixedPay = function (orderId, total) {
         style="color:#dc2626;font-size:14px;margin-top:6px"></div>
 
       <button class="variant-btn"
-        onclick="confirmMixedPay('${orderId}', ${total})">
+        onclick="confirmMixedPayAuto('${orderId}', ${total})">
         ✅ تأكيد الدفع
       </button>
 
@@ -951,23 +955,38 @@ window.openMixedPay = function (orderId, total) {
   `;
 
   document.body.appendChild(overlay);
+
+  const cashInput = overlay.querySelector("#mixCash");
+  const benefitSpan = overlay.querySelector("#autoBenefit");
+  const errorEl = overlay.querySelector("#mixError");
+
+  cashInput.addEventListener("input", () => {
+    const cash = Number(cashInput.value || 0);
+    const benefit = total - cash;
+
+    if (cash > total) {
+      errorEl.textContent = "❌ مبلغ الكاش أكبر من الإجمالي";
+      benefitSpan.textContent = "—";
+      return;
+    }
+
+    errorEl.textContent = "";
+    benefitSpan.textContent = benefit.toFixed(3);
+  });
+
   overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
 };
 
-window.confirmMixedPay = async function (orderId, total) {
+window.confirmMixedPayAuto = async function (orderId, total) {
   const cash = Number(document.getElementById("mixCash").value || 0);
-  const benefit = Number(document.getElementById("mixBenefit").value || 0);
-  const sum = cash + benefit;
+  const benefit = total - cash;
 
-  const errorEl = document.getElementById("mixError");
-
-  if (sum.toFixed(3) !== total.toFixed(3)) {
-    errorEl.textContent =
-      `❌ المجموع (${sum.toFixed(3)}) لا يساوي الإجمالي (${total.toFixed(3)})`;
+  if (cash < 0 || benefit < 0) {
+    alert("❌ قيم الدفع غير صحيحة");
     return;
   }
 
-  if (!confirm("تأكيد تسجيل الفاتورة كمدفوعة (كاش + بنفت)؟")) return;
+  if (!confirm("تأكيد تسجيل الدفع (كاش + بنفت)؟")) return;
 
   await supabase
     .from("orders")
