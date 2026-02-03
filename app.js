@@ -642,25 +642,25 @@
   ================================ */
   async function loadActiveOrders() {
     const { data } = await supabase
-      .from("orders")
-      .select(`
+  .from("orders")
+  .select(`
     id,
     total,
     invoice_no,
     created_at,
     timer_started_at,
     is_paid,
+    payment_method,
+    cash_amount,
+    benefit_amount,
     kitchen_ready,
     is_employee_order,
     employee_code,
     employees:employees!orders_employee_code_fkey(name)
   `)
-      .or(
-    "status.eq.active,and(is_employee_order.eq.true,status.neq.completed)"
-  )
-    
-      .eq("business_day_id", currentBusinessDay.id)
-      .order("created_at", { ascending: false });
+  .eq("status", "active")
+  .eq("business_day_id", currentBusinessDay.id)
+  .order("created_at", { ascending: false });
   
     activeOrders = data || [];
     renderActiveOrders();
@@ -824,29 +824,33 @@
   };
   
   /* ✅ مكتمل (اختيار طريقة الدفع) */
-  window.markCompleted = async function (orderId) {
+window.markCompleted = async function (orderId) {
   const order = activeOrders.find(o => o.id === orderId);
   if (!order) return;
 
-  // ✅ إذا الفاتورة مدفوعة مسبقًا → تأكيد فقط
-  if (order.is_paid) {
-    if (!confirm("⚠️ الفاتورة مدفوعة، هل تريد إقفالها وإدخالها في التقرير؟")) {
-      return;
-    }
-
-    await supabase.from("orders").update({
-      status: "completed",
-      closed_at: new Date().toISOString(),
-      kitchen_ready: true
-    }).eq("id", orderId);
-
-    loadActiveOrders();
+  // 🔒 لا يدخل التقرير بدون دفع
+  if (!order.is_paid) {
+    alert("❌ لا يمكن إقفال الفاتورة بدون تسجيل الدفع");
     return;
   }
 
-  // ❌ إذا غير مدفوعة → نفتح اختيار طريقة الدفع
-  window.markPaid(orderId);
+  // ✅ تأكيد الإقفال
+  if (!confirm("⚠️ هل تريد إقفال الفاتورة وإدخالها في التقرير؟")) {
+    return;
+  }
+
+  await supabase
+    .from("orders")
+    .update({
+      status: "completed",
+      closed_at: new Date().toISOString(),
+      kitchen_ready: true
+    })
+    .eq("id", orderId);
+
+  loadActiveOrders();
 };
+
 // 💰 فتح واجهة اختيار طريقة الدفع
 window.markPaid = function (orderId) {
   if (document.querySelector(".variant-overlay")) return;
@@ -863,17 +867,58 @@ window.markPaid = function (orderId) {
   overlay.className = "variant-overlay";
 
   overlay.innerHTML = `
-    <div class="variant-box" style="max-width:320px">
-      <h3>طريقة الدفع</h3>
+  <div class="variant-box" style="max-width:340px">
+    <h3>طريقة الدفع</h3>
+
+    <button class="variant-btn"
+      onclick="confirmSimplePay('${orderId}','cash',${order.total})">
+      💵 كاش
+    </button>
+
+    <button class="variant-btn"
+      onclick="confirmSimplePay('${orderId}','benefit',${order.total})">
+      💳 بنفت
+    </button>
+
+    <button class="variant-btn"
+      onclick="openMixedPay('${orderId}', ${order.total})">
+      💵 + 💳 كاش + بنفت
+    </button>
+
+    <button class="variant-cancel">إلغاء</button>
+  </div>
+`;
+
+  document.body.appendChild(overlay);
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+};
+
+window.openMixedPay = function (orderId, total) {
+  document.querySelector(".variant-overlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:360px">
+      <h3>💵 + 💳 دفع مشترك</h3>
+
+      <label>مبلغ الكاش</label>
+      <input id="mixCash" type="number" step="0.001" placeholder="0.000">
+
+      <label>مبلغ البنفت</label>
+      <input id="mixBenefit" type="number" step="0.001" placeholder="0.000">
+
+      <div style="margin-top:8px;font-weight:700">
+        الإجمالي: ${total.toFixed(3)} د.ب
+      </div>
+
+      <div id="mixError"
+        style="color:#dc2626;font-size:14px;margin-top:6px"></div>
 
       <button class="variant-btn"
-        onclick="confirmSimplePay('${orderId}','cash',${order.total})">
-        💵 كاش
-      </button>
-
-      <button class="variant-btn"
-        onclick="confirmSimplePay('${orderId}','benefit',${order.total})">
-        💳 بنفت
+        onclick="confirmMixedPay('${orderId}', ${total})">
+        ✅ تأكيد الدفع
       </button>
 
       <button class="variant-cancel">إلغاء</button>
@@ -883,6 +928,39 @@ window.markPaid = function (orderId) {
   document.body.appendChild(overlay);
   overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
 };
+
+window.confirmMixedPay = async function (orderId, total) {
+  const cash = Number(document.getElementById("mixCash").value || 0);
+  const benefit = Number(document.getElementById("mixBenefit").value || 0);
+  const sum = cash + benefit;
+
+  const errorEl = document.getElementById("mixError");
+
+  if (sum.toFixed(3) !== total.toFixed(3)) {
+    errorEl.textContent =
+      `❌ المجموع (${sum.toFixed(3)}) لا يساوي الإجمالي (${total.toFixed(3)})`;
+    return;
+  }
+
+  if (!confirm("تأكيد تسجيل الفاتورة كمدفوعة (كاش + بنفت)؟")) return;
+
+  await supabase
+    .from("orders")
+    .update({
+      is_paid: true,
+      payment_method: "mixed",
+      cash_amount: cash,
+      benefit_amount: benefit,
+      paid_at: new Date().toISOString()
+    })
+    .eq("id", orderId);
+
+  document.querySelector(".variant-overlay")?.remove();
+  loadActiveOrders();
+
+  alert("✅ تم تسجيل الدفع، اضغط (مكتمل) لإدخالها في التقرير");
+};
+
 window.confirmSimplePay = async function (orderId, method, total) {
   if (!confirm("تأكيد تسجيل الفاتورة كمدفوعة؟")) return;
 
