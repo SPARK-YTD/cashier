@@ -19,13 +19,18 @@ function calculateReportData(orders) {
 
   orders.forEach(o => {
     // 💳 طريقة الدفع
-    if (o.payment_method === "cash") {
-      cashTotal += o.total;
-    } else if (o.payment_method === "benefit") {
-      benefitTotal += o.total;
-    }
+    function calculateReportData(orders) {
+  let totalSales = 0;
+  let cashTotal = 0;
+  let benefitTotal = 0;
+  const itemsMap = {};
 
+  orders.forEach(o => {
     totalSales += o.total;
+
+    // ✅ الحساب الصحيح
+    cashTotal += Number(o.cash_amount || 0);
+    benefitTotal += Number(o.benefit_amount || 0);
 
     o.order_items.forEach(i => {
       const name = i.products.name;
@@ -136,15 +141,16 @@ if (!currentBusinessDay) {
 const { data: orders, error: ordersError } = await supabase
   .from("orders")
   .select(`
-    id,
-    total,
-    payment_method,
-    order_items (
-      qty,
-      price,
-      products ( name )
-    )
-  `)
+  id,
+  total,
+  cash_amount,
+  benefit_amount,
+  order_items (
+    qty,
+    price,
+    products ( name )
+  )
+`)
   .eq("status", "completed")
   .eq("is_employee_order", false)   // ✅ إخفاء طلبات الموظفين
   .eq("business_day_id", currentBusinessDay.id);
