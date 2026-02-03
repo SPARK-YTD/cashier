@@ -929,46 +929,77 @@ window.openUnifiedPay = function (orderId, total) {
   const payBody = overlay.querySelector("#payBody");
   const errorEl = overlay.querySelector("#payError");
 
-  function render() {
-    const remaining = total - cash - benefit;
+function render() {
+  const remaining = total - cash - benefit;
 
-    payBody.innerHTML = `
-      <label>${mode === "cash" ? "💵 مبلغ الكاش" : "💳 مبلغ البنفت"}</label>
-      <input type="number" step="0.001" min="0"
-        value="${mode === "cash" ? cash : benefit}"
-        id="payInput"
-      >
+  payBody.innerHTML = `
+    <label>${mode === "cash" ? "💵 مبلغ الكاش" : "💳 مبلغ البنفت"}</label>
 
-      <div style="margin-top:6px;font-weight:700">
-        المتبقي: ${remaining.toFixed(3)} د.ب
-      </div>
-    `;
+    <input type="number" step="0.001" min="0"
+      value="${mode === "cash" ? cash : benefit}"
+      id="payInput"
+    >
 
-    payBody.querySelector("#payInput").oninput = e => {
-      const v = Number(e.target.value || 0);
-      if (mode === "cash") cash = v;
-      else benefit = v;
+    ${
+      mode === "benefit"
+        ? `
+          <button id="fillRemaining" style="
+            margin-top:6px;
+            width:100%;
+            background:#16a34a;
+            color:white;
+            border:none;
+            padding:6px;
+            border-radius:6px;
+            font-weight:700;
+          ">
+            💳 تعبئة المبلغ المتبقي
+          </button>
+        `
+        : ""
+    }
 
-      if (cash + benefit > total) {
-        errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
-      } else {
-        errorEl.textContent = "";
-        render();
-      }
+    <div class="remaining" style="margin-top:6px;font-weight:700">
+      المتبقي: ${remaining.toFixed(3)} د.ب
+    </div>
+  `;
+
+  const input = payBody.querySelector("#payInput");
+  input.oninput = e => {
+    const v = Number(e.target.value || 0);
+    if (mode === "cash") cash = v;
+    else benefit = v;
+
+    if (cash + benefit > total) {
+      errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
+    } else {
+      errorEl.textContent = "";
+      render();
+    }
+  };
+
+  const fillBtn = payBody.querySelector("#fillRemaining");
+  if (fillBtn) {
+    fillBtn.onclick = () => {
+      benefit = total - cash;
+      render();
     };
   }
+}
 
   render();
 
   overlay.querySelector("#tabCash").onclick = () => {
-    mode = "cash";
-    render();
-  };
+  mode = "cash";
+  errorEl.textContent = "";
+  render();
+};
 
-  overlay.querySelector("#tabBenefit").onclick = () => {
-    mode = "benefit";
-    render();
-  };
+overlay.querySelector("#tabBenefit").onclick = () => {
+  mode = "benefit";
+  errorEl.textContent = "";
+  render();
+};
 
   overlay.querySelector("#confirmPay").onclick = async () => {
     if (cash + benefit !== total) {
