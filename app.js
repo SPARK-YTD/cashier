@@ -85,9 +85,7 @@
     loadItems("food");        // بدون await (غير حاجز)
     loadActiveOrders();       // بدون await
     subscribeToOrders();
-    document
-      .getElementById("paid")
-      ?.addEventListener("input", calculateChange);
+    
   
     // تحديث الطلبات كل دقيقة
    // setInterval(loadActiveOrders, 60000);
@@ -352,7 +350,7 @@
     });
   
     document.getElementById("total").textContent = total.toFixed(3) + " د.ب";
-    calculateChange();
+    
   }
   
   window.changeQty = (i, d) => {
@@ -365,18 +363,7 @@
     cart.splice(i, 1);
     renderCart();
   };
-  
-  /* ===============================
-     الدفع
-  ================================ */
-  function calculateChange() {
-    const paid = parseFloat(document.getElementById("paid").value) || 0;
-    const total = parseFloat(document.getElementById("total").textContent) || 0;
-    const change = paid - total;
-    document.getElementById("change").textContent =
-      change >= 0 && paid ? change.toFixed(3) + " د.ب" : "—";
-  }
-  
+
   /* ===============================
      إتمام الطلب (جديد / تعديل)
   ================================ */
@@ -874,25 +861,7 @@ window.markCompleted = async function (orderId) {
 };
 
 // 💰 فتح واجهة اختيار طريقة الدفع
-window.markPaid = function (orderId) {
-  if (document.querySelector(".variant-overlay")) return;
-  const order = activeOrders.find(o => o.id === orderId);
-  if (!order) return;
 
-  // إذا مدفوعة مسبقًا
-  if (order.is_paid) {
-    alert("⚠️ الفاتورة مسجلة كمدفوعة");
-    return;
-  }
-
-  const overlay = document.createElement("div");
-  overlay.className = "variant-overlay";
-
-  overlay.innerHTML = `
-  <div class="variant-box" style="max-width:340px">
-    <h3>طريقة الدفع</h3>
-
-// 💰 فتح واجهة اختيار طريقة الدفع
 window.markPaid = function (orderId) {
   if (document.querySelector(".variant-overlay")) return;
 
@@ -923,29 +892,13 @@ window.markPaid = function (orderId) {
   document.body.appendChild(overlay);
   overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
 };
-window.markPaid = function (orderId) {
-  if (document.querySelector(".variant-overlay")) return;
 
-  const order = activeOrders.find(o => o.id === orderId);
-  if (!order) return;
-
-  if (order.is_paid) {
-    alert("⚠️ الفاتورة مسجلة كمدفوعة");
-    return;
-  }
-
-  const overlay = document.createElement("div");
-  overlay.className = "variant-overlay";
-
-
-
-// 💰 واجهة الدفع الموحدة (كاش / بنفت / مشترك)
 window.openUnifiedPay = function (orderId, total) {
   document.querySelector(".variant-overlay")?.remove();
 
   let cash = 0;
   let benefit = 0;
-  let mode = "cash"; // cash | benefit
+  let mode = "cash";
 
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
@@ -964,7 +917,6 @@ window.openUnifiedPay = function (orderId, total) {
       </div>
 
       <div id="payBody"></div>
-
       <div id="payError" style="color:#dc2626;margin-top:6px"></div>
 
       <button class="variant-btn" id="confirmPay">✅ تأكيد الدفع</button>
@@ -1024,18 +976,15 @@ window.openUnifiedPay = function (orderId, total) {
       return;
     }
 
-    await supabase
-      .from("orders")
-      .update({
-        is_paid: true,
-        payment_method:
-          cash > 0 && benefit > 0 ? "mixed" :
-          cash > 0 ? "cash" : "benefit",
-        cash_amount: cash,
-        benefit_amount: benefit,
-        paid_at: new Date().toISOString()
-      })
-      .eq("id", orderId);
+    await supabase.from("orders").update({
+      is_paid: true,
+      payment_method:
+        cash > 0 && benefit > 0 ? "mixed" :
+        cash > 0 ? "cash" : "benefit",
+      cash_amount: cash,
+      benefit_amount: benefit,
+      paid_at: new Date().toISOString()
+    }).eq("id", orderId);
 
     overlay.remove();
     loadActiveOrders();
@@ -1265,10 +1214,6 @@ window.openUnifiedPay = function (orderId, total) {
     editingOrderId = null;
     renderCart();
   
-    const paidInput = document.getElementById("paid");
-    if (paidInput) paidInput.value = "";
-  
-    document.getElementById("change").textContent = "—";
   }
   window.printReceipt = function () {
   
