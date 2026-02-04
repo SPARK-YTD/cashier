@@ -171,10 +171,13 @@
       return;
     }
   
-    if (Array.isArray(item.extras) && item.extras.length > 0) {
-      showExtrasPopup(item);
-      return;
-    }
+    if (
+  (Array.isArray(item.extras) && item.extras.length > 0) ||
+  item.is_spicy
+) {
+  showExtrasPopup(item);
+  return;
+}
   
     addToCart({
       id: item.id,
@@ -223,18 +226,21 @@
       <div class="variant-box">
         <h3>${item.name}</h3>
   
-        <p style="font-size:14px;color:#555;margin-bottom:10px">
-          اختر الإضافات التي لا يريدها الزبون
-        </p>
-  
-        <div style="text-align:right;max-height:200px;overflow:auto">
-  ${(Array.isArray(item.extras) ? item.extras : []).map(extra => `
-    <label style="display:block;margin-bottom:6px">
-      <input type="checkbox" value="${extra}" checked>
-      ${extra}
-    </label>
-  `).join("")}
-        </div>
+        ${item.extras?.length ? `
+  <p style="font-size:14px;color:#555;margin-bottom:10px">
+    اختر الإضافات التي لا يريدها الزبون
+  </p>
+
+  <div style="text-align:right;max-height:200px;overflow:auto">
+    ${item.extras.map(extra => `
+      <label style="display:block;margin-bottom:6px">
+        <input type="checkbox" value="${extra}" checked>
+        ${extra}
+      </label>
+    `).join("")}
+  </div>
+` : ""}
+
    ${item.is_spicy ? `
   <hr style="margin:10px 0">
 
@@ -286,9 +292,12 @@
   }
   
   window.selectVariant = function (productId, name, variantId, label, price) {
-    const baseItem = items.find(i => i.id === productId);
-  
-  if (baseItem?.extras?.length) {
+  const baseItem = items.find(i => i.id === productId);
+
+  if (
+    (baseItem?.extras?.length > 0) ||
+    baseItem?.is_spicy
+  ) {
     showExtrasPopup({
       ...baseItem,
       name: `${name} (${label})`,
@@ -303,8 +312,9 @@
       variant_id: variantId
     });
   }
-    document.querySelector(".variant-overlay")?.remove();
-  };
+
+  document.querySelector(".variant-overlay")?.remove();
+};
   
   /* ===============================
      السلة
