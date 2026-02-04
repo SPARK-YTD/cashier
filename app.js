@@ -262,8 +262,10 @@
     // زر التأكيد
    overlay.querySelector("#confirmExtras").onclick = () => {
   const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
-    .filter(cb => !cb.checked)
-    .map(cb => cb.value);
+  .filter(cb =>
+    cb.id !== "spicyOption" && !cb.checked
+  )
+  .map(cb => cb.value);
 
   const isSpicy =
     overlay.querySelector("#spicyOption")?.checked || false;
