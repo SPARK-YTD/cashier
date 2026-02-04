@@ -262,32 +262,32 @@
     // زر التأكيد
    overlay.querySelector("#confirmExtras").onclick = () => {
   const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
-  .filter(cb =>
-    cb.id !== "spicyOption" && !cb.checked
-  )
+  .filter(cb => cb.id !== "spicyOption" && !cb.checked)
   .map(cb => cb.value);
 
-  const isSpicy =
-    overlay.querySelector("#spicyOption")?.checked || false;
+const isSpicy =
+  overlay.querySelector("#spicyOption")?.checked || false;
 
-  let nameWithExtras = item.name;
+let nameWithExtras = item.name;
 
-  if (isSpicy) {
-    nameWithExtras += " 🌶 سبايسي";
-  }
+// 🌶️ فقط إذا سبايسي
+if (isSpicy) {
+  nameWithExtras += " 🌶 سبايسي";
+}
 
-  if (unchecked.length > 0) {
-    nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
-  }
+// ❌ الإضافات فقط
+if (unchecked.length > 0) {
+  nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
+}
 
-  addToCart({
-    id: item.id,
-    name: nameWithExtras,
-    price: item.price,
-    variant_id: item.variant_id || null,
-    extras_removed: unchecked,
-    is_spicy: isSpicy
-  });
+addToCart({
+  id: item.id,
+  name: nameWithExtras,
+  price: item.price,
+  variant_id: item.variant_id || null,
+  extras_removed: unchecked,
+  is_spicy: isSpicy
+});
   
       overlay.remove();
     };
