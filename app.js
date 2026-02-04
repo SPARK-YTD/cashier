@@ -1484,13 +1484,12 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   
   // 🔒 إذا انفتح أي Popup → نقفل القائمة
   document.addEventListener("click", (e) => {
-    const popup = document.querySelector(".variant-overlay");
-    const sideMenu = document.getElementById("sideMenu");
-    const overlay = document.getElementById("overlay");
-  
-    if (popup) {
-      sideMenu?.classList.remove("open");
-      overlay?.classList.remove("show");
-    }
-  });
+  const popup = document.querySelector(".variant-overlay");
+  const sideMenu = document.getElementById("sideMenu");
+  const overlay = document.getElementById("overlay");
+
+  if (popup) {
+    sideMenu?.classList.remove("open");
+    overlay?.classList.remove("show");
   }
+});
