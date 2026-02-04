@@ -946,27 +946,30 @@ window.openUnifiedPay = function (orderId, total) {
 function render() {
   const remaining = total - cash - benefit;
   const change =
-    mode === "cash" && receivedCash > cash
-      ? receivedCash - cash
+    mode === "cash" && Number(receivedCash) > cash
+      ? Number(receivedCash) - cash
       : 0;
 
   payBody.innerHTML = `
     <label>${mode === "cash" ? "💵 مبلغ الكاش" : "💳 مبلغ البنفت"}</label>
 
-<input
-  type="text"
-  inputmode="decimal"
-  pattern="[0-9]*[.,]?[0-9]*"
-  placeholder="0.000"
-  value="${mode === "cash" ? receivedCash : benefit}"
-  id="payInput"
-/>
-${mode === "benefit" && cash > 0
-  ? `<div style="font-size:13px;color:#16a34a;margin-top:4px">
-       💵 مدفوع كاش: ${cash.toFixed(3)} د.ب
-     </div>`
-  : ""
-}
+    <input
+      type="text"
+      inputmode="decimal"
+      pattern="[0-9]*[.,]?[0-9]*"
+      placeholder="0.000"
+      value="${mode === "cash" ? receivedCash : benefit}"
+      id="payInput"
+    />
+
+    ${
+      mode === "benefit" && cash > 0
+        ? `<div style="font-size:13px;color:#16a34a;margin-top:4px">
+            💵 مدفوع كاش: ${cash.toFixed(3)} د.ب
+          </div>`
+        : ""
+    }
+
     ${
       mode === "benefit"
         ? `
@@ -985,122 +988,124 @@ ${mode === "benefit" && cash > 0
         `
         : ""
     }
-${
-  mode === "cash"
-    ? `
-      <div class="cash-buttons" style="
-        display:grid;
-        grid-template-columns:repeat(4,1fr);
-        gap:6px;
-        margin-top:8px
-      ">
-        <button data-val="0.050">0.050</button>
-        <button data-val="0.100">0.100</button>
-        <button data-val="0.500">0.500</button>
-        <button data-val="1">1</button>
-        <button data-val="5">5</button>
-        <button data-val="10">10</button>
-        <button data-val="20">20</button>
-      </div>
-    `
-    : ""
-}
+
+    ${
+      mode === "cash"
+        ? `
+          <div class="cash-buttons" style="
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:6px;
+            margin-top:8px
+          ">
+            <button data-val="0.050">0.050</button>
+            <button data-val="0.100">0.100</button>
+            <button data-val="0.500">0.500</button>
+            <button data-val="1">1</button>
+            <button data-val="5">5</button>
+            <button data-val="10">10</button>
+            <button data-val="20">20</button>
+          </div>
+        `
+        : ""
+    }
+
     <div class="remaining" style="margin-top:6px;font-weight:700">
       المتبقي: ${remaining.toFixed(3)} د.ب
       ${
         change > 0
-          ? `<br><span style="color:#16a34a">💰 الباقي للزبون: ${change.toFixed(3)} د.ب</span>`
+          ? `<br><span style="color:#16a34a">
+              💰 الباقي للزبون: ${change.toFixed(3)} د.ب
+            </span>`
           : ""
       }
     </div>
   `;
 
   const input = payBody.querySelector("#payInput");
-input.focus();
-if (input && input.setSelectionRange) {
-  input.setSelectionRange(input.value.length, input.value.length);
-}
+  input.focus();
+  input.setSelectionRange?.(input.value.length, input.value.length);
 
- input.oninput = e => {
-  const raw = e.target.value.replace(",", ".");
+  input.oninput = e => {
+    const raw = e.target.value.replace(",", ".");
 
-  // 🔒 منع أكثر من 3 منازل عشرية
-  if (raw.includes(".")) {
-    const [, dec] = raw.split(".");
-    if (dec.length > 3) return;
-  }
+    if (raw.includes(".")) {
+      const [, dec] = raw.split(".");
+      if (dec.length > 3) return;
+    }
 
-  // حالات مؤقتة أثناء الكتابة (مهم للآيفون)
-  if (raw === "" || raw === "." || raw === "0.") {
+    if (raw === "" || raw === "." || raw === "0.") {
+      if (mode === "cash") {
+        receivedCash = raw;
+        cash = 0;
+      } else {
+        benefit = 0;
+      }
+      errorEl.textContent = "";
+      return;
+    }
+
+    const v = parseFloat(raw);
+    if (isNaN(v)) return;
+
     if (mode === "cash") {
       receivedCash = raw;
-      cash = 0;
+      cash = Math.min(v, total - benefit);
     } else {
-      benefit = 0;
+      benefit = v;
     }
-    errorEl.textContent = "";
-    return;
-  }
 
-  const v = parseFloat(raw);
-  if (isNaN(v)) return;
-
-  if (mode === "cash") {
-    receivedCash = raw;
-    cash = Math.min(v, total - benefit);
-  } else {
-    benefit = v;
-  }
-
-  if (cash + benefit > total && mode !== "cash") {
-    errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
-  } else {
-    errorEl.textContent = "";
-  }
-
-  const remainingEl = payBody.querySelector(".remaining");
-
-const liveChange =
-  mode === "cash" && Number(receivedCash) > cash
-    ? Number(receivedCash) - cash
-    : 0;
-
-if (remainingEl) {
-  remainingEl.innerHTML = `
-    المتبقي: ${(total - cash - benefit).toFixed(3)} د.ب
-    ${
-      liveChange > 0
-        ? `<br><span style="color:#16a34a">💰 الباقي للزبون: ${liveChange.toFixed(3)} د.ب</span>`
-        : ""
+    if (cash + benefit > total && mode !== "cash") {
+      errorEl.textContent = "❌ المبلغ أكبر من الإجمالي";
+    } else {
+      errorEl.textContent = "";
     }
-  `;
-}
-};
 
-payBody.querySelectorAll(".cash-buttons button").forEach(btn => {
-  btn.onclick = () => {
-    const add = Number(btn.dataset.val);
+    const remainingEl = payBody.querySelector(".remaining");
+    const liveChange =
+      mode === "cash" && Number(receivedCash) > cash
+        ? Number(receivedCash) - cash
+        : 0;
 
-    const current = Number(receivedCash || 0);
-    const next = +(current + add).toFixed(3);
-
-    receivedCash = next.toFixed(3);
-    cash = Math.min(next, total - benefit);
-
-    errorEl.textContent = "";
-    render();
+    if (remainingEl) {
+      remainingEl.innerHTML = `
+        المتبقي: ${(total - cash - benefit).toFixed(3)} د.ب
+        ${
+          liveChange > 0
+            ? `<br><span style="color:#16a34a">
+                💰 الباقي للزبون: ${liveChange.toFixed(3)} د.ب
+              </span>`
+            : ""
+        }
+      `;
+    }
   };
-});
-const fillBtn = payBody.querySelector("#fillRemaining");
-if (fillBtn) {
-  fillBtn.onclick = () => {
-    const remaining = total - cash;
-    if (remaining <= 0) return;
 
-    benefit = +remaining.toFixed(3);
-    errorEl.textContent = "";
-    render();
-  };
+  payBody.querySelectorAll(".cash-buttons button").forEach(btn => {
+    btn.onclick = () => {
+      const add = Number(btn.dataset.val);
+      const current = Number(receivedCash || 0);
+      const next = +(current + add).toFixed(3);
+
+      receivedCash = next.toFixed(3);
+      cash = Math.min(next, total - benefit);
+
+      errorEl.textContent = "";
+      render();
+    };
+  });
+
+  const fillBtn = payBody.querySelector("#fillRemaining");
+  if (fillBtn) {
+    fillBtn.onclick = () => {
+      const r = total - cash;
+      if (r <= 0) return;
+
+      benefit = +r.toFixed(3);
+      errorEl.textContent = "";
+      render();
+    };
+  }
 }
 
   render();
