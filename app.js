@@ -235,7 +235,14 @@
     </label>
   `).join("")}
         </div>
-  
+   ${item.is_spicy ? `
+  <hr style="margin:10px 0">
+
+  <label style="display:block;font-weight:700">
+    <input type="checkbox" id="spicyOption">
+    🌶️ سبايسي
+  </label>
+` : ""}
         <button class="variant-btn" id="confirmExtras">إضافة للسلة</button>
         <button class="variant-cancel">إلغاء</button>
       </div>
@@ -247,23 +254,31 @@
     overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
   
     // زر التأكيد
-    overlay.querySelector("#confirmExtras").onclick = () => {
-      const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
-        .filter(cb => !cb.checked)
-        .map(cb => cb.value);
-  
-      let nameWithExtras = item.name;
-  
-      if (unchecked.length > 0) {
-        nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
-      }
-  
-      addToCart({
+   overlay.querySelector("#confirmExtras").onclick = () => {
+  const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
+    .filter(cb => !cb.checked)
+    .map(cb => cb.value);
+
+  const isSpicy =
+    overlay.querySelector("#spicyOption")?.checked || false;
+
+  let nameWithExtras = item.name;
+
+  if (isSpicy) {
+    nameWithExtras += " 🌶 سبايسي";
+  }
+
+  if (unchecked.length > 0) {
+    nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
+  }
+
+  addToCart({
     id: item.id,
     name: nameWithExtras,
     price: item.price,
     variant_id: item.variant_id || null,
-    extras_removed: unchecked
+    extras_removed: unchecked,
+    is_spicy: isSpicy
   });
   
       overlay.remove();
@@ -297,23 +312,25 @@
   function addToCart(item) {
   
     const existing = cart.find(i =>
-      i.id === item.id &&
-      i.variant_id === (item.variant_id || null) &&
-      JSON.stringify(i.extras_removed || []) === JSON.stringify(item.extras_removed || [])
-    );
+  i.id === item.id &&
+  i.variant_id === (item.variant_id || null) &&
+  i.is_spicy === (item.is_spicy || false) &&
+  JSON.stringify(i.extras_removed || []) === JSON.stringify(item.extras_removed || [])
+);
   
     if (existing) {
       existing.qty += 1;
     } else {
       cart.push({
-        row_id: crypto.randomUUID(),
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        qty: 1,
-        variant_id: item.variant_id || null,
-        extras_removed: item.extras_removed || []
-      });
+  row_id: crypto.randomUUID(),
+  id: item.id,
+  name: item.name,
+  price: item.price,
+  qty: 1,
+  variant_id: item.variant_id || null,
+  extras_removed: item.extras_removed || [],
+  is_spicy: item.is_spicy || false
+});
     }
   
     renderCart();
