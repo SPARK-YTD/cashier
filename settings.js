@@ -94,7 +94,8 @@ window.addItem = async function () {
 
     const itemType =
       document.querySelector('input[name="itemType"]:checked')?.value || "normal";
-
+      
+    const isSpicy = document.getElementById("itemSpicy")?.checked || false;
     const name = document.getElementById("itemName").value.trim();
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
@@ -140,30 +141,32 @@ let query;
 if (editingItemId) {
   // ✏️ تعديل
   query = supabase
-    .from("products")
-    .update({
-      name,
-      category,
-      price: hasVariants ? null : cleanNumber(priceNormal),
-      has_variants: hasVariants,
-      image_url,
-      extras_list: extras.join("\n")
-    })
-    .eq("id", editingItemId);
+  .from("products")
+  .update({
+    name,
+    category,
+    price: hasVariants ? null : cleanNumber(priceNormal),
+    has_variants: hasVariants,
+    image_url,
+    extras_list: extras.join("\n"),
+    is_spicy: isSpicy // 🌶 هنا بالضبط
+  })
+  .eq("id", editingItemId);
 } else {
   // ➕ إضافة
-  query = supabase
-    .from("products")
-    .insert({
-      name,
-      category,
-      price: hasVariants ? null : cleanNumber(priceNormal),
-      has_variants: hasVariants,
-      image_url,
-      extras_list: extras.join("\n"),
-      active: true,
-      sort_order: Date.now()
-    });
+query = supabase
+  .from("products")
+  .insert({
+    name,
+    category,
+    price: hasVariants ? null : cleanNumber(priceNormal),
+    has_variants: hasVariants,
+    image_url,
+    extras_list: extras.join("\n"),
+    is_spicy: isSpicy, // 🌶 هنا بالضبط
+    active: true,
+    sort_order: Date.now()
+  });
 }
 
     const { data: product, error } = await query.select().single();
@@ -341,6 +344,7 @@ window.editItem = async function (id) {
   document.getElementById("itemPrice").value = item.price || "";
   document.getElementById("itemExtras").value =
   item.extras_list || "";
+  document.getElementById("itemSpicy").checked = !!item.is_spicy;
 
   // ===== تحديد نوع الصنف (normal / burger / sizes) =====
   let itemType = "normal";
@@ -406,8 +410,9 @@ function clearForm() {
   document.getElementById("variantsBox").style.display = "none";
   document.getElementById("priceSmall").value = "";
   document.getElementById("priceMedium").value = "";
-  document.getElementById("itemExtras").value = "";
   document.getElementById("priceLarge").value = "";
+  document.getElementById("itemExtras").value = "";
+  document.getElementById("itemSpicy").checked = false; // ✅ هنا
 }
 
 window.goBack = () => location.href = "index.html";
