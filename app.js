@@ -1019,25 +1019,38 @@ function render() {
     }
 
     ${
-      mode === "cash"
-        ? `
-          <div class="cash-buttons" style="
-            display:grid;
-            grid-template-columns:repeat(4,1fr);
-            gap:6px;
-            margin-top:8px
-          ">
-            <button data-val="0.050">0.050</button>
-            <button data-val="0.100">0.100</button>
-            <button data-val="0.500">0.500</button>
-            <button data-val="1">1</button>
-            <button data-val="5">5</button>
-            <button data-val="10">10</button>
-            <button data-val="20">20</button>
-          </div>
-        `
-        : ""
-    }
+  mode === "cash"
+    ? `
+      <div class="cash-buttons" style="
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:6px;
+        margin-top:8px
+      ">
+        <button data-val="0.050">0.050</button>
+        <button data-val="0.100">0.100</button>
+        <button data-val="0.500">0.500</button>
+        <button data-val="1">1</button>
+        <button data-val="5">5</button>
+        <button data-val="10">10</button>
+        <button data-val="20">20</button>
+      </div>
+
+      <button id="fillCashRemaining" style="
+        margin-top:6px;
+        width:100%;
+        background:#2563eb;
+        color:white;
+        border:none;
+        padding:6px;
+        border-radius:6px;
+        font-weight:700;
+      ">
+        💵 تعبئة المبلغ المتبقي
+      </button>
+    `
+    : ""
+}
 
     <div class="remaining" style="margin-top:6px;font-weight:700">
       المتبقي: ${remaining.toFixed(3)} د.ب
@@ -1123,6 +1136,20 @@ function render() {
       render();
     };
   });
+
+  const fillCashBtn = payBody.querySelector("#fillCashRemaining");
+if (fillCashBtn) {
+  fillCashBtn.onclick = () => {
+    const remaining = total - benefit;
+    if (remaining <= 0) return;
+
+    receivedCash = remaining.toFixed(3);
+    cash = remaining;
+
+    errorEl.textContent = "";
+    render();
+  };
+}
 
   const fillBtn = payBody.querySelector("#fillRemaining");
   if (fillBtn) {
