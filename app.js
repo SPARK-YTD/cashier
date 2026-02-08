@@ -792,8 +792,17 @@ const invoiceNo = dayData.invoice_counter; // ✅ هذا السطر المنقذ
           <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
           ${
             order.is_paid
-              ? `<span style="color:#166534;font-weight:800;">✔ مدفوعة</span>`
-              : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+  ? `
+    <div style="color:#166534;font-weight:800;">
+      ✔ مدفوعة
+    </div>
+
+    <div style="font-size:13px;margin-top:4px;color:#444">
+      💵 كاش: ${(order.cash_amount || 0).toFixed(3)} د.ب<br>
+      💳 بطاقة: ${(order.benefit_amount || 0).toFixed(3)} د.ب
+    </div>
+  `
+  : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
           }
           <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
           <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
