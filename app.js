@@ -19,9 +19,9 @@
   /* ===============================
      Business Day Helper
   ================================ */
-  async function getOrCreateBusinessDay() {
+async function getOrCreateBusinessDay() {
   // 1️⃣ حاول تجيب يوم مفتوح
-  const { data: openDay } = await supabase
+  const { data: openDay, error } = await supabase
     .from("business_days")
     .select("*")
     .eq("is_open", true)
@@ -29,21 +29,20 @@
     .limit(1)
     .maybeSingle();
 
+  if (error) {
+    console.error("❌ Error fetching open day:", error);
+    return null;
+  }
+
   if (openDay) {
     console.log("🟢 Using existing open day:", openDay.id);
     return openDay;
   }
 
-  // 2️⃣ لو ما فيه يوم مفتوح → نسكر أي أيام قديمة بالغلط
-  await supabase
-    .from("business_days")
-    .update({ is_open: false, closed_at: new Date().toISOString() })
-    .eq("is_open", true);
-
-  // 3️⃣ إنشاء يوم جديد نظيف
+  // 2️⃣ إنشاء يوم جديد نظيف
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: newDay, error } = await supabase
+  const { data: newDay, error: insertError } = await supabase
     .from("business_days")
     .insert({
       day_date: today,
@@ -54,8 +53,8 @@
     .select()
     .single();
 
-  if (error) {
-    console.error("❌ Failed to create business day", error);
+  if (insertError) {
+    console.error("❌ Failed to create business day:", insertError);
     return null;
   }
 
