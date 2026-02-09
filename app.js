@@ -125,10 +125,7 @@ setInterval(() => {
     // تحديث الطلبات كل دقيقة
    // setInterval(loadActiveOrders, 60000);
   });
-  window.addEventListener("online", async () => {
-    await syncOfflineOrders(currentBusinessDay?.id);
-    loadActiveOrders();
-  });
+
   /* ===============================
      الأصناف
   ================================ */
@@ -573,7 +570,6 @@ if (rpcError || !invoiceNo) {
   }
   
   // 3️⃣ تخزين رقم الفاتورة للاستخدام (عرض / طباعة)
-  currentInvoiceNo = order.invoice_no;
   
   // 4️⃣ تحديث اليوم الحالي بالواجهة
   currentBusinessDay.invoice_counter = invoiceNo;
