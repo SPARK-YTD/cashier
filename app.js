@@ -838,7 +838,7 @@ if (!Number.isInteger(invoiceNo)) {
       })
       .eq("id", orderId);
   
-    loadActiveOrders();
+    await loadActiveOrders();
   };
   /* ✏️ تحميل الفاتورة للتعديل */
   window.editOrder = async function (orderId) {
@@ -928,7 +928,7 @@ window.markCompleted = async function (orderId) {
       return;
     }
 
-    loadActiveOrders();
+    await loadActiveOrders();
 
   } catch (err) {
     console.error(err);
