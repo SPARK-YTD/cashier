@@ -120,10 +120,7 @@ setInterval(() => {
     loadItems("food");        // بدون await (غير حاجز)
     loadActiveOrders();       // بدون await
     subscribeToOrders();
-    
-  
-    // تحديث الطلبات كل دقيقة
-   // setInterval(loadActiveOrders, 60000);
+
   });
 
   /* ===============================
