@@ -20,37 +20,48 @@
      Business Day Helper
   ================================ */
   async function getOrCreateBusinessDay() {
-    const { data } = await supabase
-      .from("business_days")
-      .select("*")
-      .eq("is_open", true)
-      .order("opened_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-  
-    if (data) return data;
-  
-    const today = new Date().toISOString().slice(0, 10);
-  
-    const { data: newDay, error } = await supabase
-      .from("business_days")
-      .insert({
-        day_date: today,
-        is_open: true,
-        opened_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-  
-    if (error) {
-      console.error("❌ Failed to create business day", error);
-      return null;
-    }
-  
-    console.log("🟢 New business day created");
-    return newDay;
+  // 1️⃣ حاول تجيب يوم مفتوح
+  const { data: openDay } = await supabase
+    .from("business_days")
+    .select("*")
+    .eq("is_open", true)
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (openDay) {
+    console.log("🟢 Using existing open day:", openDay.id);
+    return openDay;
   }
-  
+
+  // 2️⃣ لو ما فيه يوم مفتوح → نسكر أي أيام قديمة بالغلط
+  await supabase
+    .from("business_days")
+    .update({ is_open: false, closed_at: new Date().toISOString() })
+    .eq("is_open", true);
+
+  // 3️⃣ إنشاء يوم جديد نظيف
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: newDay, error } = await supabase
+    .from("business_days")
+    .insert({
+      day_date: today,
+      is_open: true,
+      opened_at: new Date().toISOString(),
+      invoice_counter: 0
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("❌ Failed to create business day", error);
+    return null;
+  }
+
+  console.log("🆕 New clean business day created:", newDay.id);
+  return newDay;
+}
   
   /* ===============================
      INIT (OPTIMIZED)
