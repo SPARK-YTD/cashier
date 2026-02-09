@@ -113,8 +113,8 @@ benefitTotalEl.textContent =
 const { data: openDay, error: openDayError } = await supabase
   .from("business_days")
   .select("*")
-  .eq("is_open", true)
-  .order("opened_at", { ascending: false })
+  .eq("is_open", false)              // ← نجيب اليوم المقفول
+  .order("closed_at", { ascending: false }) // ← آخر يوم انقفل
   .limit(1)
   .maybeSingle();
 
