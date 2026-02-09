@@ -889,7 +889,7 @@ window.markCompleted = async function (orderId) {
   try {
     const { data: freshOrder, error } = await supabase
       .from("orders")
-      .select("total, cash_amount, benefit_amount")
+      .select("total, cash_amount, benefit_amount, status")
       .eq("id", orderId)
       .single();
 
@@ -907,9 +907,13 @@ window.markCompleted = async function (orderId) {
       return;
     }
 
-    if (!confirm("⚠️ هل تريد إقفال الفاتورة وإدخالها في التقرير؟")) return;
+    // 🛑 إذا كان الطلب مكتمل مسبقًا لا نعيد التحديث
+    if (freshOrder.status === "completed") {
+      alert("✔ الفاتورة مقفلة مسبقًا");
+      return;
+    }
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("orders")
       .update({
         status: "completed",
@@ -918,6 +922,12 @@ window.markCompleted = async function (orderId) {
       })
       .eq("id", orderId);
 
+    if (updateError) {
+      console.error(updateError);
+      alert("❌ قاعدة البيانات رفضت الإقفال");
+      return;
+    }
+
     loadActiveOrders();
 
   } catch (err) {
@@ -925,7 +935,6 @@ window.markCompleted = async function (orderId) {
     alert("❌ حصل خطأ أثناء إقفال الفاتورة");
   }
 };
-
 // 💰 فتح واجهة اختيار طريقة الدفع
 
 window.markPaid = function (orderId) {
