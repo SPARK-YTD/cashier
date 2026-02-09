@@ -67,6 +67,30 @@
      INIT (OPTIMIZED)
   ================================ */
   document.addEventListener("DOMContentLoaded", async () => {
+    // 🔄 حماية الاتصال في الآيباد
+
+// إذا رجع الإنترنت → إعادة مزامنة + تحميل الطلبات
+window.addEventListener("online", async () => {
+  console.log("🌐 Internet back → syncing...");
+  await syncOfflineOrders(currentBusinessDay?.id);
+  loadActiveOrders();
+  subscribeToOrders();
+});
+
+// إذا رجعت الصفحة من الخلفية (الآيباد صحى)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("👀 Page visible → refresh orders");
+    loadActiveOrders();
+    subscribeToOrders();
+  }
+});
+
+// إعادة تحميل خفيفة كل 90 ثانية (تحمي من انقطاع Realtime)
+setInterval(() => {
+  console.log("⏱ Auto refresh active orders");
+  loadActiveOrders();
+}, 90000);
   
     // 🔐 تحقق سريع من الجلسة (أسرع من getSession)
     const {
@@ -509,38 +533,17 @@ addToCart({
       ================================ */
       else {
   
-   // 1️⃣ زيادة عدّاد الفواتير لليوم الحالي
-const { data: dayData, error: dayErr } = await supabase
-  .from("business_days")
-  .update({
-    invoice_counter: currentBusinessDay.invoice_counter + 1
-  })
-  .eq("id", currentBusinessDay.id)
-  .select("invoice_counter")
-  .single();
+// 1️⃣ زيادة رقم الفاتورة بشكل آمن من قاعدة البيانات
+const { data: invoiceNo, error: rpcError } = await supabase
+  .rpc("increment_invoice_counter", { row_id: currentBusinessDay.id });
 
-if (dayErr) {
-  alert("❌ خطأ في عدّاد الفواتير");
+if (rpcError || !invoiceNo) {
+  alert("❌ خطأ في إنشاء رقم الفاتورة");
   if (completeBtn) completeBtn.disabled = false;
   isSavingOrder = false;
   return;
 }
 
-const invoiceNo = dayData.invoice_counter; // ✅ هذا السطر المنقذ
-      // استدعاء الدالة الآمنة لزيادة رقم الفاتورة
-    /*const { data: newInvoiceNo, error: rpcError } = await supabase
-      .rpc('increment_invoice_counter', { row_id: currentBusinessDay.id });
-
-    if (rpcError || !newInvoiceNo) {
-      alert("❌ خطأ في إنشاء رقم الفاتورة");
-      if (completeBtn) completeBtn.disabled = false;
-      isSavingOrder = false;
-      return;
-    }
-
-    const invoiceNo = newInvoiceNo;
-
-  const invoiceNo = dayData.invoice_counter; */
   
   // 2️⃣ إنشاء الطلب برقم الفاتورة الجديد
   const { data: order, error } = await supabase
