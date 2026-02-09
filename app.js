@@ -88,9 +88,10 @@ document.addEventListener("visibilitychange", () => {
 
 // إعادة تحميل خفيفة كل 90 ثانية (تحمي من انقطاع Realtime)
 setInterval(() => {
-  console.log("⏱ Auto refresh active orders");
-  loadActiveOrders();
-}, 90000);
+  if (document.visibilityState === "visible") {
+    loadActiveOrders();
+  }
+}, 60000);
   
     // 🔐 تحقق سريع من الجلسة (أسرع من getSession)
     const {
@@ -530,7 +531,7 @@ addToCart({
 // 1️⃣ زيادة رقم الفاتورة بشكل آمن من قاعدة البيانات
 const { data: invoiceNo, error: rpcError } = await supabase
   .rpc("increment_invoice_counter", { row_id: currentBusinessDay.id });
-
+  
 if (rpcError) {
   console.error("RPC ERROR:", rpcError);
   alert("❌ فشل توليد رقم الفاتورة");
@@ -539,7 +540,7 @@ if (rpcError) {
   return;
 }
 
-if (!invoiceNo || typeof invoiceNo !== "number") {
+if (!Number.isInteger(invoiceNo)) {
   alert("❌ رقم الفاتورة غير صالح");
   isSavingOrder = false;
   if (completeBtn) completeBtn.disabled = false;
@@ -902,7 +903,7 @@ window.markCompleted = async function (orderId) {
       Number(freshOrder.cash_amount || 0) +
       Number(freshOrder.benefit_amount || 0);
 
-    if (paidSum.toFixed(3) !== Number(freshOrder.total).toFixed(3)) {
+    if (Math.abs(paidSum - Number(freshOrder.total)) > 0.001) {
       alert("❌ مبلغ الدفع لا يساوي إجمالي الفاتورة");
       return;
     }
@@ -1209,7 +1210,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
 };
 
   overlay.querySelector("#confirmPay").onclick = async () => {
-    if ((cash + benefit).toFixed(3) !== total.toFixed(3)) {
+    if (Math.abs((cash + benefit) - total) > 0.001) {
       errorEl.textContent = "❌ لم يتم سداد كامل المبلغ";
       return;
     }
