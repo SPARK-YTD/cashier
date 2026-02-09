@@ -107,15 +107,13 @@ benefitTotalEl.textContent =
     return;
   }
 
-  /* ===============================
-     معاينة اليوم المفتوح
-  ================================ */
+/* ===============================
+   جلب اليوم المفتوح الحالي
+================================ */
 const { data: openDay, error: openDayError } = await supabase
   .from("business_days")
   .select("*")
-  .eq("is_open", false)
-.order("closed_at", { ascending: false })
-.limit(1)
+  .eq("is_open", true)
   .order("opened_at", { ascending: false })
   .limit(1)
   .maybeSingle();
@@ -131,7 +129,6 @@ if (!currentBusinessDay) {
   return;
 }
 
-
 const { data: orders, error: ordersError } = await supabase
   .from("orders")
   .select(`
@@ -145,7 +142,7 @@ const { data: orders, error: ordersError } = await supabase
     products ( name )
   )
 `)
-  .in("status", ["completed", "paid"])
+  .eq("status", "completed")
   .eq("is_employee_order", false)   // ✅ إخفاء طلبات الموظفين
   .eq("business_day_id", currentBusinessDay.id);
 
