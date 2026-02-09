@@ -113,7 +113,9 @@ benefitTotalEl.textContent =
 const { data: openDay, error: openDayError } = await supabase
   .from("business_days")
   .select("*")
-  .eq("is_open", true)
+  .eq("is_open", false)
+.order("closed_at", { ascending: false })
+.limit(1)
   .order("opened_at", { ascending: false })
   .limit(1)
   .maybeSingle();
@@ -143,7 +145,7 @@ const { data: orders, error: ordersError } = await supabase
     products ( name )
   )
 `)
-  .eq("status", "completed")
+  .in("status", ["completed", "paid"])
   .eq("is_employee_order", false)   // ✅ إخفاء طلبات الموظفين
   .eq("business_day_id", currentBusinessDay.id);
 
