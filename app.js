@@ -531,10 +531,18 @@ addToCart({
 const { data: invoiceNo, error: rpcError } = await supabase
   .rpc("increment_invoice_counter", { row_id: currentBusinessDay.id });
 
-if (rpcError || !invoiceNo) {
-  alert("❌ خطأ في إنشاء رقم الفاتورة");
-  if (completeBtn) completeBtn.disabled = false;
+if (rpcError) {
+  console.error("RPC ERROR:", rpcError);
+  alert("❌ فشل توليد رقم الفاتورة");
   isSavingOrder = false;
+  if (completeBtn) completeBtn.disabled = false;
+  return;
+}
+
+if (!invoiceNo || typeof invoiceNo !== "number") {
+  alert("❌ رقم الفاتورة غير صالح");
+  isSavingOrder = false;
+  if (completeBtn) completeBtn.disabled = false;
   return;
 }
 
