@@ -1223,15 +1223,26 @@ overlay.querySelector("#tabBenefit").onclick = () => {
       return;
     }
 
-    await supabase.from("orders").update({
-      is_paid: true,
-      payment_method:
-        cash > 0 && benefit > 0 ? "mixed" :
-        cash > 0 ? "cash" : "benefit",
-      cash_amount: cash,
-      benefit_amount: benefit,
-      paid_at: new Date().toISOString()
-    }).eq("id", orderId);
+    const round3 = n => Number(Number(n).toFixed(3));
+
+    const safeCash = round3(cash);
+    const safeBenefit = round3(benefit);
+    const safeTotal = round3(safeCash + safeBenefit);
+
+  await supabase.from("orders").update({
+  is_paid: true,
+  payment_method:
+    safeCash > 0 && safeBenefit > 0 ? "mixed" :
+    safeCash > 0 ? "cash" : "benefit",
+
+  cash_amount: safeCash,
+  benefit_amount: safeBenefit,
+
+  // 🔥 أهم سطر يحل المشكلة نهائيًا
+  total: safeTotal,
+
+  paid_at: new Date().toISOString()
+}).eq("id", orderId);
 
     overlay.remove();
     loadActiveOrders();
