@@ -16,6 +16,7 @@
   let currentInvoiceNo = null;
   let ordersChannel; 
   let employeeMode = null;
+  let deliveryMode = null;
   /* ===============================
      Business Day Helper
   ================================ */
@@ -548,24 +549,66 @@ if (!Number.isInteger(invoiceNo)) {
 
   
   // 2️⃣ إنشاء الطلب برقم الفاتورة الجديد
-  const { data: order, error } = await supabase
-    .from("orders")
-    .insert({
-      total,
-      status: "active",
-      business_day_id: currentBusinessDay.id,
-      invoice_no: invoiceNo,
-      timer_started_at: new Date().toISOString(),
-  
-      is_employee_order: employeeMode ? true : false,
-      employee_code: employeeMode ? employeeMode.employee_code : null,
-  
-      // 👇 مهم
-      is_paid: employeeMode ? true : false,
-      payment_method: employeeMode ? "employee" : null
-    })
-    .select("id, invoice_no")
-    .single();
+// ===============================
+// 🚚 سؤال: هل الطلب توصيل؟
+// ===============================
+if (!employeeMode && !deliveryMode) {
+  const isDelivery = confirm("هل الطلب توصيل؟");
+
+  if (isDelivery) {
+    const name = prompt("اسم العميل:");
+    if (!name) {
+      isSavingOrder = false;
+      if (completeBtn) completeBtn.disabled = false;
+      return;
+    }
+
+    const phone = prompt("رقم التلفون:");
+    if (!phone) {
+      isSavingOrder = false;
+      if (completeBtn) completeBtn.disabled = false;
+      return;
+    }
+
+    const area = prompt("المنطقة:");
+    if (!area) {
+      isSavingOrder = false;
+      if (completeBtn) completeBtn.disabled = false;
+      return;
+    }
+
+    deliveryMode = { name, phone, area };
+  }
+}
+
+// ===============================
+// إنشاء الطلب
+// ===============================
+const { data: order, error } = await supabase
+  .from("orders")
+  .insert({
+    total,
+    status: "active",
+    business_day_id: currentBusinessDay.id,
+    invoice_no: invoiceNo,
+    timer_started_at: new Date().toISOString(),
+
+    // 👨‍🍳 موظف
+    is_employee_order: employeeMode ? true : false,
+    employee_code: employeeMode ? employeeMode.employee_code : null,
+
+    // 💰 دفع تلقائي للموظف
+    is_paid: employeeMode ? true : false,
+    payment_method: employeeMode ? "employee" : null,
+
+    // 🚚 توصيل
+    is_delivery: deliveryMode ? true : false,
+    customer_name: deliveryMode?.name || null,
+    customer_phone: deliveryMode?.phone || null,
+    customer_area: deliveryMode?.area || null
+  })
+  .select("id, invoice_no")
+  .single();
   
   if (error) {
     alert("❌ فشل إنشاء الطلب");
@@ -614,6 +657,7 @@ if (!Number.isInteger(invoiceNo)) {
     const banner = document.getElementById("employeeBanner");
     if (banner) banner.style.display = "none";
   }
+       deliveryMode = null;
        clearForNewOrder();
       /* ===============================
          🧹 تنظيف بعد الحفظ
