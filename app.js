@@ -732,20 +732,27 @@ const { data: order, error } = await supabase
     const { data } = await supabase
   .from("orders")
   .select(`
-    id,
-    total,
-    invoice_no,
-    created_at,
-    timer_started_at,
-    is_paid,
-    payment_method,
-    cash_amount,
-    benefit_amount,
-    kitchen_ready,
-    is_employee_order,
-    employee_code,
-    employees:employees!orders_employee_code_fkey(name)
-  `)
+  id,
+  total,
+  invoice_no,
+  created_at,
+  timer_started_at,
+  is_paid,
+  payment_method,
+  cash_amount,
+  benefit_amount,
+  kitchen_ready,
+  is_employee_order,
+  employee_code,
+
+  -- 🚚 التوصيل
+  is_delivery,
+  customer_name,
+  customer_phone,
+  customer_area,
+
+  employees:employees!orders_employee_code_fkey(name)
+`)
   .eq("status", "active")
   .eq("business_day_id", currentBusinessDay.id)
   .order("created_at", { ascending: false });
