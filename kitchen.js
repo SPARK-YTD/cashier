@@ -166,6 +166,7 @@ window.markKitchenReady = async function (orderId) {
     console.error(error);
   }
 };
+
 /* ===============================
    REALTIME – بدون رفرش
 ================================ */
