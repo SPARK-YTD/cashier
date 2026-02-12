@@ -33,17 +33,22 @@ async function loadKitchenOrders() {
   const { data, error } = await supabase
     .from("orders")
     .select(`
-      id,
-      invoice_no,
-      created_at,
-      timer_started_at,
-      kitchen_ready,
-      order_items (
-        qty,
-        item_name,
-        extras_removed
-      )
-    `)
+  id,
+  invoice_no,
+  created_at,
+  timer_started_at,
+  kitchen_ready,
+  is_employee_order,
+  is_delivery,
+  customer_name,
+  customer_phone,
+  customer_area,
+  order_items (
+    qty,
+    item_name,
+    extras_removed
+  )
+`)
     .eq("status", "active")
     .eq("kitchen_ready", false)
     .order("created_at", { ascending: true });
@@ -73,39 +78,72 @@ function renderKitchenOrders(orders) {
   }
 
   orders.forEach(order => {
-    const baseTime = order.timer_started_at || order.created_at;
-    const diffMin = Math.floor((now - new Date(baseTime)) / 60000);
+  const baseTime = order.timer_started_at || order.created_at;
+  const diffMin = Math.floor((now - new Date(baseTime)) / 60000);
+  let timeColor = "#E5E7EB";
 
-    const div = document.createElement("div");
-    div.className = "kitchen-card";
+if (diffMin >= 20) timeColor = "#EF4444";
+else if (diffMin >= 10) timeColor = "#FACC15";
 
-    div.innerHTML = `
-      <div class="k-header">
-        <div class="k-invoice">فاتورة #${order.invoice_no}</div>
-        <div class="k-time">${diffMin} دقيقة</div>
-      </div>
+  // 🎨 لون الهيدر حسب نوع الطلب
+  let headerColor = "#334155"; // عادي
 
-      <div class="k-items">
-        ${order.order_items.map(item => `
-          <div class="k-item">
-            <div class="k-name">${item.item_name}</div>
-            <div class="k-qty">× ${item.qty}</div>
-            ${
-              item.extras_removed?.length
-                ? `<div class="k-extras">بدون: ${item.extras_removed.join("، ")}</div>`
-                : ""
-            }
-          </div>
-        `).join("")}
-      </div>
+  if (order.is_employee_order) {
+    headerColor = "#7C3AED"; // بنفسجي للموظف
+  } else if (order.is_delivery) {
+    headerColor = "#2563EB"; // أزرق للتوصيل
+  }
 
-      <button class="k-ready-btn" onclick="markKitchenReady('${order.id}')">
-        ✅ جاهز
-      </button>
-    `;
+  const div = document.createElement("div");
+  div.className = "kitchen-card";
 
-    box.appendChild(div);
-  });
+  div.innerHTML = `
+    <div class="k-header" style="background:${headerColor}">
+      <div class="k-invoice">فاتورة #${order.invoice_no}</div>
+      <div class="k-time" style="color:${timeColor}">
+  ${diffMin} دقيقة
+</div>
+
+    ${
+      order.is_delivery
+        ? `
+        <div style="font-size:13px;margin:6px 0;color:#1D4ED8">
+          👤 ${order.customer_name || "-"}  
+          📞 ${order.customer_phone || "-"}  
+          📍 ${order.customer_area || "-"}
+        </div>
+        `
+        : ""
+    }
+
+    ${
+      order.is_employee_order
+        ? `<div style="color:#7C3AED;font-weight:700;margin:6px 0">🧑‍🍳 طلب موظف</div>`
+        : ""
+    }
+
+    <div class="k-items">
+      ${order.order_items.map(item => `
+        <div class="k-item">
+          <div class="k-name">${item.item_name}</div>
+          <div class="k-qty">× ${item.qty}</div>
+          ${
+            item.extras_removed?.length
+              ? `<div class="k-extras">بدون: ${item.extras_removed.join("، ")}</div>`
+              : ""
+          }
+        </div>
+      `).join("")}
+    </div>
+
+    <button class="k-ready-btn" onclick="markKitchenReady('${order.id}')">
+      ✅ جاهز
+    </button>
+  `;
+
+  box.appendChild(div);
+});
+
 }
 
 /* ===============================
