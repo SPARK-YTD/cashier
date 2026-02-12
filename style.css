@@ -703,3 +703,77 @@ hr {
     object-fit: contain;
   }
 }
+
+.kitchen-card {
+  background: #020617;
+  border: 2px solid #334155;
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
+
+/* الهيدر */
+.k-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* رقم الفاتورة */
+.k-invoice {
+  font-size: 20px;
+}
+
+/* الوقت */
+.k-time {
+  background: #0f172a;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* عناصر الطلب */
+.k-item {
+  border-bottom: 1px dashed #334155;
+  padding: 6px 0;
+}
+
+.k-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.k-qty {
+  font-size: 15px;
+  color: #cbd5e1;
+}
+
+.k-extras {
+  font-size: 13px;
+  color: #f87171;
+}
+
+/* زر جاهز */
+.k-ready-btn {
+  margin-top: 8px;
+  padding: 12px;
+  font-size: 18px;
+  border: none;
+  border-radius: 12px;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.k-ready-btn:active {
+  transform: scale(0.96);
+}
