@@ -744,13 +744,10 @@ const { data: order, error } = await supabase
   kitchen_ready,
   is_employee_order,
   employee_code,
-
-  -- 🚚 التوصيل
   is_delivery,
   customer_name,
   customer_phone,
   customer_area,
-
   employees:employees!orders_employee_code_fkey(name)
 `)
   .eq("status", "active")
