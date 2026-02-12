@@ -11,97 +11,140 @@
   <link rel="stylesheet" href="style.css" />
 
   <style>
-    body {
-      background: #0f172a;
-      color: #f8fafc;
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    }
+  body {
+    background: linear-gradient(180deg, #020617, #020617 40%, #020617);
+    color: #f8fafc;
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  }
 
-    h1 {
-      text-align: center;
-      margin: 15px 0;
-      font-size: 28px;
-    }
+  h1 {
+    text-align: center;
+    margin: 12px 0;
+    font-size: 26px;
+    letter-spacing: 1px;
+  }
 
-    #kitchenOrders {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 15px;
-      padding: 15px;
-    }
+  /* الشبكة الرئيسية */
+  #kitchenOrders {
+    display: grid;
 
-    .kitchen-card {
-      background: #020617;
-      border: 2px solid #334155;
-      border-radius: 14px;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
+    /* 👇 أهم تعديل — يعرض عدد كبير من الفواتير */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 
-    .k-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+    gap: 12px;
+    padding: 12px;
+  }
 
-    .k-invoice {
-      font-size: 20px;
-      font-weight: bold;
-    }
+  /* كرت الفاتورة */
+  .kitchen-card {
+    background: #020617;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 12px;
 
-    .k-time {
-      background: #1e293b;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 14px;
-    }
+    display: flex;
+    flex-direction: column;
 
-    .k-items {
-      flex: 1;
-      margin-bottom: 10px;
-    }
+    /* 👇 يمنع الفاتورة الكبيرة من أكل الشاشة */
+    min-height: 240px;
+    max-height: 420px;
 
-    .k-item {
-      border-bottom: 1px dashed #334155;
-      padding: 8px 0;
-    }
+    transition: 0.2s ease;
+  }
 
-    .k-name {
-      font-size: 18px;
-      font-weight: 600;
-    }
+  /* ألوان حسب الوقت */
+  .late-10 {
+    border-color: #facc15;
+    box-shadow: 0 0 10px #facc1530;
+  }
 
-    .k-qty {
-      font-size: 16px;
-      color: #e5e7eb;
-    }
+  .late-20 {
+    border-color: #ef4444;
+    box-shadow: 0 0 12px #ef444440;
+  }
 
-    .k-extras {
-      font-size: 14px;
-      color: #f87171;
-      margin-top: 3px;
-    }
+  /* رأس الفاتورة */
+  .k-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
 
-    .k-ready-btn {
-      margin-top: 10px;
-      padding: 14px;
-      font-size: 20px;
-      border: none;
-      border-radius: 10px;
-      background: #22c55e;
-      color: #052e16;
-      font-weight: bold;
-      cursor: pointer;
-    }
+  .k-invoice {
+    font-size: 18px;
+    font-weight: bold;
+  }
 
-    .k-ready-btn:active {
-      transform: scale(0.97);
-    }
-  </style>
+  .k-time {
+    background: #1e293b;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  /* قائمة الطلبات */
+  .k-items {
+    flex: 1;
+    overflow-y: auto;   /* 👈 سكرول داخل الفاتورة فقط */
+    padding-right: 4px;
+  }
+
+  .k-item {
+    border-bottom: 1px dashed #334155;
+    padding: 6px 0;
+  }
+
+  .k-name {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .k-qty {
+    font-size: 14px;
+    color: #e5e7eb;
+  }
+
+  .k-extras {
+    font-size: 13px;
+    color: #f87171;
+    margin-top: 2px;
+  }
+
+  /* زر الجاهزية */
+  .k-ready-btn {
+    margin-top: 8px;
+    padding: 12px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+
+  .k-ready-btn:hover {
+    background: #16a34a;
+  }
+
+  .k-ready-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* شكل السكرول الداخلي */
+  .k-items::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .k-items::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 6px;
+  }
+</style>
+
 </head>
 
 <body>
