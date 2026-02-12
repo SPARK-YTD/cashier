@@ -1,15 +1,26 @@
+/* ===============================
+   🔐 حماية شاشة المطبخ
+================================ */
+const kitchenAuth = sessionStorage.getItem("kitchen_auth");
+
+if (!kitchenAuth) {
+  const pass = prompt("🔐 أدخل كلمة سر المطبخ:");
+
+  if (pass !== "1234") {
+    alert("❌ كلمة المرور غير صحيحة");
+    location.href = "about:blank";
+    throw new Error("Unauthorized");
+  }
+
+  sessionStorage.setItem("kitchen_auth", "ok");
+}
+
 import { supabase } from "./supabase.js";
 
 /* ===============================
    INIT
 ================================ */
 document.addEventListener("DOMContentLoaded", async () => {
-  // 🔐 تأكد من تسجيل الدخول
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    location.href = "login.html";
-    return;
-  }
 
   loadKitchenOrders();
   subscribeKitchenOrders();
