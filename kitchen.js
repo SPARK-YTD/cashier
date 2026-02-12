@@ -107,24 +107,28 @@ else if (diffMin >= 10) timeColor = "#FACC15";
   </div>
 
   ${
-    order.is_delivery
-      ? `
+  order.is_delivery
+    ? `
       <div style="
-        background:#EFF6FF;
-        border:1px dashed #2563EB;
-        padding:8px;
-        border-radius:10px;
-        font-size:13px;
-        line-height:1.6;
+        background:#0F172A;
+        border:2px dashed #3B82F6;
+        padding:10px;
+        border-radius:12px;
+        font-size:14px;
+        line-height:1.7;
+        color:#E2E8F0;
       ">
-        <strong>🚚 توصيل</strong><br>
-        👤 ${order.customer_name || "-"}<br>
-        📞 ${order.customer_phone || "-"}<br>
-        📍 ${order.customer_area || "-"}
+        <div style="font-weight:900;color:#60A5FA;margin-bottom:4px">
+          🚚 طلب توصيل
+        </div>
+
+        <div>👤 ${order.customer_name || "-"}</div>
+        <div>📞 ${order.customer_phone || "-"}</div>
+        <div>📍 ${order.customer_area || "-"}</div>
       </div>
       `
-      : ""
-  }
+    : ""
+}
 
   <div class="k-items">
     ${order.order_items.map(item => `
