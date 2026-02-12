@@ -806,6 +806,25 @@ const { data: order, error } = await supabase
   div.innerHTML = `
   
     <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+    ${
+  order.is_delivery
+    ? `
+      <div style="
+        background:#EFF6FF;
+        border:2px dashed #2563EB;
+        padding:6px;
+        border-radius:8px;
+        margin:6px 0;
+        font-size:13px;
+      ">
+        <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
+        <div>👤 ${order.customer_name || "—"}</div>
+        <div>📞 ${order.customer_phone || "—"}</div>
+        <div>📍 ${order.customer_area || "—"}</div>
+      </div>
+    `
+    : ""
+}
   
   ${
     order.is_employee_order
