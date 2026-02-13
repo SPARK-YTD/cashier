@@ -1,19 +1,26 @@
 /* ===============================
    🔐 حماية شاشة المطبخ
 ================================ */
-const kitchenAuth = sessionStorage.getItem("kitchen_auth");
+document.addEventListener("DOMContentLoaded", async () => {
 
-if (!kitchenAuth) {
-  const pass = prompt("🔐 أدخل كلمة سر المطبخ:");
+  const kitchenAuth = sessionStorage.getItem("kitchen_auth");
 
-  if (pass !== "1234") {
-    alert("❌ كلمة المرور غير صحيحة");
-    location.href = "about:blank";
-    throw new Error("Unauthorized");
+  if (!kitchenAuth) {
+    const pass = prompt("🔐 أدخل كلمة سر المطبخ:");
+
+    if (pass !== "1234") {
+      alert("❌ كلمة المرور غير صحيحة");
+      location.href = "about:blank";
+      return;
+    }
+
+    sessionStorage.setItem("kitchen_auth", "ok");
   }
 
-  sessionStorage.setItem("kitchen_auth", "ok");
-}
+  loadKitchenOrders();
+  subscribeKitchenOrders();
+  setInterval(loadKitchenOrders, 60000);
+});
 import { supabase } from "./supabase.js";
 
 /* ===============================
