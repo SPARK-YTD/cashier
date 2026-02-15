@@ -229,6 +229,36 @@ query = supabase
 }
 
     const { data: product, error } = await query.select().single();
+    /* حفظ المواد الاستهلاكية المرتبطة بالصنف */
+const rows = document.querySelectorAll("#consumablesBox > div");
+
+if (editingItemId) {
+  await supabase
+    .from("product_consumables")
+    .delete()
+    .eq("product_id", product.id);
+}
+
+const consumableRows = [];
+
+rows.forEach(r => {
+  const consumable_id = r.querySelector(".consumable-select")?.value;
+  const size = r.querySelector(".consumable-size")?.value;
+  const qty = parseFloat(r.querySelector(".consumable-qty")?.value || 0);
+
+  if (consumable_id && qty > 0) {
+    consumableRows.push({
+      product_id: product.id,
+      consumable_id,
+      consumable_size: size,
+      qty
+    });
+  }
+});
+
+if (consumableRows.length) {
+  await supabase.from("product_consumables").insert(consumableRows);
+}
     if (error) throw error;
 
     /* === الأحجام / الوجبات === */
@@ -389,26 +419,7 @@ window.editItem = async function (id) {
     .select("*")
     .eq("id", id)
     .single();
-    /* ===============================
-   حفظ المواد الاستهلاكية
-================================ */
 
-const consumableRows = document.querySelectorAll("#consumablesBox .variant-row");
-
-for (const row of consumableRows) {
-  const consumableId = row.querySelector(".consumable-select")?.value;
-  const size = row.querySelector(".consumable-size")?.value;
-  const qty = parseFloat(row.querySelector(".consumable-qty")?.value || 0);
-
-  if (!consumableId || !size || qty <= 0) continue;
-
-  await supabase.from("product_consumables").insert({
-    product_id: item.id,
-    consumable_id: consumableId,
-    consumable_size: size,
-    qty: qty
-  });
-}
   if (error || !item) {
     alert("فشل تحميل الصنف");
     return;
