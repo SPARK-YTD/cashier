@@ -67,6 +67,7 @@ async function loadStock() {
   const { data } = await supabase
     .from("consumable_stock")
     .select(`
+      id,
       quantity,
       size,
       consumables ( name )
@@ -83,11 +84,51 @@ async function loadStock() {
     div.innerHTML = `
       <strong>${row.consumables.name}</strong> — ${row.size}<br>
       الكمية الحالية: <b>${row.quantity}</b>
+
+      <div style="margin-top:8px;display:flex;gap:6px">
+        <button onclick="editStock('${row.id}', ${row.quantity})">
+          ✏️ تعديل
+        </button>
+
+        <button onclick="deleteStock('${row.id}')"
+          style="background:#dc2626;color:white">
+          🗑 حذف
+        </button>
+      </div>
     `;
 
     box.appendChild(div);
   });
 }
+/* تعديل الكمية */
+window.editStock = async function (id, currentQty) {
+  const newQty = prompt("الكمية الجديدة:", currentQty);
+
+  if (newQty === null) return;
+
+  const qty = parseFloat(newQty);
+  if (isNaN(qty)) return alert("رقم غير صالح");
+
+  await supabase
+    .from("consumable_stock")
+    .update({ quantity: qty })
+    .eq("id", id);
+
+  loadStock();
+};
+
+
+/* حذف المخزون */
+window.deleteStock = async function (id) {
+  if (!confirm("تأكيد حذف هذا المخزون؟")) return;
+
+  await supabase
+    .from("consumable_stock")
+    .delete()
+    .eq("id", id);
+
+  loadStock();
+};
 
 /* INIT */
 loadConsumables();
