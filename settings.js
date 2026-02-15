@@ -5,11 +5,70 @@ window.setLang = setLang;
 
 const PASSWORD = "1234";
 let editingItemId = null;
+
+/* ===============================
+   المواد الاستهلاكية
+================================ */
+
+let consumablesList = [];
+
+// تحميل المواد الاستهلاكية من قاعدة البيانات
+async function loadConsumables() {
+  const { data, error } = await supabase
+    .from("consumables")
+    .select("*")
+    .order("name");
+
+  if (error) {
+    console.error("LOAD CONSUMABLES ERROR:", error);
+    return;
+  }
+
+  consumablesList = data || [];
+}
+
+// إضافة صف مادة استهلاكية
+window.addConsumableRow = function () {
+  const box = document.getElementById("consumablesBox");
+  if (!box) return;
+
+  const row = document.createElement("div");
+  row.className = "variant-row";
+
+  row.innerHTML = `
+    <select class="consumable-select">
+      <option value="">اختر مادة</option>
+      ${consumablesList.map(c => `
+        <option value="${c.id}">${c.name}</option>
+      `).join("")}
+    </select>
+
+    <select class="consumable-size">
+      <option value="Small">Small</option>
+      <option value="Medium">Medium</option>
+      <option value="Large">Large</option>
+    </select>
+
+    <input
+      type="number"
+      step="0.01"
+      min="0"
+      class="consumable-qty"
+      placeholder="الكمية"
+      value="1"
+    >
+
+    <button type="button" onclick="this.parentElement.remove()">❌</button>
+  `;
+
+  box.appendChild(row);
+};
 /* ===============================
    INIT
 ================================ */
 document.addEventListener("DOMContentLoaded", () => {
   applyLang();
+  loadConsumables();
 
   // 👇 هذا هو الكود الجديد
   const typeRadios = document.querySelectorAll('input[name="itemType"]');
