@@ -73,7 +73,7 @@
     <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
 
       <div id="variantsBox" style="margin-top:10px">
-
+      
         <div class="variant-row">
 <span class="variant-label">Small</span>
   <input id="priceSmall" type="number" step="0.001" placeholder="السعر">
@@ -90,7 +90,23 @@
 </div>
       </div>
     </div>
+    
+    <!-- ===== المواد الاستهلاكية ===== -->
+<div style="margin-top:15px;padding:10px;border:1px dashed #0ea5e9;border-radius:8px">
+  <strong>📦 المواد الاستهلاكية لهذا الصنف</strong>
 
+  <div id="consumablesBox" style="margin-top:10px"></div>
+
+  <button
+    type="button"
+    class="btn secondary"
+    onclick="addConsumableRow()"
+    style="margin-top:10px"
+  >
+    ➕ إضافة مادة استهلاكية
+  </button>
+</div>
+    
     <button class="btn success" onclick="addItem()">💾 حفظ الصنف</button>
 
     <hr>
