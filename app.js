@@ -904,7 +904,7 @@ const { data: order, error } = await supabase
         kitchen_ready: true
       })
       .eq("id", orderId);
-  
+    await deductConsumables(orderId);
     await loadActiveOrders();
   };
   /* ✏️ تحميل الفاتورة للتعديل */
@@ -994,7 +994,7 @@ window.markCompleted = async function (orderId) {
       alert("❌ قاعدة البيانات رفضت الإقفال");
       return;
     }
-
+    
     await loadActiveOrders();
 
   } catch (err) {
@@ -1665,3 +1665,37 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     overlay?.classList.remove("show");
   }
 });
+/* ===============================
+   خصم المواد الاستهلاكية من المخزون
+================================ */
+async function deductConsumables(orderId) {
+  try {
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("product_id, variant_id, qty")
+      .eq("order_id", orderId);
+
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      const { data: consumables } = await supabase
+        .from("product_consumables")
+        .select("*")
+        .eq("product_id", item.product_id);
+
+      if (!consumables) continue;
+
+      for (const c of consumables) {
+        const totalQty = c.qty * item.qty;
+
+        await supabase.rpc("decrement_consumable_stock", {
+          p_consumable_id: c.consumable_id,
+          p_size: c.consumable_size,
+          p_qty: totalQty
+        });
+      }
+    }
+  } catch (err) {
+    console.error("DEDUCT CONSUMABLES ERROR:", err);
+  }
+}
