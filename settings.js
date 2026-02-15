@@ -389,7 +389,26 @@ window.editItem = async function (id) {
     .select("*")
     .eq("id", id)
     .single();
+    /* ===============================
+   حفظ المواد الاستهلاكية
+================================ */
 
+const consumableRows = document.querySelectorAll("#consumablesBox .variant-row");
+
+for (const row of consumableRows) {
+  const consumableId = row.querySelector(".consumable-select")?.value;
+  const size = row.querySelector(".consumable-size")?.value;
+  const qty = parseFloat(row.querySelector(".consumable-qty")?.value || 0);
+
+  if (!consumableId || !size || qty <= 0) continue;
+
+  await supabase.from("product_consumables").insert({
+    product_id: item.id,
+    consumable_id: consumableId,
+    consumable_size: size,
+    qty: qty
+  });
+}
   if (error || !item) {
     alert("فشل تحميل الصنف");
     return;
