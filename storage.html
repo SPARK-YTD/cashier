@@ -1,108 +1,55 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>المخزون الاستهلاكي</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #f1f5f9;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,.1);
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font-size: 14px;
-    }
-
-    button {
-      padding: 10px 14px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-
-    .add-btn { background: #16a34a; color: white; }
-    .save-btn { background: #2563eb; color: white; }
-    .back-btn { background: #111827; color: white; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
-      text-align: center;
-    }
-
-    th {
-      background: #f8fafc;
-      font-weight: bold;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>المخزون</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<h1>📦 إدارة المواد الاستهلاكية</h1>
+<header class="topbar">
+  📦 إدارة المخزون
+</header>
 
-<div class="card">
-  <h3>إضافة مادة جديدة</h3>
+<main class="card" style="max-width:900px;margin:20px auto">
 
-  <input id="name" placeholder="اسم المادة (كيس / كوب / صحن)" />
+  <!-- إضافة مادة -->
+  <h3>➕ إضافة مادة استهلاكية</h3>
 
-  <input id="smallQty" type="number" placeholder="كمية Small" />
-  <input id="mediumQty" type="number" placeholder="كمية Medium" />
-  <input id="largeQty" type="number" placeholder="كمية Large" />
+  <input id="consumableName" placeholder="اسم المادة (كيس / كوب / صحن)">
 
-  <button class="add-btn" onclick="addConsumable()">➕ إضافة</button>
-</div>
+  <button class="btn success" onclick="addConsumable()">
+    💾 حفظ المادة
+  </button>
 
-<div class="card">
-  <h3>المخزون الحالي</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>المادة</th>
-        <th>Small</th>
-        <th>Medium</th>
-        <th>Large</th>
-        <th>حفظ</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
+  <hr>
 
-<button class="back-btn" onclick="location.href='settings.html'">
-⬅ رجوع
-</button>
+  <!-- إضافة كمية -->
+  <h3>📥 إضافة كمية للمخزون</h3>
 
+  <select id="stockConsumable"></select>
+
+  <select id="stockSize">
+    <option value="Small">Small</option>
+    <option value="Medium">Medium</option>
+    <option value="Large">Large</option>
+  </select>
+
+  <input id="stockQty" type="number" placeholder="الكمية">
+
+  <button class="btn secondary" onclick="addStock()">
+    ➕ إضافة كمية
+  </button>
+
+  <hr>
+
+  <!-- عرض المخزون -->
+  <h3>📊 المخزون الحالي</h3>
+  <div id="stockList"></div>
+
+</main>
 
 <script type="module" src="storage.js"></script>
 </body>
