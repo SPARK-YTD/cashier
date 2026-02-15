@@ -1,1 +1,108 @@
-g
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>المخزون الاستهلاكي</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,.1);
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .add-btn { background: #16a34a; color: white; }
+    .save-btn { background: #2563eb; color: white; }
+    .back-btn { background: #111827; color: white; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>📦 إدارة المواد الاستهلاكية</h1>
+
+<div class="card">
+  <h3>إضافة مادة جديدة</h3>
+
+  <input id="name" placeholder="اسم المادة (كيس / كوب / صحن)" />
+
+  <input id="smallQty" type="number" placeholder="كمية Small" />
+  <input id="mediumQty" type="number" placeholder="كمية Medium" />
+  <input id="largeQty" type="number" placeholder="كمية Large" />
+
+  <button class="add-btn" onclick="addConsumable()">➕ إضافة</button>
+</div>
+
+<div class="card">
+  <h3>المخزون الحالي</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>المادة</th>
+        <th>Small</th>
+        <th>Medium</th>
+        <th>Large</th>
+        <th>حفظ</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<button class="back-btn" onclick="location.href='settings.html'">
+⬅ رجوع
+</button>
+
+<script type="module" src="storage.js"></script>
+</body>
+</html>
