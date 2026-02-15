@@ -988,13 +988,14 @@ window.markCompleted = async function (orderId) {
         kitchen_ready: true
       })
       .eq("id", orderId);
+    
 
     if (updateError) {
       console.error(updateError);
       alert("❌ قاعدة البيانات رفضت الإقفال");
       return;
     }
-    
+    await deductConsumables(orderId);
     await loadActiveOrders();
 
   } catch (err) {
@@ -1688,11 +1689,15 @@ async function deductConsumables(orderId) {
       for (const c of consumables) {
         const totalQty = c.qty * item.qty;
 
-        await supabase.rpc("decrement_consumable_stock", {
-          p_consumable_id: c.consumable_id,
-          p_size: c.consumable_size,
-          p_qty: totalQty
-        });
+        const { error } = await supabase.rpc("decrement_consumable_stock", {
+  p_consumable_id: c.consumable_id,
+  p_size: c.consumable_size,
+  p_qty: totalQty
+});
+
+if (error) {
+  console.error("STOCK DEDUCT ERROR:", error);
+}
       }
     }
   } catch (err) {
