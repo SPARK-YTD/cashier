@@ -1679,6 +1679,10 @@ async function deductConsumables(orderId) {
     if (!items || items.length === 0) return;
 
     for (const item of items) {
+
+      // 👇 إذا ما فيه حجم → نستخدم Normal
+      const sizeToUse = item.variant_id ? null : "Normal";
+
       const { data: consumables } = await supabase
         .from("product_consumables")
         .select("*")
@@ -1687,21 +1691,31 @@ async function deductConsumables(orderId) {
       if (!consumables) continue;
 
       for (const c of consumables) {
+
+        // 👇 تحديد الحجم الصحيح للخصم
+        const finalSize = item.variant_id
+          ? c.consumable_size      // الأصناف اللي لها أحجام
+          : sizeToUse;             // الأصناف بدون أحجام → Normal
+
         const totalQty = c.qty * item.qty;
 
         const { error } = await supabase.rpc("decrement_consumable_stock", {
-  p_consumable_id: c.consumable_id,
-  p_size: c.consumable_size,
-  p_qty: totalQty
-});
+          p_consumable_id: c.consumable_id,
+          p_size: finalSize,
+          p_qty: totalQty
+        });
 
-if (error) {
-  console.error("STOCK DEDUCT ERROR:", error);
-}
+        if (error) {
+          console.error("STOCK DEDUCT ERROR:", error);
+        }
       }
     }
+
   } catch (err) {
     console.error("DEDUCT CONSUMABLES ERROR:", err);
   }
 }
+
+
+
 window.goToStorage = () => location.href = "storage.html";
