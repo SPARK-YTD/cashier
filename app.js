@@ -1704,3 +1704,4 @@ if (error) {
     console.error("DEDUCT CONSUMABLES ERROR:", err);
   }
 }
+window.goToStorage = () => location.href = "storage.html";
