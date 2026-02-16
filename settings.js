@@ -381,7 +381,8 @@ async function loadItems() {
 
   data.forEach(item => {
     const div = document.createElement("div");
-    div.className = "order-box";
+div.className = "order-box";
+div.dataset.id = item.id;
 
     div.innerHTML = `
       ${
@@ -405,6 +406,7 @@ async function loadItems() {
 
     box.appendChild(div);
   });
+  enableDragSort();
 }
 
 /* ===============================
@@ -516,5 +518,30 @@ function clearForm() {
   document.getElementById("itemExtras").value = "";
   document.getElementById("itemSpicy").checked = false; // ✅ هنا
 }
+/* ===============================
+   تفعيل السحب وترتيب الأصناف
+================================ */
+function enableDragSort() {
+  const list = document.getElementById("itemsList");
+  if (!list) return;
 
+  new Sortable(list, {
+    animation: 150,
+
+    onEnd: async () => {
+      const boxes = list.querySelectorAll(".order-box");
+
+      for (let i = 0; i < boxes.length; i++) {
+        const id = boxes[i].dataset.id;
+
+        await supabase
+          .from("products")
+          .update({ sort_order: i })
+          .eq("id", id);
+      }
+
+      console.log("✅ تم حفظ الترتيب الجديد");
+    }
+  });
+}
 window.goBack = () => location.href = "index.html";
