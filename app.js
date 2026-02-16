@@ -138,22 +138,24 @@ setInterval(() => {
     .from("products")
     .select("*")
     .eq("category", category)
-    .eq("active", true);
-  
+    .eq("active", true)
+    .order("sort_order", { ascending: true }); // 🔥 هذا السطر الناقص
+
   if (error) {
     console.error(error);
     items = [];
     return;
   }
-  
+
   items = data.map(p => ({
     ...p,
     extras: p.extras_list
       ? p.extras_list.split("\n").map(e => e.trim()).filter(Boolean)
       : []
   }));
-    renderItems();
-  }
+
+  renderItems();
+}
   function cleanImageUrl(url) {
     if (!url) return "";
     return url
