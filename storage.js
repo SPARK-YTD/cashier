@@ -33,7 +33,12 @@ window.addConsumable = async function () {
 /* إضافة كمية */
 window.addStock = async function () {
   const consumable_id = document.getElementById("stockConsumable").value;
-  const size = document.getElementById("stockSize").value;
+  const sizeInput = document.getElementById("sizeSelect");
+if (!sizeInput) {
+  alert("خطأ: اختيار الحجم غير موجود");
+  return;
+}
+const size = sizeInput.value;
   const qty = parseFloat(document.getElementById("stockQty").value);
 
   if (!qty) return alert("اكتب الكمية");
