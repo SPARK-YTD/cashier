@@ -44,10 +44,11 @@ window.addConsumableRow = function () {
     </select>
 
     <select class="consumable-size">
-      <option value="Small">Small</option>
-      <option value="Medium">Medium</option>
-      <option value="Large">Large</option>
-    </select>
+  <option value="Normal">Normal</option>
+  <option value="Small">Small</option>
+  <option value="Medium">Medium</option>
+  <option value="Large">Large</option>
+</select>
 
     <input
       type="number"
