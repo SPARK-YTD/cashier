@@ -1680,36 +1680,28 @@ async function deductConsumables(orderId) {
 
     for (const item of items) {
 
-      // 🟢 نجيب اسم الحجم الحقيقي من product_variants
-      let selectedSize = "Normal";
-
-      if (item.variant_id) {
-        const { data: variant } = await supabase
-          .from("product_variants")
-          .select("label")
-          .eq("id", item.variant_id)
-          .single();
-
-        if (variant?.label) {
-          selectedSize = variant.label;
-        }
-      }
-
-      // 🟢 نجيب فقط المواد المرتبطة بهذا الحجم
+      // 🔎 نجيب كل المواد المرتبطة بالصنف
       const { data: consumables } = await supabase
         .from("product_consumables")
         .select("*")
-        .eq("product_id", item.product_id)
-        .eq("consumable_size", selectedSize);
+        .eq("product_id", item.product_id);
 
-      if (!consumables) continue;
+      if (!consumables || consumables.length === 0) continue;
 
       for (const c of consumables) {
+
+        // 🧠 القاعدة الذهبية:
+        // إذا المادة مربوطة بـ Normal → نستخدم Normal دائمًا
+        const finalSize =
+          c.consumable_size === "Normal"
+            ? "Normal"
+            : c.consumable_size;
+
         const totalQty = c.qty * item.qty;
 
         const { error } = await supabase.rpc("decrement_consumable_stock", {
           p_consumable_id: c.consumable_id,
-          p_size: selectedSize,
+          p_size: finalSize,
           p_qty: totalQty
         });
 
