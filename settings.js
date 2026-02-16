@@ -544,4 +544,43 @@ function enableDragSort() {
     }
   });
 }
+/* ===============================
+   تفعيل السحب وترتيب الأصناف
+================================ */
+/* ===============================
+   تفعيل السحب وترتيب الأصناف
+================================ */
+
+let sortableInstance = null;
+
+function enableDragSort() {
+  const list = document.getElementById("itemsList");
+  if (!list) return;
+
+  // حذف القديم لو موجود
+  if (sortableInstance) {
+    sortableInstance.destroy();
+  }
+
+  sortableInstance = new Sortable(list, {
+    animation: 150,
+
+    onEnd: async () => {
+      const boxes = list.querySelectorAll(".order-box");
+
+      for (let i = 0; i < boxes.length; i++) {
+        const id = boxes[i].dataset.id;
+
+        await supabase
+          .from("products")
+          .update({ sort_order: i })
+          .eq("id", id);
+      }
+
+      console.log("✅ تم حفظ الترتيب الجديد");
+    }
+  });
+}
+
+window.goBack = () => location.href = "index.html";
 window.goBack = () => location.href = "index.html";
