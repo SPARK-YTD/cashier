@@ -363,11 +363,15 @@ async function loadItems() {
 
   box.innerHTML = "";
 
+  sortableInstances.forEach(s => s.destroy());
+  sortableInstances = [];
+
   const { data, error } = await supabase
-  .from("products")
-  .select("*")
-  .order("sort_order", { ascending: true })
-  .order("created_at", { ascending: true });
+    .from("products")
+    .select("*")
+    .order("category", { ascending: true })   // 👈 ترتيب حسب القسم
+    .order("sort_order", { ascending: true });
+
   if (error) {
     console.error("LOAD ITEMS ERROR:", error);
     box.innerHTML = "<p>خطأ في تحميل الأصناف</p>";
@@ -379,38 +383,70 @@ async function loadItems() {
     return;
   }
 
-  data.forEach((item, index) => {
-  const div = document.createElement("div");
-  div.className = "order-box";
-  div.dataset.id = item.id;
+  // 👇 نجمع الأصناف حسب القسم
+  const groups = {
+    food: [],
+    drinks: [],
+    sides: []
+  };
 
-  div.innerHTML = `
-    ${
-      item.image_url
-        ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
-        : ""
+  data.forEach(item => {
+    if (groups[item.category]) {
+      groups[item.category].push(item);
     }
+  });
 
-    <strong>#{index + 1} — ${item.name}</strong><br>
+  // 👇 عرض كل قسم لحاله مع ترقيم منفصل
+  Object.entries(groups).forEach(([category, items]) => {
+    if (!items.length) return;
 
-    ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
-    الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
+    const title = document.createElement("h4");
+    title.textContent =
+      category === "food" ? "🍔 الطعام" :
+      category === "drinks" ? "🥤 المشروبات" :
+      "🍟 الجانبية";
 
-    ${
-      item.active
-        ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 تعطيل</button>`
-        : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
-    }
+    box.appendChild(title);
 
-    <button class="btn secondary" onclick="editItem('${item.id}')">✏️ تعديل</button>
-    <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
-  `;
+    const section = document.createElement("div");
+    section.className = "category-section";
+    section.dataset.category = category;
 
-  box.appendChild(div);
-});
+    items.forEach((item, index) => {
+      const div = document.createElement("div");
+      div.className = "order-box";
+      div.dataset.id = item.id;
 
-// 🔥 مهم جدًا
-enableDragSort();
+      div.innerHTML = `
+        ${
+          item.image_url
+            ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
+            : ""
+        }
+
+        <strong>#{index + 1} — ${item.name}</strong><br>
+
+        ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
+        الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
+
+        ${
+          item.active
+            ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 تعطيل</button>`
+            : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
+        }
+
+        <button class="btn secondary" onclick="editItem('${item.id}')">✏️ تعديل</button>
+        <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
+      `;
+
+      section.appendChild(div);
+    });
+
+    box.appendChild(section);
+
+    // 👇 تفعيل السحب لكل قسم لحاله
+    enableDragSort(section);
+  });
 }
 
 /* ===============================
@@ -527,35 +563,31 @@ function clearForm() {
    تفعيل السحب وترتيب الأصناف
 ================================ */
 
-let sortableInstance = null;
+let sortableInstances = [];
 
-function enableDragSort() {
-  const list = document.getElementById("itemsList");
-  if (!list) return;
+function enableDragSort(sectionElement) {
+  const category = sectionElement.dataset.category;
 
-  // حذف القديم لو موجود
-  if (sortableInstance) {
-    sortableInstance.destroy();
-  }
-
-  sortableInstance = new Sortable(list, {
+  const sortable = new Sortable(sectionElement, {
     animation: 150,
 
     onEnd: async () => {
-      const boxes = list.querySelectorAll(".order-box");
+      const boxes = sectionElement.querySelectorAll(".order-box");
 
       for (let i = 0; i < boxes.length; i++) {
         const id = boxes[i].dataset.id;
 
         await supabase
-          .from("products")
-          .update({ sort_order: i })
-          .eq("id", id);
+  .from("products")
+  .update({ sort_order: i })
+  .eq("id", id);
       }
 
-      console.log("✅ تم حفظ الترتيب الجديد");
+      console.log(`✅ تم حفظ ترتيب قسم ${category}`);
     }
   });
+
+  sortableInstances.push(sortable);
 }
 
 window.goBack = () => location.href = "index.html";
