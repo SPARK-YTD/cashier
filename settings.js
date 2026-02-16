@@ -199,20 +199,31 @@ window.addItem = async function () {
 let query;
 
 if (editingItemId) {
-  // ✏️ تعديل
+  // ✏️ تعديل — نحافظ على الصورة والترتيب
+  const { data: oldItem } = await supabase
+    .from("products")
+    .select("image_url, sort_order")
+    .eq("id", editingItemId)
+    .single();
+
   query = supabase
-  .from("products")
-  .update({
-    name,
-    category,
-    price: hasVariants ? null : cleanNumber(priceNormal),
-    has_variants: hasVariants,
-    image_url,
-    extras_list: extras.join("\n"),
-    is_spicy: isSpicy // 🌶 هنا بالضبط
-  })
-  .eq("id", editingItemId);
-} else {
+    .from("products")
+    .update({
+      name,
+      category,
+      price: hasVariants ? null : cleanNumber(priceNormal),
+      has_variants: hasVariants,
+
+      // 🟢 أهم سطرين في الدنيا
+      image_url: image_url || oldItem?.image_url,
+      sort_order: oldItem?.sort_order,
+
+      extras_list: extras.join("\n"),
+      is_spicy: isSpicy
+    })
+    .eq("id", editingItemId);
+}
+ else {
   // ➕ إضافة
 query = supabase
   .from("products")
@@ -229,7 +240,8 @@ query = supabase
   });
 }
 
-    const { data: product, error } = await query.select().single();
+const { data: product, error } = await query.select().single();
+if (error) throw error;
     /* حفظ المواد الاستهلاكية المرتبطة بالصنف */
 const rows = document.querySelectorAll("#consumablesBox > div");
 
