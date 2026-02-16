@@ -140,6 +140,6 @@ window.deleteStock = async function (id) {
 /* INIT */
 loadConsumables();
 loadStock();
-<button class="btn" onclick="goBackToCashier()">
-  ⬅️ رجوع للكاشير
-</button>
+window.goBackToCashier = function () {
+  location.href = "index.html";
+};
