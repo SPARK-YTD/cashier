@@ -379,35 +379,35 @@ async function loadItems() {
     return;
   }
 
-  data.forEach(item => {
-    const div = document.createElement("div");
-div.className = "order-box";
-div.dataset.id = item.id;
+  data.forEach((item, index) => {
+  const div = document.createElement("div");
+  div.className = "order-box";
+  div.dataset.id = item.id;
 
-    div.innerHTML = `
-      ${
-        item.image_url
-          ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
-          : ""
-      }
-      <strong>${item.name}</strong><br>
-      ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
-      الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
+  div.innerHTML = `
+    ${
+      item.image_url
+        ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
+        : ""
+    }
 
-      ${
-        item.active
-          ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 تعطيل</button>`
-          : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
-      }
+    <strong>#{index + 1} — ${item.name}</strong><br>
 
-<button class="btn secondary" onclick="editItem('${item.id}')">✏️ تعديل</button>
-<button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
-    `;
+    ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
+    الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
 
-    box.appendChild(div);
-  });
-  enableDragSort();
-}
+    ${
+      item.active
+        ? `<button class="btn warn" onclick="toggleItem('${item.id}', false)">🚫 تعطيل</button>`
+        : `<button class="btn success" onclick="toggleItem('${item.id}', true)">✅ تفعيل</button>`
+    }
+
+    <button class="btn secondary" onclick="editItem('${item.id}')">✏️ تعديل</button>
+    <button class="btn danger" onclick="deleteItem('${item.id}')">🗑 حذف</button>
+  `;
+
+  box.appendChild(div);
+});
 
 /* ===============================
    تفعيل / تعطيل
