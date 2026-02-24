@@ -1,5 +1,27 @@
 import { supabase } from "./supabase.js";
 
+// 🔐 التحقق من أن المستخدم مدير
+async function checkAdminAccess() {
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    window.location.replace("employee-login.html");
+    return;
+  }
+
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("is_manager")
+    .eq("auth_user_id", user.id)
+    .single();
+
+  if (!employee || !employee.is_manager) {
+    alert("غير مصرح لك بالدخول");
+    await supabase.auth.signOut();
+    window.location.replace("employee-login.html");
+  }
+}
 /* ===============================
    عناصر الصفحة
 ================================ */
@@ -40,7 +62,7 @@ async function loadEmployees() {
 
         <button
           class="danger"
-          onclick="deleteEmployee('${e.id}', '${e.employee_code}', ${e.is_manager})"
+          onclick="deleteEmployee('${e.id}', '${e.employee_code}')"
           style="margin-top:6px"
         >
           🗑 حذف
@@ -108,6 +130,7 @@ window.addEmployee = async function () {
    إنشاء / تحديث كوبون شهري
 ================================ */
 window.setCoupon = async function () {
+
   const code = couponEmpCode.value.trim();
   const amount = Number(couponAmount.value);
 
@@ -116,38 +139,14 @@ window.setCoupon = async function () {
     return;
   }
 
-  // 🔐 طلب الرقم السري
-  const pin = prompt("🔐 أدخل الرقم السري للمدير:");
-  if (!pin) return;
-
-  // 🔍 جلب الموظف والتحقق من الرقم السري
-  const { data: emp, error: empErr } = await supabase
-    .from("employees")
-    .select("id, manager_pin")
-    .eq("employee_code", code)
-    .maybeSingle();
-
-  if (empErr || !emp) {
-    alert("❌ رقم الموظف غير موجود");
-    return;
-  }
-
-  if (!emp.manager_pin || emp.manager_pin !== pin) {
-    alert("❌ الرقم السري غير صحيح");
-    return;
-  }
-
-  // 📅 الشهر الحالي
   const month = new Date().toISOString().slice(0, 7);
 
-  // 🔄 حذف كوبون الشهر (إن وجد)
   await supabase
     .from("employee_coupons")
     .delete()
     .eq("employee_code", code)
     .eq("month", month);
 
-  // ➕ إنشاء الكوبون
   const { error } = await supabase
     .from("employee_coupons")
     .insert({
@@ -159,7 +158,6 @@ window.setCoupon = async function () {
 
   if (error) {
     alert("❌ فشل حفظ الكوبون");
-    console.error(error);
     return;
   }
 
@@ -178,10 +176,6 @@ window.editEmployee = async function (id, oldName, isManager) {
 
   let updateData = { name };
 
-  if (isManager) {
-    const pin = prompt("🔐 رقم المدير (اتركه فارغ بدون تغيير):");
-    if (pin) updateData.manager_pin = pin;
-  }
 
   const { error } = await supabase
     .from("employees")
@@ -201,38 +195,23 @@ window.editEmployee = async function (id, oldName, isManager) {
 /* ===============================
    حذف موظف
 ================================ */
-window.deleteEmployee = async function (id, employeeCode, isManager) {
-  if (isManager) {
-    const pin = prompt("⚠️ هذا مدير\nأدخل رقم المدير للحذف:");
-    if (!pin) return;
 
-    const { data } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("id", id)
-      .eq("manager_pin", pin)
-      .maybeSingle();
-
-    if (!data) {
-      alert("❌ الرقم السري غير صحيح");
-      return;
-    }
-  }
+ window.deleteEmployee = async function (id, employeeCode) {
 
   if (!confirm("❗ هل أنت متأكد من حذف الموظف؟")) return;
 
-  // 1️⃣ حذف الكوبونات أولاً
-await supabase
-  .from("employee_coupons")
-  .delete()
-  .eq("employee_code", employeeCode);
+  // حذف الكوبونات أولاً
+  await supabase
+    .from("employee_coupons")
+    .delete()
+    .eq("employee_code", employeeCode);
 
-// 2️⃣ حذف الموظف
-const { error } = await supabase
-  .from("employees")
-  .delete()
-  .eq("id", id);
-  
+  // حذف الموظف
+  const { error } = await supabase
+    .from("employees")
+    .delete()
+    .eq("id", id);
+
   if (error) {
     alert("❌ فشل حذف الموظف");
     console.error(error);
@@ -240,17 +219,20 @@ const { error } = await supabase
   }
 
   alert("🗑 تم حذف الموظف");
-loadEmployees();
-loadCoupons(); 
+  loadEmployees();
+  loadCoupons();
 };
 
 /* ===============================
    أدوات
 ================================ */
 window.backToCashier = () => location.href = "index.html";
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+  await checkAdminAccess();  
+
   loadEmployees();
-  loadCoupons(); // 👈 هذا المهم
+  loadCoupons();
 });
 
 async function loadCoupons() {
