@@ -374,3 +374,82 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("openCouponsReport")
     ?.addEventListener("click", openCouponsReport);
 });
+
+/* ===============================
+   📊 تقرير مبيعات الموظفين
+================================ */
+
+window.loadEmployeesSalesReport = async function () {
+
+  const box = document.getElementById("employeesSalesReportResult");
+  if (!box) return;
+
+  box.innerHTML = "⏳ جاري تحميل التقرير...";
+
+  const { data, error } = await supabase
+    .from("order_items")
+    .select(`
+      qty,
+      price,
+      products (
+        partner_id,
+        employees (
+          id,
+          name
+        )
+      )
+    `);
+
+  if (error) {
+    console.error(error);
+    box.innerHTML = "❌ خطأ في تحميل التقرير";
+    return;
+  }
+
+  const report = {};
+
+  (data || []).forEach(row => {
+
+    const emp = row.products?.employees;
+    if (!emp) return;
+
+    const total = row.qty * row.price;
+
+    if (!report[emp.id]) {
+      report[emp.id] = {
+        name: emp.name,
+        totalQty: 0,
+        totalSales: 0
+      };
+    }
+
+    report[emp.id].totalQty += row.qty;
+    report[emp.id].totalSales += total;
+
+  });
+
+  const result = Object.values(report);
+
+  if (result.length === 0) {
+    box.innerHTML = "لا توجد مبيعات مرتبطة بموظفين";
+    return;
+  }
+
+  box.innerHTML = "";
+
+  result.forEach(emp => {
+
+    const div = document.createElement("div");
+    div.style.borderBottom = "1px dashed #ccc";
+    div.style.padding = "10px 0";
+
+    div.innerHTML = `
+      <strong>👤 ${emp.name}</strong><br>
+      🧾 عدد القطع: ${emp.totalQty}<br>
+      💰 إجمالي المبيعات: ${emp.totalSales.toFixed(3)} د.ب
+    `;
+
+    box.appendChild(div);
+  });
+
+};
