@@ -57,47 +57,50 @@ async function loadEmployees() {
 window.addEmployee = async function () {
   const name = empName.value.trim();
   const code = empCode.value.trim();
-  const pin  = empPin.value.trim();
+  const password = empPin.value.trim();
   const manager = isManager.checked;
 
-  if (!name || !code) {
-    alert("❌ الاسم ورقم الموظف مطلوبين");
+  if (!name || !code || !password) {
+    alert("❌ البيانات كاملة مطلوبة");
     return;
   }
 
-  if (!pin) {
-  alert("❌ أدخل رقم سري للموظف");
-  return;
-}
+  const email = code + "@staff.local";
 
-  const { data: exists } = await supabase
-    .from("employees")
-    .select("id")
-    .eq("employee_code", code)
-    .maybeSingle();
+  // 1️⃣ إنشاء حساب Auth
+  const { data: authData, error: authError } =
+    await supabase.auth.signUp({
+      email,
+      password
+    });
 
-  if (exists) {
-    alert("❌ رقم الموظف موجود مسبقًا");
+  if (authError) {
+    alert("❌ فشل إنشاء حساب الدخول");
+    console.error(authError);
     return;
   }
 
+  // 2️⃣ حفظ الموظف وربطه بـ auth_user_id
   const { error } = await supabase.from("employees").insert({
-  name,
-  employee_code: code,
-  manager_pin: manager ? pin : null,
-  employee_pin: manager ? null : pin,
-  is_manager: manager
-});
+    name,
+    employee_code: code,
+    is_manager: manager,
+    auth_user_id: authData.user.id
+  });
 
   if (error) {
-    alert("❌ فشل إضافة الموظف");
+    alert("❌ فشل حفظ الموظف");
     console.error(error);
     return;
   }
 
-  alert("✅ تم إضافة الموظف");
-  empName.value = empCode.value = empPin.value = "";
+  alert("✅ تم إنشاء الموظف بنجاح");
+
+  empName.value = "";
+  empCode.value = "";
+  empPin.value = "";
   isManager.checked = false;
+
   loadEmployees();
 };
 
