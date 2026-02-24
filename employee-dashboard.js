@@ -31,9 +31,10 @@ window.employeeLogin = async function () {
     .single();
 
   if (!emp) {
-    msg.innerText = "لم يتم العثور على بيانات الموظف";
-    return;
-  }
+  await supabase.auth.signOut();
+  msg.innerText = "لم يتم العثور على بيانات الموظف";
+  return;
+}
 
   // تحويل للوحة الموظف
   window.location.href = "employee-panel.html";
