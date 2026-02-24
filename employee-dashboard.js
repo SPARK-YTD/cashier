@@ -11,31 +11,21 @@ window.employeeLogin = async function () {
     return;
   }
 
-  const email = code + "@staff.local";
+  const { data: employee, error } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("employee_code", code)
+    .eq("password", password)
+    .single();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
+  if (error || !employee) {
     msg.innerText = "بيانات الدخول غير صحيحة";
     return;
   }
 
-  // جلب بيانات الموظف من الجدول
-  const { data: emp } = await supabase
-    .from("employees")
-    .select("id, name")
-    .eq("auth_user_id", data.user.id)
-    .single();
+  // نحفظ بياناته في localStorage
+  localStorage.setItem("employee", JSON.stringify(employee));
 
-  if (!emp) {
-  await supabase.auth.signOut();
-  msg.innerText = "لم يتم العثور على بيانات الموظف";
-  return;
-}
-
-  // تحويل للوحة الموظف
+  // ننتقل للوحة الموظف
   window.location.href = "employee-panel.html";
 };
