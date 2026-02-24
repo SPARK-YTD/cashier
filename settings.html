@@ -43,6 +43,21 @@
     </select>
 
     <input type="file" id="itemImage" accept="image/*">
+      
+      <!-- ===== منتج موظف ===== -->
+<div style="margin-top:15px;padding:10px;border:1px dashed #8b5cf6;border-radius:8px">
+  <label style="font-weight:700;color:#7c3aed">
+    <input type="checkbox" id="isPartnerProduct">
+    📦 منتج تابع لموظف
+  </label>
+
+  <div id="partnerSelectBox" style="margin-top:10px;display:none">
+    <select id="partnerSelect">
+      <option value="">اختر الموظف</option>
+    </select>
+  </div>
+</div>
+      
 <!-- ===== نوع الصنف ===== -->
 <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
   <strong>نوع الصنف:</strong><br>
@@ -184,6 +199,16 @@ typeRadios.forEach(radio => {
 updateUI(
   document.querySelector('input[name="itemType"]:checked').value
 );
+// ===== التحكم بخيار منتج موظف =====
+const isPartnerCheckbox = document.getElementById("isPartnerProduct");
+const partnerSelectBox = document.getElementById("partnerSelectBox");
+
+if (isPartnerCheckbox && partnerSelectBox) {
+  isPartnerCheckbox.addEventListener("change", () => {
+    partnerSelectBox.style.display =
+      isPartnerCheckbox.checked ? "block" : "none";
+  });
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>
