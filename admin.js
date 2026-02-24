@@ -97,10 +97,16 @@ window.addEmployee = async function () {
     });
 
   if (authError) {
-    alert("❌ فشل إنشاء حساب الدخول");
-    console.error(authError);
-    return;
+
+  if (authError.message.includes("already registered")) {
+    alert("❌ رقم الموظف مستخدم مسبقاً");
+  } else {
+    alert("❌ خطأ في إنشاء الحساب");
   }
+
+  console.error(authError);
+  return;
+}
 
   // 2️⃣ حفظ الموظف وربطه بـ auth_user_id
   const { error } = await supabase.from("employees").insert({
