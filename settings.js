@@ -6,6 +6,33 @@ window.setLang = setLang;
 const PASSWORD = "1234";
 let editingItemId = null;
 
+let employeesList = [];
+
+async function loadEmployees() {
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, name")
+    .eq("active", true)
+    .order("name");
+
+  if (error) {
+    console.error("LOAD EMPLOYEES ERROR:", error);
+    return;
+  }
+
+  employeesList = data || [];
+
+  const select = document.getElementById("partnerSelect");
+  if (!select) return;
+
+  select.innerHTML = `
+    <option value="">اختر الموظف</option>
+    ${employeesList.map(e => `
+      <option value="${e.id}">${e.name}</option>
+    `).join("")}
+  `;
+}
+
 /* ===============================
    المواد الاستهلاكية
 ================================ */
@@ -70,6 +97,7 @@ window.addConsumableRow = function () {
 document.addEventListener("DOMContentLoaded", () => {
   applyLang();
   loadConsumables();
+  loadEmployees();
 
   // 👇 هذا هو الكود الجديد
   const typeRadios = document.querySelectorAll('input[name="itemType"]');
@@ -157,6 +185,8 @@ window.addItem = async function () {
       
     const isSpicy = document.getElementById("itemSpicy")?.checked || false;
     const name = document.getElementById("itemName").value.trim();
+    const isPartner = document.getElementById("isPartnerProduct")?.checked;
+    const partnerId = document.getElementById("partnerSelect")?.value || null;
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
 
@@ -209,18 +239,17 @@ if (editingItemId) {
   query = supabase
     .from("products")
     .update({
-      name,
-      category,
-      price: hasVariants ? null : cleanNumber(priceNormal),
-      has_variants: hasVariants,
+  name,
+  category,
+  price: hasVariants ? null : cleanNumber(priceNormal),
+  has_variants: hasVariants,
+  image_url: image_url || oldItem?.image_url,
+  sort_order: oldItem?.sort_order,
+  extras_list: extras.join("\n"),
+  is_spicy: isSpicy,
 
-      // 🟢 أهم سطرين في الدنيا
-      image_url: image_url || oldItem?.image_url,
-      sort_order: oldItem?.sort_order,
-
-      extras_list: extras.join("\n"),
-      is_spicy: isSpicy
-    })
+  partner_id: isPartner ? partnerId : null   // 👈 أضف هذا هنا
+})
     .eq("id", editingItemId);
 }
  else {
@@ -234,9 +263,11 @@ query = supabase
     has_variants: hasVariants,
     image_url,
     extras_list: extras.join("\n"),
-    is_spicy: isSpicy, // 🌶 هنا بالضبط
+    is_spicy: isSpicy,
     active: true,
-    sort_order: Date.now()
+    sort_order: Date.now(),
+
+    partner_id: isPartner ? partnerId : null   // 👈 هذا أهم سطر
   });
 }
 
@@ -540,7 +571,16 @@ window.editItem = async function (id) {
       }
     });
   }
-
+  // ===== تحميل ربط الموظف =====
+if (item.partner_id) {
+  await loadEmployees();
+  document.getElementById("isPartnerProduct").checked = true;
+  document.getElementById("partnerSelect").style.display = "block";
+  document.getElementById("partnerSelect").value = item.partner_id;
+} else {
+  document.getElementById("isPartnerProduct").checked = false;
+  document.getElementById("partnerSelect").style.display = "none";
+}
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 /* ===============================
@@ -556,7 +596,10 @@ function clearForm() {
   document.getElementById("priceMedium").value = "";
   document.getElementById("priceLarge").value = "";
   document.getElementById("itemExtras").value = "";
-  document.getElementById("itemSpicy").checked = false; // ✅ هنا
+  document.getElementById("itemSpicy").checked = false;
+  document.getElementById("isPartnerProduct").checked = false;
+  document.getElementById("partnerSelect").style.display = "none";
+  document.getElementById("partnerSelect").value = "";
 }
 
 /* ===============================
