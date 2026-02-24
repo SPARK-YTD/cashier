@@ -65,10 +65,10 @@ window.addEmployee = async function () {
     return;
   }
 
-  if (manager && !pin) {
-    alert("❌ أدخل رقم سري للمدير");
-    return;
-  }
+  if (!pin) {
+  alert("❌ أدخل رقم سري للموظف");
+  return;
+}
 
   const { data: exists } = await supabase
     .from("employees")
@@ -82,11 +82,12 @@ window.addEmployee = async function () {
   }
 
   const { error } = await supabase.from("employees").insert({
-    name,
-    employee_code: code,
-    manager_pin: manager ? pin : null,
-    is_manager: manager
-  });
+  name,
+  employee_code: code,
+  manager_pin: manager ? pin : null,
+  employee_pin: manager ? null : pin,
+  is_manager: manager
+});
 
   if (error) {
     alert("❌ فشل إضافة الموظف");
