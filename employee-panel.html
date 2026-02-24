@@ -60,10 +60,10 @@
     const empName = localStorage.getItem("employee_name");
 
     if (!empId) {
-      window.location.href = "employee-login.html";
-    }
-
+    window.location.replace("employee-login.html");
+    } else {
     document.getElementById("empName").innerText = "👤 " + empName;
+}
 
     async function loadMySales() {
 
