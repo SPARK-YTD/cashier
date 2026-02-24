@@ -12,7 +12,6 @@ async function loadEmployees() {
   const { data, error } = await supabase
     .from("employees")
     .select("id, name")
-    .eq("active", true)
     .order("name");
 
   if (error) {
@@ -32,7 +31,6 @@ async function loadEmployees() {
     `).join("")}
   `;
 }
-
 /* ===============================
    المواد الاستهلاكية
 ================================ */
