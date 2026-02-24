@@ -1720,3 +1720,6 @@ async function deductConsumables(orderId) {
 
 
 window.goToStorage = () => location.href = "storage.html";
+window.goToEmployee = function() {
+  window.location.href = "employee-login.html";
+};
