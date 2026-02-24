@@ -98,8 +98,16 @@ document.addEventListener("DOMContentLoaded", () => {
   applyLang();
   loadConsumables();
   loadEmployees();
+  
+  const partnerCheckbox = document.getElementById("isPartnerProduct");
+const partnerSelect = document.getElementById("partnerSelect");
 
-  // 👇 هذا هو الكود الجديد
+if (partnerCheckbox && partnerSelect) {
+  partnerCheckbox.addEventListener("change", () => {
+    partnerSelect.disabled = !partnerCheckbox.checked;
+  });
+}
+
   const typeRadios = document.querySelectorAll('input[name="itemType"]');
   const variantsBox = document.getElementById("variantsBox");
 
@@ -571,15 +579,22 @@ window.editItem = async function (id) {
       }
     });
   }
-  // ===== تحميل ربط الموظف =====
+// ===== تحميل ربط الموظف =====
+await loadEmployees();  
+
+const checkbox = document.getElementById("isPartnerProduct");
+const select = document.getElementById("partnerSelect");
+
+select.style.display = "block";    
+
 if (item.partner_id) {
-  await loadEmployees();
-  document.getElementById("isPartnerProduct").checked = true;
-  document.getElementById("partnerSelect").style.display = "block";
-  document.getElementById("partnerSelect").value = item.partner_id;
+  checkbox.checked = true;
+  select.disabled = false;
+  select.value = item.partner_id;
 } else {
-  document.getElementById("isPartnerProduct").checked = false;
-  document.getElementById("partnerSelect").style.display = "none";
+  checkbox.checked = false;
+  select.disabled = true;
+  select.value = "";
 }
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -598,7 +613,8 @@ function clearForm() {
   document.getElementById("itemExtras").value = "";
   document.getElementById("itemSpicy").checked = false;
   document.getElementById("isPartnerProduct").checked = false;
-  document.getElementById("partnerSelect").style.display = "none";
+  document.getElementById("partnerSelect").style.display = "block";
+  document.getElementById("partnerSelect").disabled = true;
   document.getElementById("partnerSelect").value = "";
 }
 
