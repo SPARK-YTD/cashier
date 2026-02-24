@@ -87,7 +87,7 @@ window.addEmployee = async function () {
     return;
   }
 
-  const email = code + "@staff.local";
+  const email = code + "@getbreak.com";
 
   // 1️⃣ إنشاء حساب Auth
   const { data: authData, error: authError } =
