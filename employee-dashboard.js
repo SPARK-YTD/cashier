@@ -17,7 +17,7 @@ window.employeeLogin = async function () {
 
   const { data, error } = await supabase
     .from("employees")
-    .select("id, name, manager_pin")
+    .select("id, name, employee_pin")
     .eq("employee_code", code)
     .single();
 
@@ -26,7 +26,7 @@ window.employeeLogin = async function () {
     return;
   }
 
-  if (data.manager_pin !== pin) {
+  if (data.employee_pin !== pin) {
     msg.innerText = "الرقم السري غير صحيح";
     return;
   }
