@@ -1,24 +1,11 @@
 import { supabase } from "./supabase.js";
 
 // 🔐 التحقق من أن المستخدم مدير
-async function checkAdminAccess() {
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    window.location.replace("employee-login.html");
-    return;
-  }
-
-  const { data: employee } = await supabase
-    .from("employees")
-    .select("is_manager")
-    .eq("auth_user_id", user.id)
-    .single();
+function checkAdminAccess() {
+  const employee = JSON.parse(localStorage.getItem("employee"));
 
   if (!employee || !employee.is_manager) {
     alert("غير مصرح لك بالدخول");
-    await supabase.auth.signOut();
     window.location.replace("employee-login.html");
   }
 }
@@ -87,38 +74,18 @@ window.addEmployee = async function () {
     return;
   }
 
-  const email = code + "@getbreak.com";
-
-  // 1️⃣ إنشاء حساب Auth
-  const { data: authData, error: authError } =
-    await supabase.auth.signUp({
-      email,
-      password
+  const { error } = await supabase
+    .from("employees")
+    .insert({
+      name,
+      employee_code: code,
+      password: password,
+      is_manager: manager
     });
 
-  if (authError) {
-
-  if (authError.message.includes("already registered")) {
-    alert("❌ رقم الموظف مستخدم مسبقاً");
-  } else {
-    alert("❌ خطأ في إنشاء الحساب");
-  }
-
-  console.error(authError);
-  return;
-}
-
-  // 2️⃣ حفظ الموظف وربطه بـ auth_user_id
-  const { error } = await supabase.from("employees").insert({
-    name,
-    employee_code: code,
-    is_manager: manager,
-    auth_user_id: authData.user.id
-  });
-
   if (error) {
-    alert("❌ فشل حفظ الموظف");
     console.error(error);
+    alert("❌ خطأ في إنشاء الحساب");
     return;
   }
 
