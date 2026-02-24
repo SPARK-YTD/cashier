@@ -53,69 +53,6 @@
     <div id="mySalesResult">⏳ جاري التحميل...</div>
   </div>
 
-  <script type="module">
-import { supabase } from "./supabase.js";
-
-// 1️⃣ التحقق من وجود جلسة
-const { data: { user } } = await supabase.auth.getUser();
-
-if (!user) {
-  window.location.replace("employee-login.html");
-}
-
-// 2️⃣ جلب بيانات الموظف من جدول employees
-const { data: employee } = await supabase
-  .from("employees")
-  .select("id, name")
-  .eq("auth_user_id", user.id)
-  .single();
-
-if (!employee) {
-  await supabase.auth.signOut();
-  window.location.replace("employee-login.html");
-}
-
-// عرض الاسم
-document.getElementById("empName").innerText = "👤 " + employee.name;
-
-// 3️⃣ تحميل مبيعاته
-async function loadMySales() {
-
-  const box = document.getElementById("mySalesResult");
-
-  const { data } = await supabase
-    .from("order_items")
-    .select(`
-      qty,
-      price,
-      products!inner (
-        partner_id
-      )
-    `)
-    .eq("products.partner_id", employee.id);
-
-  let totalQty = 0;
-  let totalSales = 0;
-
-  (data || []).forEach(row => {
-    totalQty += row.qty;
-    totalSales += row.qty * row.price;
-  });
-
-  box.innerHTML = `
-    🧾 عدد القطع: ${totalQty} <br><br>
-    💰 إجمالي المبيعات: ${totalSales.toFixed(3)} د.ب
-  `;
-}
-
-// 4️⃣ تسجيل الخروج
-window.logout = async function () {
-  await supabase.auth.signOut();
-  window.location.replace("employee-login.html");
-};
-
-loadMySales();
-</script>
 <script type="module" src="employee-panel.js"></script>
 </body>
 </html>
