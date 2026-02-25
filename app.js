@@ -1,8 +1,7 @@
   
   import { supabase } from "./supabase.js";
-  import { applyLang, setLang } from "./i18n.js";
   import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
-  window.setLang = setLang;
+
   
   /*********************************
    * Get-Break | Cashier System
@@ -104,7 +103,7 @@ setInterval(() => {
     }
   
     // 🚀 واجهة فورية
-    applyLang();
+  
     renderCart();
   
   // 📦 تحميل البيانات بعد التأكد من الدخول
