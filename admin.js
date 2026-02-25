@@ -86,7 +86,7 @@ window.addEmployee = async function () {
 
   const email = code + "@staff.local";
 
-  // 1️⃣ إنشاء حساب Auth
+  // 1️⃣ إنشاء المستخدم
   const { data: authData, error: authError } =
     await supabase.auth.signUp({
       email,
@@ -94,12 +94,19 @@ window.addEmployee = async function () {
     });
 
   if (authError) {
-  console.error(authError);
-  alert(authError.message);
-  return;
-}
+    alert("❌ خطأ في إنشاء الحساب");
+    return;
+  }
 
-  // 2️⃣ حفظ الموظف وربطه بالـ auth_user_id
+  // 2️⃣ رجّع جلسة الأدمن فوراً
+  await supabase.auth.signOut();
+
+  await supabase.auth.signInWithPassword({
+    email: "yy@hotmail.sk",   // حط ايميلك
+    password: "ADMIN_PASSWORD" // حط باسوردك
+  });
+
+  // 3️⃣ الآن أضف الموظف في الجدول
   const { error } = await supabase
     .from("employees")
     .insert({
@@ -110,17 +117,11 @@ window.addEmployee = async function () {
     });
 
   if (error) {
-    console.error(error);
     alert("❌ فشل حفظ الموظف");
     return;
   }
 
   alert("✅ تم إنشاء الموظف بنجاح");
-
-  empName.value = "";
-  empCode.value = "";
-  empPin.value = "";
-  isManager.checked = false;
 
   loadEmployees();
 };
