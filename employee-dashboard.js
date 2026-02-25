@@ -34,27 +34,9 @@ async function loadStats() {
 
   const productIds = products.map(p => p.id);
 
-  // 2️⃣ جلب الطلبات المكتملة فقط
-  // 2️⃣ جلب الطلبات المكتملة فقط + فلترة زمنية
 // 2️⃣ جلب الطلبات المكتملة + فلترة زمنية صحيحة
-const filter = document.getElementById("timeFilter")?.value || "all";
-
-let startDate = null;
-
-if (filter === "today") {
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  startDate = today.toISOString();
-}
-
-if (filter === "month") {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0,0,0,0);
-  startDate = monthStart.toISOString();
-}
-
-let query = supabase
+// 2️⃣ جلب كل الطلبات المكتملة
+const { data: items, error: itemsError } = await supabase
   .from("order_items")
   .select(`
     product_id,
@@ -65,13 +47,7 @@ let query = supabase
   .in("product_id", productIds)
   .eq("order.status", "completed");
 
-if (startDate) {
-  query = query.gte("order.created_at", startDate);
-}
-
-const { data: items, error: itemsError } = await query;
-
-  if (itemsError || !items) return;
+if (itemsError || !items) return;
 
 let total = 0;
 const uniqueOrders = new Set();
@@ -82,9 +58,7 @@ const categoryStats = {
   sides: 0
 };
 
-// فلترة يدوية للتاريخ (حل مضمون 100%)
 const filter = document.getElementById("timeFilter")?.value || "all";
-
 const now = new Date();
 
 items.forEach(item => {
@@ -135,8 +109,8 @@ document.getElementById("drinksCount").textContent =
 
 document.getElementById("sidesCount").textContent =
   categoryStats.sides;
-}
 
+}
 // تسجيل خروج
 window.logoutEmployee = function () {
   sessionStorage.removeItem("employee_session");
