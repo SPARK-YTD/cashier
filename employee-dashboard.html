@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>لوحة الموظف</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout {
+      background: #dc2626;
+      color: white;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      margin-bottom: 15px;
+    }
+
+    .stat {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <h2>👨‍🍳 <span id="employeeName"></span></h2>
+    <button class="logout" onclick="logoutEmployee()">تسجيل خروج</button>
+  </div>
+
+  <div class="card">
+    <div>عدد الطلبات المرتبطة بك:</div>
+    <div class="stat" id="ordersCount">0</div>
+  </div>
+
+  <div class="card">
+    <div>إجمالي المبيعات المرتبطة بك:</div>
+    <div class="stat" id="totalSales">0.000 د.ب</div>
+  </div>
+
+  <script src="employee-guard.js"></script>
+  <script type="module" src="employee-dashboard.js"></script>
+
+</body>
+</html>
