@@ -50,7 +50,7 @@ function calculateReportData(orders) {
    INIT
 ================================ */
 document.addEventListener("DOMContentLoaded", async () => {
-  applyLang();
+
 
   const closeTimeEl   = document.getElementById("closeTime");
   const ordersCountEl = document.getElementById("ordersCount");
