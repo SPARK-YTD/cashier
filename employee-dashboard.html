@@ -60,6 +60,15 @@
   </div>
 
   <div class="card">
+    <label>عرض الإحصائيات حسب:</label>
+    <select id="timeFilter" onchange="loadStats()">
+      <option value="all">كل الوقت</option>
+      <option value="today">اليوم</option>
+      <option value="month">هذا الشهر</option>
+    </select>
+  </div>
+
+  <div class="card">
     <div>عدد الطلبات المرتبطة بك:</div>
     <div class="stat" id="ordersCount">0</div>
   </div>
@@ -68,7 +77,12 @@
     <div>إجمالي المبيعات المرتبطة بك:</div>
     <div class="stat" id="totalSales">0.000 د.ب</div>
   </div>
-
+  <div class="card">
+  <h3>تفصيل المبيعات حسب القسم:</h3>
+  <p>🍔 الطعام: <span id="foodCount">0</span></p>
+  <p>🥤 المشروبات: <span id="drinksCount">0</span></p>
+  <p>🍟 الجانبية: <span id="sidesCount">0</span></p>
+</div>
   <script src="employee-guard.js"></script>
   <script type="module" src="employee-dashboard.js"></script>
 
