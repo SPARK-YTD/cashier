@@ -1,15 +1,8 @@
 import { supabase } from "./supabase.js";
-import { applyLang, setLang } from "./i18n.js";
-
-window.setLang = setLang;
 
 const PASSWORD = "1234";
 
-/* ===============================
-   INIT
-================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  applyLang();
   loadReports();
 });
 
