@@ -250,7 +250,7 @@ if (editingItemId) {
   extras_list: extras.join("\n"),
   is_spicy: isSpicy,
 
-  partner_id: isPartner ? partnerId : null   // 👈 أضف هذا هنا
+  partner_id: isPartner && partnerId ? partnerId : null   // 👈 أضف هذا هنا
 })
     .eq("id", editingItemId);
 }
@@ -269,7 +269,7 @@ query = supabase
     active: true,
     sort_order: Date.now(),
 
-    partner_id: isPartner ? partnerId : null   // 👈 هذا أهم سطر
+    partner_id: isPartner && partnerId ? partnerId : null   // 👈 هذا أهم سطر
   });
 }
 
@@ -303,9 +303,12 @@ rows.forEach(r => {
 });
 
 if (consumableRows.length) {
-  await supabase.from("product_consumables").insert(consumableRows);
+  const { error: cErr } = await supabase
+    .from("product_consumables")
+    .insert(consumableRows);
+
+  if (cErr) throw cErr;
 }
-    if (error) throw error;
 
     /* === الأحجام / الوجبات === */
     if (hasVariants) {
@@ -493,11 +496,23 @@ window.toggleItem = async function (id, state) {
 /* ===============================
    حذف صنف
 ================================ */
-window.deleteItem = async function (id) {
+  window.deleteItem = async function (id) {
   if (!confirm("هل أنت متأكد من الحذف؟")) return;
 
-  await supabase.from("product_variants").delete().eq("product_id", id);
-  await supabase.from("products").delete().eq("id", id);
+  await supabase
+    .from("product_variants")
+    .delete()
+    .eq("product_id", id);
+
+  await supabase
+    .from("product_consumables")
+    .delete()
+    .eq("product_id", id);
+
+  await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
 
   loadItems();
 };
@@ -632,7 +647,7 @@ function enableDragSort(sectionElement) {
 
         await supabase
   .from("products")
-  .update({ sort_order: i })
+  .update({ sort_order: i + 1 })
   .eq("id", id);
       }
 
