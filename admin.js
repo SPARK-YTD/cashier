@@ -6,19 +6,17 @@ async function checkAdminAccess() {
 
   if (error || !user) {
     alert("يجب تسجيل الدخول أولاً");
-    window.location.replace("index.html"); // يرجع للكاشير
+    window.location.replace("index.html");
     return;
   }
 
-  // لو تبي تتأكد إنه حساب معين فقط:
-  const allowedEmail = "yy@hotmail.sk"; // حط ايميل الكاشير
+  const allowedEmail = "yy@hotmail.sk";
 
   if (user.email !== allowedEmail) {
     alert("غير مصرح لك بالدخول");
     window.location.replace("index.html");
     return;
   }
-
 }
 /* ===============================
    عناصر الصفحة
