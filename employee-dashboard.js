@@ -36,7 +36,23 @@ async function loadStats() {
 
   // 2️⃣ جلب الطلبات المكتملة فقط
   // 2️⃣ جلب الطلبات المكتملة فقط + فلترة زمنية
+// 2️⃣ جلب الطلبات المكتملة + فلترة زمنية صحيحة
 const filter = document.getElementById("timeFilter")?.value || "all";
+
+let startDate = null;
+
+if (filter === "today") {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  startDate = today.toISOString();
+}
+
+if (filter === "month") {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0,0,0,0);
+  startDate = monthStart.toISOString();
+}
 
 let query = supabase
   .from("order_items")
@@ -49,16 +65,8 @@ let query = supabase
   .in("product_id", productIds)
   .eq("order.status", "completed");
 
-if (filter === "today") {
-  const today = new Date().toISOString().slice(0, 10);
-  query = query.gte("order.created_at", today);
-}
-
-if (filter === "month") {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0,0,0,0);
-  query = query.gte("order.created_at", monthStart.toISOString());
+if (startDate) {
+  query = query.gte("order.created_at", startDate);
 }
 
 const { data: items, error: itemsError } = await query;
