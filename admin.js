@@ -1,14 +1,25 @@
 import { supabase } from "./supabase.js";
 
-// 🔐 التحقق من أن المستخدم مدير
-function checkAdminAccess() {
-  const employee = JSON.parse(localStorage.getItem("employee"));
+async function checkAdminAccess() {
 
-  if (!employee || !employee.is_manager) {
-    alert("غير مصرح لك بالدخول");
-    window.location.replace("employee-login.html");
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    alert("يجب تسجيل الدخول أولاً");
+    window.location.replace("index.html"); // يرجع للكاشير
+    return;
   }
-}
+
+  // لو تبي تتأكد إنه حساب معين فقط:
+  const allowedEmail = "yy@hotmail.sk"; // حط ايميل الكاشير
+
+  if (user.email !== allowedEmail) {
+    alert("غير مصرح لك بالدخول");
+    window.location.replace("index.html");
+    return;
+  }
+
+}}
 /* ===============================
    عناصر الصفحة
 ================================ */
