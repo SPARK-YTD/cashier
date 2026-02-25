@@ -73,40 +73,68 @@ const { data: items, error: itemsError } = await query;
 
   if (itemsError || !items) return;
 
-  let total = 0;
-  const uniqueOrders = new Set();
+let total = 0;
+const uniqueOrders = new Set();
 
-  const categoryStats = {
-    food: 0,
-    drinks: 0,
-    sides: 0
-  };
+const categoryStats = {
+  food: 0,
+  drinks: 0,
+  sides: 0
+};
 
-  items.forEach(item => {
-    total += item.qty * item.price;
-    uniqueOrders.add(item.order.id);
+// فلترة يدوية للتاريخ (حل مضمون 100%)
+const filter = document.getElementById("timeFilter")?.value || "all";
 
-    const category = productMap[item.product_id];
-    if (categoryStats[category] !== undefined) {
-      categoryStats[category] += item.qty;
+const now = new Date();
+
+items.forEach(item => {
+
+  const orderDate = new Date(item.order.created_at);
+
+  // فلترة اليوم
+  if (filter === "today") {
+    if (
+      orderDate.getDate() !== now.getDate() ||
+      orderDate.getMonth() !== now.getMonth() ||
+      orderDate.getFullYear() !== now.getFullYear()
+    ) {
+      return;
     }
-  });
+  }
 
-  document.getElementById("ordersCount").textContent =
-    uniqueOrders.size;
+  // فلترة الشهر
+  if (filter === "month") {
+    if (
+      orderDate.getMonth() !== now.getMonth() ||
+      orderDate.getFullYear() !== now.getFullYear()
+    ) {
+      return;
+    }
+  }
 
-  document.getElementById("totalSales").textContent =
-    total.toFixed(3) + " د.ب";
+  total += item.qty * item.price;
+  uniqueOrders.add(item.order.id);
 
-  // عرض إحصائيات الأقسام
-  document.getElementById("foodCount").textContent =
-    categoryStats.food;
+  const category = productMap[item.product_id];
+  if (categoryStats[category] !== undefined) {
+    categoryStats[category] += item.qty;
+  }
+});
 
-  document.getElementById("drinksCount").textContent =
-    categoryStats.drinks;
+document.getElementById("ordersCount").textContent =
+  uniqueOrders.size;
 
-  document.getElementById("sidesCount").textContent =
-    categoryStats.sides;
+document.getElementById("totalSales").textContent =
+  total.toFixed(3) + " د.ب";
+
+document.getElementById("foodCount").textContent =
+  categoryStats.food;
+
+document.getElementById("drinksCount").textContent =
+  categoryStats.drinks;
+
+document.getElementById("sidesCount").textContent =
+  categoryStats.sides;
 }
 
 // تسجيل خروج
