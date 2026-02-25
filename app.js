@@ -1715,7 +1715,9 @@ async function deductConsumables(orderId) {
     console.error("DEDUCT CONSUMABLES ERROR:", err);
   }
 }
-
+window.openEmployeeLogin = function () {
+  window.open("employee-login.html", "_blank");
+};
 
 window.goToStorage = () => location.href = "storage.html";
 window.goToEmployee = function() {
