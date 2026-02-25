@@ -1515,8 +1515,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     // نمسح أي دخول قديم
     sessionStorage.removeItem("admin_auth");
   
-    // نفتح صفحة الإدارة
-    location.href = "admin.html";
+
   };
   // ===============================
   // تسجيل الخروج
