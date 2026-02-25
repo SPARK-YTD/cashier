@@ -73,6 +73,7 @@ async function loadEmployees() {
    إضافة موظف
 ================================ */
 window.addEmployee = async function () {
+
   const name = empName.value.trim();
   const code = empCode.value.trim();
   const password = empPin.value.trim();
@@ -83,18 +84,34 @@ window.addEmployee = async function () {
     return;
   }
 
+  const email = code + "@staff.local";
+
+  // 1️⃣ إنشاء حساب Auth
+  const { data: authData, error: authError } =
+    await supabase.auth.signUp({
+      email,
+      password
+    });
+
+  if (authError) {
+    console.error(authError);
+    alert("❌ خطأ في إنشاء حساب تسجيل الدخول");
+    return;
+  }
+
+  // 2️⃣ حفظ الموظف وربطه بالـ auth_user_id
   const { error } = await supabase
     .from("employees")
     .insert({
       name,
       employee_code: code,
-      password: password,
-      is_manager: manager
+      is_manager: manager,
+      auth_user_id: authData.user.id
     });
 
   if (error) {
     console.error(error);
-    alert("❌ خطأ في إنشاء الحساب");
+    alert("❌ فشل حفظ الموظف");
     return;
   }
 
