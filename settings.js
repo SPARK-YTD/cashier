@@ -90,7 +90,6 @@ window.addConsumableRow = function () {
    INIT
 ================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  applyLang();
   loadConsumables();
   loadEmployees();
   
