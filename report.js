@@ -1,5 +1,4 @@
 import { supabase } from "./supabase.js";
-import { applyLang } from "./i18n.js";
 
 /*********************************
  * Get-Break | Daily Close Report
