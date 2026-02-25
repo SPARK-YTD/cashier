@@ -1,19 +1,38 @@
 import { supabase } from "./supabase.js";
 
-// 🔐 التحقق من تسجيل الدخول
-const employee = JSON.parse(localStorage.getItem("employee"));
+let employee = null;
 
-if (!employee) {
-  window.location.replace("employee-login.html");
+async function checkEmployeeAccess() {
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    window.location.replace("employee-login.html");
+    return;
+  }
+
+  const { data, error: empError } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .single();
+
+  if (empError || !data) {
+    window.location.replace("employee-login.html");
+    return;
+  }
+
+  employee = data;
+
+  document.getElementById("empName").innerText = "👤 " + employee.name;
+
+  loadMySales();
 }
 
-// عرض الاسم
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("empName").innerText = "👤 " + employee.name;
-  loadMySales();
+document.addEventListener("DOMContentLoaded", async () => {
+  await checkEmployeeAccess();
 });
 
-// تحميل مبيعات الموظف
 async function loadMySales() {
 
   const box = document.getElementById("mySalesResult");
@@ -48,8 +67,7 @@ async function loadMySales() {
   `;
 }
 
-// تسجيل خروج
-window.logout = function () {
-  localStorage.removeItem("employee");
+window.logout = async function () {
+  await supabase.auth.signOut();
   window.location.replace("employee-login.html");
 };
