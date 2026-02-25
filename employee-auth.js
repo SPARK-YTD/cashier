@@ -16,7 +16,7 @@ window.loginEmployee = async function () {
   // جلب الموظف من قاعدة البيانات
   const { data: employee, error } = await supabase
     .from("employees")
-    .select("id, name, employee_code, pin_hash, is_active")
+    .select("id, name, employee_code, pin_hash, active")
     .eq("employee_code", code)
     .single();
 
@@ -25,7 +25,7 @@ window.loginEmployee = async function () {
     return;
   }
 
-  if (!employee.is_active) {
+  if (!employee.active) {
     errorMsg.textContent = "الحساب موقوف";
     return;
   }
