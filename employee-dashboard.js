@@ -15,10 +15,10 @@ loadStats();
 
 async function loadStats() {
 
-  // 1️⃣ جلب منتجات الموظف
+  // 1️⃣ جلب منتجات الموظف مع القسم
   const { data: products, error: prodError } = await supabase
     .from("products")
-    .select("id")
+    .select("id, category")
     .eq("partner_id", session.id);
 
   if (prodError || !products || products.length === 0) {
@@ -27,37 +27,43 @@ async function loadStats() {
     return;
   }
 
+  const productMap = {};
+  products.forEach(p => {
+    productMap[p.id] = p.category;
+  });
+
   const productIds = products.map(p => p.id);
 
-  // 2️⃣ جلب الأصناف المباعة المرتبطة بطلبات مكتملة
+  // 2️⃣ جلب الطلبات المكتملة فقط
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
     .select(`
+      product_id,
       qty,
       price,
-      order:orders!inner(status)
+      order:orders!inner(id, status)
     `)
     .in("product_id", productIds)
     .eq("order.status", "completed");
 
-  if (itemsError || !items) {
-    document.getElementById("ordersCount").textContent = "0";
-    document.getElementById("totalSales").textContent = "0.000 د.ب";
-    return;
-  }
+  if (itemsError || !items) return;
 
-  // 3️⃣ حساب الإحصائيات
-  const uniqueOrders = new Set();
   let total = 0;
+  const uniqueOrders = new Set();
+
+  const categoryStats = {
+    food: 0,
+    drinks: 0,
+    sides: 0
+  };
 
   items.forEach(item => {
     total += item.qty * item.price;
-  });
+    uniqueOrders.add(item.order.id);
 
-  // عدد الطلبات الفريدة
-  items.forEach(item => {
-    if (item.order) {
-      uniqueOrders.add(item.order.id);
+    const category = productMap[item.product_id];
+    if (categoryStats[category] !== undefined) {
+      categoryStats[category] += item.qty;
     }
   });
 
@@ -66,6 +72,16 @@ async function loadStats() {
 
   document.getElementById("totalSales").textContent =
     total.toFixed(3) + " د.ب";
+
+  // عرض إحصائيات الأقسام
+  document.getElementById("foodCount").textContent =
+    categoryStats.food;
+
+  document.getElementById("drinksCount").textContent =
+    categoryStats.drinks;
+
+  document.getElementById("sidesCount").textContent =
+    categoryStats.sides;
 }
 
 // تسجيل خروج
