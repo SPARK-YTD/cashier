@@ -94,10 +94,10 @@ window.addEmployee = async function () {
     });
 
   if (authError) {
-    console.error(authError);
-    alert("❌ خطأ في إنشاء حساب تسجيل الدخول");
-    return;
-  }
+  console.error(authError);
+  alert(authError.message);
+  return;
+}
 
   // 2️⃣ حفظ الموظف وربطه بالـ auth_user_id
   const { error } = await supabase
