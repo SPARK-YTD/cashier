@@ -35,16 +35,33 @@ async function loadStats() {
   const productIds = products.map(p => p.id);
 
   // 2️⃣ جلب الطلبات المكتملة فقط
-  const { data: items, error: itemsError } = await supabase
-    .from("order_items")
-    .select(`
-      product_id,
-      qty,
-      price,
-      order:orders!inner(id, status)
-    `)
-    .in("product_id", productIds)
-    .eq("order.status", "completed");
+  // 2️⃣ جلب الطلبات المكتملة فقط + فلترة زمنية
+const filter = document.getElementById("timeFilter")?.value || "all";
+
+let query = supabase
+  .from("order_items")
+  .select(`
+    product_id,
+    qty,
+    price,
+    order:orders!inner(id, status, created_at)
+  `)
+  .in("product_id", productIds)
+  .eq("order.status", "completed");
+
+if (filter === "today") {
+  const today = new Date().toISOString().slice(0, 10);
+  query = query.gte("order.created_at", today);
+}
+
+if (filter === "month") {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0,0,0,0);
+  query = query.gte("order.created_at", monthStart.toISOString());
+}
+
+const { data: items, error: itemsError } = await query;
 
   if (itemsError || !items) return;
 
