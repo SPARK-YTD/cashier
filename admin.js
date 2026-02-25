@@ -10,12 +10,15 @@ async function checkAdminAccess() {
     return;
   }
 
-  const allowedEmail = "yy@hotmail.sk";
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("is_manager")
+    .eq("auth_user_id", user.id)
+    .single();
 
-  if (user.email !== allowedEmail) {
+  if (!employee || !employee.is_manager) {
     alert("غير مصرح لك بالدخول");
     window.location.replace("index.html");
-    return;
   }
 }
 /* ===============================
@@ -74,6 +77,9 @@ async function loadEmployees() {
 ================================ */
 window.addEmployee = async function () {
 
+  const { data: sessionData } = await supabase.auth.getSession();
+  const adminSession = sessionData.session;
+
   const name = empName.value.trim();
   const code = empCode.value.trim();
   const password = empPin.value.trim();
@@ -86,7 +92,7 @@ window.addEmployee = async function () {
 
   const email = code + "@staff.local";
 
-  // 1️⃣ إنشاء المستخدم
+  // إنشاء المستخدم (هذا يغيّر الجلسة)
   const { data: authData, error: authError } =
     await supabase.auth.signUp({
       email,
@@ -98,15 +104,10 @@ window.addEmployee = async function () {
     return;
   }
 
-  // 2️⃣ رجّع جلسة الأدمن فوراً
-  await supabase.auth.signOut();
+  // 🔥 نرجّع جلسة الأدمن القديمة
+  await supabase.auth.setSession(adminSession);
 
-  await supabase.auth.signInWithPassword({
-    email: "yy@hotmail.sk",   // حط ايميلك
-    password: "ADMIN_PASSWORD" // حط باسوردك
-  });
-
-  // 3️⃣ الآن أضف الموظف في الجدول
+  // الآن نضيفه في جدول employees
   const { error } = await supabase
     .from("employees")
     .insert({
@@ -122,10 +123,8 @@ window.addEmployee = async function () {
   }
 
   alert("✅ تم إنشاء الموظف بنجاح");
-
   loadEmployees();
 };
-
 /* ===============================
    إنشاء / تحديث كوبون شهري
 ================================ */
