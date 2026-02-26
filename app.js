@@ -1720,7 +1720,7 @@ window.openEmployeeLogin = function () {
 };
 
 window.openAdminEmployees = function () {
-  window.open("admin-employees.html", "_blank");
+  window.open("admin-login.html", "_blank");
 };
 window.goToStorage = () => location.href = "storage.html";
 window.goToEmployee = function() {
