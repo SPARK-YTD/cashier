@@ -647,7 +647,7 @@ const { data: order, error } = await supabase
     const { data: success } = await supabase.rpc(
   "deduct_employee_balance",
   {
-    p_employee_id: employeeMode.employee_id,  // 🔥 هنا التعديل
+    p_employee_id: employeeMode.employee_id,
     p_amount: total
   }
 );
