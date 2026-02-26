@@ -123,6 +123,13 @@ input,select{
   </div>
 </div>
 
+<script>
+const adminSession = sessionStorage.getItem("admin_session");
+if (!adminSession) {
+  window.location.href = "admin-login.html";
+}
+</script>
+
 <script type="module" src="admin-employees.js"></script>
 
 </body>
