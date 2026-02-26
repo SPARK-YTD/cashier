@@ -1389,7 +1389,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   // ===============================
   // 👨‍🍳 وجبات الموظفين (الدخول)
   // ===============================
-  window.openEmployeeMeals = function () {
+  window.openEmployeeCoupon = function () {
 
   if (employeeMode) {
     alert("⚠️ أنت بالفعل في وضع الموظف");
