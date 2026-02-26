@@ -1,53 +1,34 @@
 import { supabase } from "./supabase.js";
 
-// جلب بيانات الجلسة
 const session = JSON.parse(sessionStorage.getItem("employee_session"));
+if (!session) window.location.href = "employee-login.html";
 
-if (!session) {
-  window.location.href = "employee-login.html";
-}
-
-// عرض الاسم
 document.getElementById("employeeName").textContent =
   `${session.name} (ID: ${session.code})`;
 
-// تعريف الدالة أولاً
+/* ===============================
+   عرض/إخفاء فلترة مخصصة
+================================ */
+document.getElementById("timeFilter").addEventListener("change", (e) => {
+  const box = document.getElementById("customDateBox");
+  box.style.display = e.target.value === "custom" ? "block" : "none";
+});
+
+/* ===============================
+   الدالة الرئيسية
+================================ */
 window.loadStats = async function () {
 
-  const { data: products, error: prodError } = await supabase
+  const { data: products } = await supabase
     .from("products")
     .select("id, name, category")
     .eq("partner_id", session.id);
 
-  if (prodError || !products || products.length === 0) {
-    document.getElementById("ordersCount").textContent = "0";
-    document.getElementById("totalSales").textContent = "0.000 د.ب";
-    document.getElementById("foodCount").textContent = 0;
-    document.getElementById("drinksCount").textContent = 0;
-    document.getElementById("sidesCount").textContent = 0;
-    return;
-  }
-
-  const productMap = {};
-  products.forEach(p => {
-    productMap[p.id] = p.category;
-  });
+  if (!products || products.length === 0) return;
 
   const productIds = products.map(p => p.id);
-  // عرض عدد وأسماء الأصناف المرتبطة
-document.getElementById("linkedProductsCount").textContent =
-  products.length + " صنف";
 
-const list = document.getElementById("linkedProductsList");
-list.innerHTML = "";
-
-products.forEach(p => {
-  const li = document.createElement("li");
-  li.textContent = p.name || "صنف";
-  list.appendChild(li);
-});
-
-  const { data: items, error: itemsError } = await supabase
+  const { data: items } = await supabase
     .from("order_items")
     .select(`
       product_id,
@@ -58,45 +39,83 @@ products.forEach(p => {
     .in("product_id", productIds)
     .eq("order.status", "completed");
 
-  if (itemsError || !items) return;
+  if (!items) return;
 
-  let total = 0;
-  const uniqueOrders = new Set();
+  /* ===============================
+     فلترة التاريخ
+  ================================ */
+  const filter = document.getElementById("timeFilter").value;
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
 
-  const categoryStats = {
-    food: 0,
-    drinks: 0,
-    sides: 0
-  };
+  let fromDate = null;
+  let toDate = null;
 
-  const filter = document.getElementById("timeFilter")?.value || "all";
+  if (filter === "custom") {
+    fromDate = document.getElementById("dateFrom").value;
+    toDate = document.getElementById("dateTo").value;
+  }
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const monthStr = todayStr.slice(0, 7);
+  const filteredItems = items.filter(item => {
 
-  items.forEach(item => {
+    const orderDate = item.order.created_at.slice(0, 10);
+    const orderMonth = orderDate.slice(0, 7);
 
-    const orderDateStr = item.order.created_at.slice(0, 10);
-    const orderMonthStr = orderDateStr.slice(0, 7);
+    if (filter === "today" && orderDate !== today) return false;
+    if (filter === "month" && orderMonth !== month) return false;
 
-    if (filter === "today" && orderDateStr !== todayStr) return;
-    if (filter === "month" && orderMonthStr !== monthStr) return;
-
-    total += item.qty * item.price;
-    uniqueOrders.add(item.order.id);
-
-    const category = productMap[item.product_id];
-    if (categoryStats[category] !== undefined) {
-      categoryStats[category] += item.qty;
+    if (filter === "custom") {
+      if (fromDate && orderDate < fromDate) return false;
+      if (toDate && orderDate > toDate) return false;
     }
 
+    return true;
   });
+
+  /* ===============================
+     الحسابات
+  ================================ */
+
+  let totalSales = 0;
+  const uniqueOrders = new Set();
+  const categoryStats = { food:0, drinks:0, sides:0 };
+  const productStats = {};
+
+  filteredItems.forEach(item => {
+
+    totalSales += item.qty * item.price;
+    uniqueOrders.add(item.order.id);
+
+    const product = products.find(p => p.id === item.product_id);
+    if (!product) return;
+
+    // حسب القسم
+    if (categoryStats[product.category] !== undefined) {
+      categoryStats[product.category] += item.qty;
+    }
+
+    // حسب الصنف
+    if (!productStats[product.id]) {
+      productStats[product.id] = {
+        name: product.name,
+        qty: 0,
+        value: 0
+      };
+    }
+
+    productStats[product.id].qty += item.qty;
+    productStats[product.id].value += item.qty * item.price;
+  });
+
+  /* ===============================
+     تحديث الإحصائيات العامة
+  ================================ */
 
   document.getElementById("ordersCount").textContent =
     uniqueOrders.size;
 
   document.getElementById("totalSales").textContent =
-    total.toFixed(3) + " د.ب";
+    totalSales.toFixed(3) + " د.ب";
 
   document.getElementById("foodCount").textContent =
     categoryStats.food;
@@ -106,12 +125,38 @@ products.forEach(p => {
 
   document.getElementById("sidesCount").textContent =
     categoryStats.sides;
+
+  /* ===============================
+     ترتيب حسب الأكثر مبيعاً
+  ================================ */
+
+  const sortedProducts = Object.values(productStats)
+    .sort((a,b) => b.qty - a.qty);
+
+  const list = document.getElementById("productSalesList");
+  list.innerHTML = "";
+
+  sortedProducts.forEach((p, index) => {
+
+    const li = document.createElement("li");
+
+    if (index === 0) {
+      li.innerHTML =
+        `🏆 <strong>${p.name}</strong> — ${p.qty} قطعة — ${p.value.toFixed(3)} د.ب`;
+    } else {
+      li.textContent =
+        `${p.name} — ${p.qty} قطعة — ${p.value.toFixed(3)} د.ب`;
+    }
+
+    list.appendChild(li);
+  });
+
 };
 
-// الآن نناديها بعد تعريفها
+/* تشغيل أولي */
 window.loadStats();
 
-// تسجيل خروج
+/* تسجيل خروج */
 window.logoutEmployee = function () {
   sessionStorage.removeItem("employee_session");
   window.location.href = "employee-login.html";
