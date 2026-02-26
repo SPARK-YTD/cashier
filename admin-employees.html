@@ -29,7 +29,7 @@ h1{
 
 .dashboard{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
   gap:15px;
   margin-bottom:25px;
 }
@@ -137,6 +137,48 @@ input,select{
   border-radius:8px;
   border:1px solid #ddd;
 }
+
+/* Overlay المستخدم في JS */
+.variant-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+
+.variant-box{
+  background:white;
+  padding:25px;
+  border-radius:14px;
+  width:90%;
+  max-width:500px;
+}
+
+.variant-btn{
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  background:#2563eb;
+  color:white;
+  font-weight:600;
+}
+
+.variant-cancel{
+  margin-top:10px;
+  width:100%;
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  background:#6b7280;
+  color:white;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -178,7 +220,7 @@ input,select{
         <th>الدور</th>
         <th>الحالة</th>
         <th>الكوبون</th>
-        <th>إدارة</th>
+        <th>الإدارة</th>
       </tr>
     </thead>
     <tbody id="employeesTable"></tbody>
@@ -205,8 +247,6 @@ input,select{
     <button class="gray" onclick="closeModal()">إلغاء</button>
   </div>
 </div>
-
-<!-- ================= Security Guard ================= -->
 
 <script>
 const adminSession = sessionStorage.getItem("admin_session");
