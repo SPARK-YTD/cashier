@@ -13,7 +13,7 @@ document.getElementById("employeeName").textContent =
 
 loadStats();
 
-async function loadStats() {
+window.loadStats = async function () {
 
   // 1️⃣ جلب منتجات الموظف مع القسم
   const { data: products, error: prodError } = await supabase
