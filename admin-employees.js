@@ -24,11 +24,19 @@ async function loadEmployees() {
       <td>${emp.role}</td>
       <td>${emp.active ? "نشط" : "موقوف"}</td>
       <td>
-        <button class="danger" onclick="deleteEmployee('${emp.id}')">حذف</button>
-        <button class="primary" onclick="toggleEmployee('${emp.id}', ${emp.active})">
-          ${emp.active ? "إيقاف" : "تفعيل"}
-        </button>
-      </td>
+        <td>
+  <button class="danger" onclick="deleteEmployee('${emp.id}')">
+    حذف
+  </button>
+
+  <button class="primary" onclick="toggleEmployee('${emp.id}', ${emp.active})">
+    ${emp.active ? "إيقاف" : "تفعيل"}
+  </button>
+
+  <button class="secondary" onclick="openCouponManager('${emp.employee_code}')">
+    🎟 كوبون
+  </button>
+</td>
     `;
 
     table.appendChild(row);
