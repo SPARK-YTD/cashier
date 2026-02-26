@@ -25,8 +25,7 @@ h1{
   font-weight:800;
 }
 
-/* ================= Dashboard ================= */
-
+/* Dashboard */
 .dashboard{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -54,8 +53,7 @@ h1{
   margin-top:8px;
 }
 
-/* ================= Top Actions ================= */
-
+/* Actions */
 .top-actions{
   display:flex;
   justify-content:space-between;
@@ -70,16 +68,20 @@ button{
   cursor:pointer;
   font-family:inherit;
   font-weight:600;
+  transition:0.2s;
+}
+
+button:hover{
+  opacity:0.9;
 }
 
 .primary{background:#2563eb;color:white;}
-.success{background:#16a34a;color:white;}
 .secondary{background:#7c3aed;color:white;}
+.success{background:#16a34a;color:white;}
 .danger{background:#dc2626;color:white;}
 .gray{background:#6b7280;color:white;}
 
-/* ================= Table ================= */
-
+/* Table */
 table{
   width:100%;
   border-collapse:collapse;
@@ -100,8 +102,7 @@ th{
   font-weight:700;
 }
 
-/* ================= Badges ================= */
-
+/* Badges */
 .badge{
   padding:5px 10px;
   border-radius:20px;
@@ -112,8 +113,7 @@ th{
 .active{background:#dcfce7;color:#166534;}
 .inactive{background:#fee2e2;color:#991b1b;}
 
-/* ================= Modal ================= */
-
+/* Modal */
 .modal{
   position:fixed;
   inset:0;
@@ -138,7 +138,7 @@ input,select{
   border:1px solid #ddd;
 }
 
-/* Overlay المستخدم في JS */
+/* Overlay (JS modals) */
 .variant-overlay{
   position:fixed;
   inset:0;
@@ -187,7 +187,7 @@ input,select{
 
   <h1>👥 لوحة إدارة الموظفين</h1>
 
-  <!-- ================= Dashboard ================= -->
+  <!-- Dashboard -->
   <div class="dashboard">
     <div class="card">
       <h3>عدد الموظفين</h3>
@@ -205,13 +205,13 @@ input,select{
     </div>
   </div>
 
-  <!-- ================= Actions ================= -->
+  <!-- Actions -->
   <div class="top-actions">
     <div></div>
     <button class="primary" onclick="openModal()">➕ إضافة موظف</button>
   </div>
 
-  <!-- ================= Table ================= -->
+  <!-- Table -->
   <table>
     <thead>
       <tr>
@@ -228,8 +228,7 @@ input,select{
 
 </div>
 
-<!-- ================= Add Employee Modal ================= -->
-
+<!-- Add Employee Modal -->
 <div class="modal" id="employeeModal">
   <div class="modal-content">
     <h3>إضافة موظف</h3>
