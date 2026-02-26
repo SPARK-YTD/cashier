@@ -1448,7 +1448,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
 
     const { data: employee, error } = await supabase
       .from("employees")
-      .select("employee_code, name, password")
+      .select("employee_code, name, pin_hash")
       .eq("employee_code", employeeCode)
       .single();
 
@@ -1457,7 +1457,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
       return;
     }
 
-    if (employee.password !== password) {
+    if (employee.pin_hash !== password) {
       errorBox.textContent = "❌ الرقم السري غير صحيح";
       return;
     }
