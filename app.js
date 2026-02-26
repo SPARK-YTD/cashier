@@ -1719,6 +1719,9 @@ window.openEmployeeLogin = function () {
   window.open("employee-login.html", "_blank");
 };
 
+window.openAdminEmployees = function () {
+  window.open("admin-employees.html", "_blank");
+};
 window.goToStorage = () => location.href = "storage.html";
 window.goToEmployee = function() {
   window.location.href = "employee-login.html";
