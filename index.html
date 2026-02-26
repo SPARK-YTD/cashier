@@ -28,22 +28,39 @@
 </header>
 <!-- ===== Side Menu ===== -->
 <div id="sideMenu" class="side-menu" onclick="event.stopPropagation()">
-  
+
   <button onclick="openAdminEmployees()" class="admin-btn">
-  👥 إدارة الموظفين
-</button>
-  <button onclick="goToReports()">📁 أرشيف التقارير</button>
-  <button onclick="closeDay()">📊 إقفال اليوم</button>
-  <button onclick="goToSettings()">⚙️ إدارة الأصناف</button>
-  <button onclick="goToStorage()">المخزون 📦</button>
+    👥 إدارة الموظفين
+  </button>
+
   <button onclick="openEmployeeLogin()">
-  👤 دخول الموظف
-</button>
-</button>
+    👤 دخول الموظف
+  </button>
+
   <button onclick="openEmployeeCoupon()">
-  🎟 كوبون موظف
-</button>
-  <button onclick="logout()">🚪 تسجيل خروج</button>
+    🎟 كوبون الموظف
+  </button>
+
+  <button onclick="goToReports()">
+    📁 أرشيف التقارير
+  </button>
+
+  <button onclick="closeDay()">
+    📊 إقفال اليوم
+  </button>
+
+  <button onclick="goToSettings()">
+    ⚙️ إدارة الأصناف
+  </button>
+
+  <button onclick="goToStorage()">
+    📦 المخزون
+  </button>
+
+  <button onclick="logout()">
+    🚪 تسجيل خروج
+  </button>
+
 </div>
 
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
