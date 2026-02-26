@@ -654,6 +654,8 @@ const { data: order, error } = await supabase
 
 if (!success) {
   alert("❌ فشل خصم الرصيد");
+  isSavingOrder = false;
+  if (completeBtn) completeBtn.disabled = false;
   return;
 }
   
@@ -1488,8 +1490,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
 
     // ✅ تفعيل الوضع
     employeeMode = {
-      employeeMode = {
-  employee_id: employee.id,              // 🔥 أضف هذا
+  employee_id: employee.id,
   employee_code: employee.employee_code,
   employee_name: employee.name,
   remaining: coupon.remaining_amount
@@ -1664,10 +1665,12 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     employeeMode = null;
   
     // ❌ إلغاء ستايل وضع الموظف
-    document.body.classList.remove("employee-mode");
-  
-    const banner = document.getElementById("employeeBanner");
-    if (banner) banner.style.display = "none";
+    employeeMode = null;
+
+document.body.classList.remove("employee-mode");
+
+const banner = document.getElementById("employeeBanner");
+if (banner) banner.style.display = "none";
   
     alert("🚪 تم الخروج من وضع الموظف");
   };
