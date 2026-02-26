@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تسجيل دخول المدير</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{
+  font-family:'Cairo',sans-serif;
+  background:#f4f6f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  margin:0;
+}
+.card{
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.08);
+  width:300px;
+}
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border-radius:6px;
+  border:1px solid #ddd;
+}
+button{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:6px;
+  background:#3b82f6;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+.error{
+  color:red;
+  font-size:13px;
+  margin-bottom:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h3>🔐 دخول الإدارة</h3>
+  <div class="error" id="errorMsg"></div>
+
+  <input type="text" id="adminCode" placeholder="الرقم الوظيفي">
+  <input type="password" id="adminPin" placeholder="كلمة المرور">
+
+  <button onclick="loginAdmin()">دخول</button>
+</div>
+
+<script type="module" src="admin-login.js"></script>
+
+</body>
+</html>
