@@ -644,11 +644,18 @@ const { data: order, error } = await supabase
        await loadActiveOrders(); // ✅ تحديث فوري للطلبات الجارية
   // خصم رصيد الموظف + الخروج من الوضع
   if (employeeMode) {
-    await supabase
-    .from("employee_coupons")
-    .update({
-      remaining_amount: employeeMode.remaining - total
-    })
+    const { data: success } = await supabase.rpc(
+  "deduct_employee_balance",
+  {
+    p_employee_code: employeeMode.employee_code,
+    p_amount: total
+  }
+);
+
+if (!success) {
+  alert("❌ فشل خصم الرصيد");
+  return;
+}
     .eq("employee_code", employeeMode.employee_code)
     .eq("month", new Date().toISOString().slice(0, 7))
     .limit(1);
