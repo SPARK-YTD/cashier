@@ -656,9 +656,6 @@ if (!success) {
   alert("❌ فشل خصم الرصيد");
   return;
 }
-    .eq("employee_code", employeeMode.employee_code)
-    .eq("month", new Date().toISOString().slice(0, 7))
-    .limit(1);
   
     employeeMode = null;
   
