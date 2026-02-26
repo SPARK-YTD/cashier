@@ -1447,10 +1447,10 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     }
 
     const { data: employee, error } = await supabase
-      .from("employees")
-      .select("employee_code, name, pin_hash")
-      .eq("employee_code", employeeCode)
-      .single();
+  .from("employees")
+  .select("id, employee_code, name, pin_hash")
+  .eq("employee_code", employeeCode)
+  .single();
 
     if (error || !employee) {
       errorBox.textContent = "❌ رقم الموظف غير صحيح";
@@ -1465,11 +1465,11 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     const month = new Date().toISOString().slice(0, 7);
 
     const { data: coupon } = await supabase
-      .from("employee_coupons")
-      .select("*")
-      .eq("employee_code", employeeCode)
-      .eq("month", month)
-      .maybeSingle();
+  .from("employee_coupons")
+  .select("*")
+  .eq("employee_id", employee.id)     
+  .eq("month", month)
+  .maybeSingle();
 
     if (!coupon) {
       errorBox.textContent = "❌ لا يوجد كوبون لهذا الشهر";
