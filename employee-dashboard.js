@@ -20,9 +20,25 @@ document.getElementById("timeFilter").addEventListener("change", (e) => {
 window.loadStats = async function () {
 
   const { data: products } = await supabase
+  
     .from("products")
     .select("id, name, category")
     .eq("partner_id", session.id);
+
+  // ✅ عدد الأصناف المرتبطة بالموظف (بغض النظر عن المبيعات)
+document.getElementById("linkedProductsCount").textContent =
+  products ? products.length : 0;
+
+// عرض أسماء الأصناف المرتبطة
+const linkedList = document.getElementById("linkedProductsList");
+if (linkedList) {
+  linkedList.innerHTML = "";
+  products?.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = p.name;
+    linkedList.appendChild(li);
+  });
+}
 
   if (!products || products.length === 0) return;
 
