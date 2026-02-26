@@ -59,21 +59,23 @@ const categoryStats = {
 };
 
 const filter = document.getElementById("timeFilter")?.value || "all";
-const now = new Date();
+
+const todayStr = new Date().toISOString().slice(0, 10);      // YYYY-MM-DD
+const monthStr = todayStr.slice(0, 7);                      // YYYY-MM
 
 items.forEach(item => {
 
-  const orderDate = new Date(item.order.created_at);
+  const orderDateStr = item.order.created_at.slice(0, 10);  // YYYY-MM-DD
+  const orderMonthStr = orderDateStr.slice(0, 7);
 
   // فلترة اليوم
-  if (filter === "today") {
-    if (
-      orderDate.getDate() !== now.getDate() ||
-      orderDate.getMonth() !== now.getMonth() ||
-      orderDate.getFullYear() !== now.getFullYear()
-    ) {
-      return;
-    }
+  if (filter === "today" && orderDateStr !== todayStr) {
+    return;
+  }
+
+  // فلترة الشهر
+  if (filter === "month" && orderMonthStr !== monthStr) {
+    return;
   }
 
   // فلترة الشهر
