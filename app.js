@@ -647,7 +647,7 @@ const { data: order, error } = await supabase
     const { data: success } = await supabase.rpc(
   "deduct_employee_balance",
   {
-    p_employee_code: employeeMode.employee_code,
+    p_employee_id: employeeMode.employee_id,  // 🔥 هنا التعديل
     p_amount: total
   }
 );
@@ -1488,10 +1488,12 @@ overlay.querySelector("#tabBenefit").onclick = () => {
 
     // ✅ تفعيل الوضع
     employeeMode = {
-      employee_code: employee.employee_code,
-      employee_name: employee.name,
-      remaining: coupon.remaining_amount
-    };
+      employeeMode = {
+  employee_id: employee.id,              // 🔥 أضف هذا
+  employee_code: employee.employee_code,
+  employee_name: employee.name,
+  remaining: coupon.remaining_amount
+};
 
     document.body.classList.add("employee-mode");
 
