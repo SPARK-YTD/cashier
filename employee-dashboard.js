@@ -48,6 +48,7 @@ const { data: items, error: itemsError } = await supabase
   .eq("order.status", "completed");
 
 if (itemsError || !items) return;
+console.log("DEBUG ITEMS:", items);
 
 let total = 0;
 const uniqueOrders = new Set();
