@@ -214,40 +214,50 @@ window.openCouponManager = async function(empId) {
 
   overlay.querySelector("#save").onclick = async () => {
 
-    const value = Number(amount.value);
-    if (!value || value <= 0) return alert("أدخل مبلغ صحيح");
+  const value = Number(amount.value);
+  if (!value || value <= 0) return alert("أدخل مبلغ صحيح");
 
-    if (coupon) {
-      await supabase.from("employee_coupons")
-        .update({
-          total_amount: value,
-          remaining_amount: value,
-          active: true
-        })
-        .eq("id", coupon.id);
-    } else {
-      await supabase.from("employee_coupons")
-        .insert({
-          employee_id: empId,
-          month,
-          total_amount: value,
-          remaining_amount: value,
-          active: true
-        });
-    }
+  if (coupon) {
 
-    overlay.remove();
-    loadEmployees();
-  };
+    const newRemaining =
+      coupon.total_amount === value
+        ? coupon.remaining_amount
+        : value;
+
+    await supabase.from("employee_coupons")
+      .update({
+        total_amount: value,
+        remaining_amount: newRemaining
+      })
+      .eq("id", coupon.id);
+
+  } else {
+
+    await supabase.from("employee_coupons")
+      .insert({
+        employee_id: empId,
+        month,
+        total_amount: value,
+        remaining_amount: value,
+        active: true
+      });
+
+  }
+
+  overlay.remove();
+  loadEmployees();
+};
 
   if (coupon) {
     overlay.querySelector("#reset").onclick = async () => {
-      await supabase.from("employee_coupons")
-        .update({ remaining_amount: coupon.total_amount })
-        .eq("id", coupon.id);
-      overlay.remove();
-      loadEmployees();
-    };
+
+  await supabase.from("employee_coupons")
+    .update({ remaining_amount: 0 })
+    .eq("id", coupon.id);
+
+  overlay.remove();
+  loadEmployees();
+};
 
     overlay.querySelector("#toggle").onclick = async () => {
       await supabase.from("employee_coupons")
