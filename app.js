@@ -1389,109 +1389,119 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   // ===============================
   // 👨‍🍳 وجبات الموظفين (الدخول)
   // ===============================
-  window.openEmployeeMeals = async function () {
-  
-    // 🔒 منع الدخول مرتين
-    if (employeeMode) {
-      alert("⚠️ أنت بالفعل في وضع الموظف");
+  window.openEmployeeMeals = function () {
+
+  if (employeeMode) {
+    alert("⚠️ أنت بالفعل في وضع الموظف");
+    return;
+  }
+
+  if (document.querySelector(".variant-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:400px;text-align:center">
+
+      <h3 style="margin-bottom:15px">🎟 دخول كوبون الموظف</h3>
+
+      <input 
+        type="text"
+        id="empCodeInput"
+        placeholder="رقم الموظف"
+        style="width:100%;padding:10px;margin-bottom:10px"
+      >
+
+      <input 
+        type="password"
+        id="empPassInput"
+        placeholder="الرقم السري"
+        style="width:100%;padding:10px;margin-bottom:10px"
+      >
+
+      <div id="empLoginError" style="color:#dc2626;font-size:14px;margin-bottom:8px"></div>
+
+      <button class="variant-btn" id="empLoginBtn">
+        🔓 دخول
+      </button>
+
+      <button class="variant-cancel">إلغاء</button>
+
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+
+  overlay.querySelector("#empLoginBtn").onclick = async () => {
+
+    const employeeCode = document.getElementById("empCodeInput").value.trim();
+    const password = document.getElementById("empPassInput").value.trim();
+    const errorBox = document.getElementById("empLoginError");
+
+    if (!employeeCode || !password) {
+      errorBox.textContent = "❌ أدخل جميع البيانات";
       return;
     }
-  
-    // 1️⃣ رقم الموظف
-    const employeeCode = prompt("👨‍🍳 أدخل رقم الموظف:");
-    if (!employeeCode) return;
-  
-    // 2️⃣ رقم المدير
-    const managerPin = prompt("🔐 أدخل رقم المدير:");
-    if (!managerPin) return;
-  
-    // 3️⃣ جلب الموظف والتحقق من الرقم السري المرتبط به
-    const { data: employee, error: empError } = await supabase
+
+    const { data: employee, error } = await supabase
       .from("employees")
-      .select("employee_code, name, manager_pin")
+      .select("employee_code, name, password")
       .eq("employee_code", employeeCode)
       .single();
-  
-    if (empError || !employee) {
-      alert("❌ رقم الموظف غير موجود");
+
+    if (error || !employee) {
+      errorBox.textContent = "❌ رقم الموظف غير صحيح";
       return;
     }
-  
-    if (!employee.manager_pin) {
-      alert("❌ هذا الموظف غير مرتبط بمدير");
+
+    if (employee.password !== password) {
+      errorBox.textContent = "❌ الرقم السري غير صحيح";
       return;
     }
-  
-    if (employee.manager_pin !== managerPin) {
-      alert("❌ رقم المدير غير صحيح لهذا الموظف");
-      return;
-    }
-  
-    // 4️⃣ جلب / إنشاء كوبون الشهر
+
     const month = new Date().toISOString().slice(0, 7);
-  
-    const { data: lastCoupon } = await supabase
-      .from("employee_coupons")
-      .select("total_amount")
-      .eq("employee_code", employeeCode)
-      .order("month", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-  
-    if (!lastCoupon) {
-      alert("❌ لا يوجد كوبون ثابت لهذا الموظف");
-      return;
-    }
-  
-    let { data: coupon } = await supabase
+
+    const { data: coupon } = await supabase
       .from("employee_coupons")
       .select("*")
       .eq("employee_code", employeeCode)
       .eq("month", month)
       .maybeSingle();
-  
+
     if (!coupon) {
-      const { data: newCoupon, error } = await supabase
-        .from("employee_coupons")
-        .insert({
-          employee_code: employeeCode,
-          month,
-          total_amount: lastCoupon.total_amount,
-          remaining_amount: lastCoupon.total_amount
-        })
-        .select()
-        .single();
-  
-      if (error) {
-        alert("❌ فشل إنشاء كوبون الشهر");
-        return;
-      }
-  
-      coupon = newCoupon;
-    }
-  
-    if (coupon.remaining_amount <= 0) {
-      alert("❌ رصيد الموظف منتهي لهذا الشهر");
+      errorBox.textContent = "❌ لا يوجد كوبون لهذا الشهر";
       return;
     }
-  
-    // 5️⃣ تفعيل وضع الموظف
+
+    if (!coupon.active) {
+      errorBox.textContent = "❌ الكوبون موقوف من الإدارة";
+      return;
+    }
+
+    if (coupon.remaining_amount <= 0) {
+      errorBox.textContent = "❌ الرصيد منتهي";
+      return;
+    }
+
+    // ✅ تفعيل الوضع
     employeeMode = {
       employee_code: employee.employee_code,
       employee_name: employee.name,
       remaining: coupon.remaining_amount
     };
-  // ✅ تفعيل ستايل وضع الموظف
-  document.body.classList.add("employee-mode");
-  
-  // ✅ إغلاق القائمة الجانبية إذا كانت مفتوحة
-  document.getElementById("sideMenu")?.classList.remove("open");
-  document.getElementById("overlay")?.classList.remove("show");
-    // 🎨 تحديث البانر
+
+    document.body.classList.add("employee-mode");
+
+    document.getElementById("sideMenu")?.classList.remove("open");
+    document.getElementById("overlay")?.classList.remove("show");
+
     const banner = document.getElementById("employeeBanner");
     const nameSpan = document.getElementById("employeeName");
     const balanceSpan = document.getElementById("employeeBalance");
-  
+
     if (banner && nameSpan && balanceSpan) {
       banner.style.display = "block";
       nameSpan.textContent =
@@ -1499,9 +1509,10 @@ overlay.querySelector("#tabBenefit").onclick = () => {
       balanceSpan.textContent =
         coupon.remaining_amount.toFixed(3);
     }
-  
-    alert("✅ تم الدخول لوضع وجبات الموظفين");
+
+    overlay.remove();
   };
+};
   
   
   
