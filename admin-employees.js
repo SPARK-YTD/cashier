@@ -83,3 +83,143 @@ window.toggleEmployee = async function(id, state) {
 };
 
 loadEmployees();
+window.openCouponManager = async function(employeeCode) {
+
+  const month = new Date().toISOString().slice(0,7);
+
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("name")
+    .eq("employee_code", employeeCode)
+    .single();
+
+  const { data: coupon } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("employee_code", employeeCode)
+    .eq("month", month)
+    .maybeSingle();
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box" style="max-width:420px;text-align:center">
+
+      <h3>🎟 إدارة كوبون الموظف</h3>
+
+      <div style="margin-bottom:10px;font-weight:700">
+        ${employee?.name || ""} (ID: ${employeeCode})
+      </div>
+
+      <div style="margin-bottom:10px">
+        الشهر: ${month}
+      </div>
+
+      <div style="margin-bottom:10px">
+        المبلغ:
+        <input type="number" id="couponAmount"
+          value="${coupon?.total_amount || ""}"
+          style="width:100%;padding:8px;margin-top:5px">
+      </div>
+
+      <div style="margin-bottom:10px">
+        المتبقي:
+        <strong>
+          ${coupon ? coupon.remaining_amount.toFixed(3) : "—"}
+        </strong>
+      </div>
+
+      <button class="variant-btn" id="saveCouponBtn">
+        💾 حفظ
+      </button>
+
+      <button class="variant-btn" id="resetCouponBtn">
+        🔄 تصفير
+      </button>
+
+      <button class="variant-btn" id="toggleCouponBtn">
+        ${coupon?.active ? "⛔ إيقاف" : "✅ تفعيل"}
+      </button>
+
+      <button class="variant-cancel">إغلاق</button>
+
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+
+  // حفظ / إنشاء
+  overlay.querySelector("#saveCouponBtn").onclick = async () => {
+
+    const amount = Number(
+      document.getElementById("couponAmount").value
+    );
+
+    if (!amount || amount <= 0) {
+      alert("❌ أدخل مبلغ صحيح");
+      return;
+    }
+
+    if (coupon) {
+
+      await supabase
+        .from("employee_coupons")
+        .update({
+          total_amount: amount,
+          remaining_amount: amount,
+          active: true
+        })
+        .eq("id", coupon.id);
+
+    } else {
+
+      await supabase
+        .from("employee_coupons")
+        .insert({
+          employee_code: employeeCode,
+          month,
+          total_amount: amount,
+          remaining_amount: amount,
+          active: true
+        });
+    }
+
+    alert("✅ تم الحفظ");
+    overlay.remove();
+  };
+
+  // تصفير
+  overlay.querySelector("#resetCouponBtn").onclick = async () => {
+
+    if (!coupon) return;
+
+    await supabase
+      .from("employee_coupons")
+      .update({
+        remaining_amount: coupon.total_amount
+      })
+      .eq("id", coupon.id);
+
+    alert("✅ تم تصفير الرصيد");
+    overlay.remove();
+  };
+
+  // تفعيل / إيقاف
+  overlay.querySelector("#toggleCouponBtn").onclick = async () => {
+
+    if (!coupon) return;
+
+    await supabase
+      .from("employee_coupons")
+      .update({
+        active: !coupon.active
+      })
+      .eq("id", coupon.id);
+
+    alert("✅ تم تحديث الحالة");
+    overlay.remove();
+  };
+};
