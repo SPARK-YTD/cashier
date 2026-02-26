@@ -16,7 +16,7 @@ window.loadStats = async function () {
 
   const { data: products, error: prodError } = await supabase
     .from("products")
-    .select("id, category")
+    .select("id, name, category")
     .eq("partner_id", session.id);
 
   if (prodError || !products || products.length === 0) {
@@ -34,6 +34,18 @@ window.loadStats = async function () {
   });
 
   const productIds = products.map(p => p.id);
+  // عرض عدد وأسماء الأصناف المرتبطة
+document.getElementById("linkedProductsCount").textContent =
+  products.length + " صنف";
+
+const list = document.getElementById("linkedProductsList");
+list.innerHTML = "";
+
+products.forEach(p => {
+  const li = document.createElement("li");
+  li.textContent = p.name || "صنف";
+  list.appendChild(li);
+});
 
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
