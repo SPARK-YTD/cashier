@@ -3,42 +3,104 @@ import { supabase } from "./supabase.js";
 const table = document.getElementById("employeesTable");
 const modal = document.getElementById("employeeModal");
 
-window.openModal = () => modal.style.display = "flex";
-window.closeModal = () => modal.style.display = "none";
+let employeesCache = [];
+const currentMonth = new Date().toISOString().slice(0,7);
 
-/* ========================================
-   تحميل الموظفين + كوبون الشهر الحالي
-======================================== */
-async function loadEmployees() {
+/* ===================================================
+   🟢 Dashboard
+=================================================== */
+async function loadDashboard() {
 
-  const month = new Date().toISOString().slice(0,7);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id");
+
+  const { data: coupons } = await supabase
+    .from("employee_coupons")
+    .select("total_amount, remaining_amount")
+    .eq("month", currentMonth);
+
+  const { data: logs } = await supabase
+    .from("employee_coupon_logs")
+    .select("amount")
+    .eq("month", currentMonth);
+
+  document.getElementById("totalEmployees").textContent =
+    employees?.length || 0;
+
+  document.getElementById("totalCoupons").textContent =
+    coupons?.reduce((s,c)=>s+Number(c.total_amount),0).toFixed(3) || "0.000";
+
+  document.getElementById("totalUsage").textContent =
+    logs?.reduce((s,l)=>s+Number(l.amount),0).toFixed(3) || "0.000";
+}
+
+/* ===================================================
+   🟢 Auto Renew ذكي
+=================================================== */
+async function ensureCouponExists(employeeCode){
+
+  const { data: existing } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("employee_code", employeeCode)
+    .eq("month", currentMonth)
+    .maybeSingle();
+
+  if(existing) return existing;
+
+  const { data: lastCoupon } = await supabase
+    .from("employee_coupons")
+    .select("*")
+    .eq("employee_code", employeeCode)
+    .order("month",{ascending:false})
+    .limit(1)
+    .maybeSingle();
+
+  if(!lastCoupon) return null;
+
+  const { data: newCoupon } = await supabase
+    .from("employee_coupons")
+    .insert({
+      employee_code: employeeCode,
+      month: currentMonth,
+      total_amount: lastCoupon.total_amount,
+      remaining_amount: lastCoupon.total_amount,
+      active: true
+    })
+    .select()
+    .single();
+
+  return newCoupon;
+}
+
+/* ===================================================
+   🟢 تحميل الموظفين
+=================================================== */
+async function loadEmployees(){
 
   const { data: employees } = await supabase
     .from("employees")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at",{ascending:false});
 
+  employeesCache = employees || [];
   table.innerHTML = "";
 
-  for (const emp of employees || []) {
+  for(const emp of employeesCache){
 
-    const { data: coupon } = await supabase
-      .from("employee_coupons")
-      .select("*")
-      .eq("employee_code", emp.employee_code)
-      .eq("month", month)
-      .maybeSingle();
+    const coupon = await ensureCouponExists(emp.employee_code);
 
     const row = document.createElement("tr");
 
-    // 🎨 تلوين إذا الكوبون موقوف
-    if (coupon && !coupon.active) {
+    // 🎨 تلوين الكوبون الموقوف
+    if(coupon && !coupon.active){
       row.style.background = "#fff1f2";
     }
 
-    // 🎨 تنبيه إذا الرصيد أقل من 20%
     let remainingColor = "#374151";
-    if (coupon && coupon.remaining_amount <= coupon.total_amount * 0.2) {
+
+    if(coupon && coupon.remaining_amount <= coupon.total_amount * 0.2){
       remainingColor = "#dc2626";
     }
 
@@ -46,40 +108,37 @@ async function loadEmployees() {
       <td>${emp.name}</td>
       <td>${emp.employee_code}</td>
       <td>${emp.role}</td>
-      <td>${emp.active ? "نشط" : "موقوف"}</td>
+      <td>
+        <span class="badge ${emp.active ? "active":"inactive"}">
+          ${emp.active ? "نشط":"موقوف"}
+        </span>
+      </td>
 
       <td>
         ${
           coupon
-            ? `
-              <div style="font-weight:700">
-                ${coupon.total_amount.toFixed(3)} د.ب
-              </div>
-              <div style="font-size:13px;color:${remainingColor}">
-                متبقي: ${coupon.remaining_amount.toFixed(3)}
-              </div>
-              <div style="
-                font-size:13px;
-                font-weight:700;
-                color:${coupon.active ? '#10b981' : '#ef4444'}
-              ">
-                ${coupon.active ? "مفعل" : "موقوف"}
-              </div>
-            `
-            : `<span style="color:#9ca3af">لا يوجد</span>`
+          ? `
+            <div style="font-weight:700">
+              ${coupon.total_amount.toFixed(3)} د.ب
+            </div>
+            <div style="font-size:13px;color:${remainingColor}">
+              متبقي: ${coupon.remaining_amount.toFixed(3)}
+            </div>
+            <div style="
+              font-size:13px;
+              font-weight:700;
+              color:${coupon.active ? '#10b981' : '#ef4444'}
+            ">
+              ${coupon.active ? "مفعل":"موقوف"}
+            </div>
+          `
+          : `<span style="color:#9ca3af">لا يوجد</span>`
         }
       </td>
 
       <td>
-        <button class="danger" onclick="deleteEmployee('${emp.id}')">
-          حذف
-        </button>
-
-        <button class="primary" onclick="toggleEmployee('${emp.id}', ${emp.active})">
-          ${emp.active ? "إيقاف" : "تفعيل"}
-        </button>
-
-        <button class="success" onclick="openCouponManager('${emp.employee_code}')">
+        <button class="secondary"
+          onclick="openCouponManager('${emp.employee_code}')">
           🎟 إدارة
         </button>
       </td>
@@ -87,22 +146,22 @@ async function loadEmployees() {
 
     table.appendChild(row);
   }
+
+  loadDashboard();
 }
 
-/* ========================================
-   إضافة موظف
-======================================== */
-window.saveEmployee = async function () {
+/* ===================================================
+   🟢 إضافة موظف
+=================================================== */
+window.saveEmployee = async function(){
 
-  const name = document.getElementById("empName").value;
-  const code = document.getElementById("empCode").value;
-  const pin = document.getElementById("empPin").value;
-  const role = document.getElementById("empRole").value;
+  const name = empName.value;
+  const code = empCode.value;
+  const pin = empPin.value;
+  const role = empRole.value;
 
-  if (!name || !code || !pin) {
-    alert("أدخل جميع البيانات");
-    return;
-  }
+  if(!name || !code || !pin)
+    return alert("أدخل جميع البيانات");
 
   await supabase.from("employees").insert({
     name,
@@ -116,166 +175,126 @@ window.saveEmployee = async function () {
   loadEmployees();
 };
 
-/* ========================================
-   حذف / تفعيل موظف
-======================================== */
-window.deleteEmployee = async function(id) {
-  if (!confirm("حذف الموظف؟")) return;
-  await supabase.from("employees").delete().eq("id", id);
-  loadEmployees();
-};
+window.openModal = ()=> modal.style.display="flex";
+window.closeModal = ()=> modal.style.display="none";
 
-window.toggleEmployee = async function(id, state) {
-  await supabase
-    .from("employees")
-    .update({ active: !state })
-    .eq("id", id);
-  loadEmployees();
-};
+/* ===================================================
+   🟢 إدارة كوبون
+=================================================== */
+window.openCouponManager = async function(employeeCode){
 
-/* ========================================
-   إدارة كوبون الموظف
-======================================== */
-window.openCouponManager = async function(employeeCode) {
+  const coupon = await ensureCouponExists(employeeCode);
 
-  const month = new Date().toISOString().slice(0,7);
-
-  const { data: employee } = await supabase
-    .from("employees")
-    .select("name")
+  const { data: logs } = await supabase
+    .from("employee_coupon_logs")
+    .select("amount, created_at")
     .eq("employee_code", employeeCode)
-    .single();
-
-  const { data: coupon } = await supabase
-    .from("employee_coupons")
-    .select("*")
-    .eq("employee_code", employeeCode)
-    .eq("month", month)
-    .maybeSingle();
+    .eq("month", currentMonth)
+    .order("created_at",{ascending:false});
 
   const overlay = document.createElement("div");
-  overlay.className = "variant-overlay";
+  overlay.className="variant-overlay";
 
   overlay.innerHTML = `
-    <div class="variant-box" style="max-width:420px;text-align:center">
+  <div class="variant-box" style="max-width:500px">
 
-      <h3>🎟 إدارة كوبون الموظف</h3>
+    <h3>🎟 إدارة كوبون</h3>
 
-      <div style="margin-bottom:10px;font-weight:700">
-        ${employee?.name || ""} (ID: ${employeeCode})
-      </div>
+    <div>الشهر: ${currentMonth}</div>
 
-      <div style="margin-bottom:10px">
-        الشهر: ${month}
-      </div>
+    <input type="number" id="couponAmount"
+      value="${coupon?.total_amount || ""}"
+      placeholder="المبلغ الجديد">
 
-      <div style="margin-bottom:10px">
-        المبلغ:
-        <input type="number" id="couponAmount"
-          value="${coupon?.total_amount || ""}"
-          style="width:100%;padding:8px;margin-top:5px">
-      </div>
-
-      <div style="margin-bottom:10px">
-        المتبقي:
-        <strong>
-          ${coupon ? coupon.remaining_amount.toFixed(3) : "—"}
-        </strong>
-      </div>
-
-      <button class="variant-btn" id="saveCouponBtn">
-        💾 حفظ
-      </button>
-
-      ${
-        coupon
-          ? `<button class="variant-btn" id="resetCouponBtn">
-              🔄 تصفير
-            </button>`
-          : ""
-      }
-
-      ${
-        coupon
-          ? `<button class="variant-btn" id="toggleCouponBtn">
-              ${coupon.active ? "⛔ إيقاف" : "✅ تفعيل"}
-            </button>`
-          : ""
-      }
-
-      <button class="variant-cancel">إغلاق</button>
-
+    <div style="margin-bottom:10px">
+      المتبقي:
+      <strong>
+        ${coupon ? coupon.remaining_amount.toFixed(3) : "—"}
+      </strong>
     </div>
+
+    <button class="variant-btn" id="saveBtn">💾 تحديث</button>
+
+    ${
+      coupon
+      ? `<button class="variant-btn" id="resetBtn">
+          🔄 تصفير الرصيد
+        </button>`
+      : ""
+    }
+
+    ${
+      coupon
+      ? `<button class="variant-btn" id="toggleBtn">
+          ${coupon.active ? "⛔ إيقاف":"✅ تفعيل"}
+        </button>`
+      : ""
+    }
+
+    <hr>
+
+    <h4>📜 سجل الاستخدام</h4>
+    <div style="max-height:150px;overflow:auto;font-size:13px">
+      ${
+        logs?.length
+        ? logs.map(l=>`
+            <div>
+              - ${Number(l.amount).toFixed(3)} د.ب
+              (${new Date(l.created_at).toLocaleDateString()})
+            </div>
+          `).join("")
+        : "لا يوجد عمليات"
+      }
+    </div>
+
+    <button class="variant-cancel">إغلاق</button>
+  </div>
   `;
 
   document.body.appendChild(overlay);
+  overlay.querySelector(".variant-cancel").onclick=()=>overlay.remove();
 
-  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+  overlay.querySelector("#saveBtn").onclick=async()=>{
+    const amount = Number(couponAmount.value);
+    if(!amount || amount<=0)
+      return alert("مبلغ غير صالح");
 
-  // 💾 حفظ / إنشاء
-  overlay.querySelector("#saveCouponBtn").onclick = async () => {
-
-    const amount = Number(document.getElementById("couponAmount").value);
-
-    if (!amount || amount <= 0) {
-      alert("❌ أدخل مبلغ صحيح");
-      return;
-    }
-
-    if (coupon) {
-      await supabase
-        .from("employee_coupons")
+    if(coupon){
+      await supabase.from("employee_coupons")
         .update({
           total_amount: amount,
-          remaining_amount: amount,
-          active: true
+          remaining_amount: amount
         })
-        .eq("id", coupon.id);
-    } else {
-      await supabase
-        .from("employee_coupons")
-        .insert({
-          employee_code: employeeCode,
-          month,
-          total_amount: amount,
-          remaining_amount: amount,
-          active: true
-        });
+        .eq("id",coupon.id);
     }
 
-    alert("✅ تم الحفظ");
+    alert("تم التحديث");
     overlay.remove();
     loadEmployees();
   };
 
-  // 🔄 تصفير
-  if (coupon) {
-    overlay.querySelector("#resetCouponBtn").onclick = async () => {
-      await supabase
-        .from("employee_coupons")
-        .update({
-          remaining_amount: coupon.total_amount
-        })
-        .eq("id", coupon.id);
+  if(coupon){
+    overlay.querySelector("#resetBtn").onclick=async()=>{
+      await supabase.from("employee_coupons")
+        .update({ remaining_amount: coupon.total_amount })
+        .eq("id",coupon.id);
 
-      alert("✅ تم تصفير الرصيد");
+      alert("تم التصفير");
       overlay.remove();
       loadEmployees();
     };
 
-    overlay.querySelector("#toggleCouponBtn").onclick = async () => {
-      await supabase
-        .from("employee_coupons")
-        .update({
-          active: !coupon.active
-        })
-        .eq("id", coupon.id);
+    overlay.querySelector("#toggleBtn").onclick=async()=>{
+      await supabase.from("employee_coupons")
+        .update({ active: !coupon.active })
+        .eq("id",coupon.id);
 
-      alert("✅ تم تحديث الحالة");
+      alert("تم التحديث");
       overlay.remove();
       loadEmployees();
     };
   }
 };
 
+/* =================================================== */
 loadEmployees();
