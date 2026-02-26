@@ -18,26 +18,25 @@ async function loadEmployees() {
 
     const row = document.createElement("tr");
 
-    row.innerHTML = `
-      <td>${emp.name}</td>
-      <td>${emp.employee_code}</td>
-      <td>${emp.role}</td>
-      <td>${emp.active ? "نشط" : "موقوف"}</td>
-      <td>
-        <td>
-  <button class="danger" onclick="deleteEmployee('${emp.id}')">
-    حذف
-  </button>
+   row.innerHTML = `
+  <td>${emp.name}</td>
+  <td>${emp.employee_code}</td>
+  <td>${emp.role}</td>
+  <td>${emp.active ? "نشط" : "موقوف"}</td>
+  <td>
+    <button class="danger" onclick="deleteEmployee('${emp.id}')">
+      حذف
+    </button>
 
-  <button class="primary" onclick="toggleEmployee('${emp.id}', ${emp.active})">
-    ${emp.active ? "إيقاف" : "تفعيل"}
-  </button>
+    <button class="primary" onclick="toggleEmployee('${emp.id}', ${emp.active})">
+      ${emp.active ? "إيقاف" : "تفعيل"}
+    </button>
 
-  <button class="secondary" onclick="openCouponManager('${emp.employee_code}')">
-    🎟 كوبون
-  </button>
-</td>
-    `;
+    <button class="secondary" onclick="openCouponManager('${emp.employee_code}')">
+      🎟 كوبون
+    </button>
+  </td>
+`;
 
     table.appendChild(row);
   });
