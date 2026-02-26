@@ -346,7 +346,21 @@ html, body {
   border: none;
   margin-top: 10px;
 }
+.employee-mode {
+  background: #f9fafb;
+}
 
+.variant-box input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.variant-box input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124,58,237,0.2);
+}
 /* ===============================
    MOBILE MODE
 ================================ */
