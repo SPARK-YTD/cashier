@@ -791,3 +791,6 @@ hr {
 .k-ready-btn:active {
   transform: scale(0.96);
 }
+body.employee-mode .topbar {
+  background: #7c3aed;
+}
