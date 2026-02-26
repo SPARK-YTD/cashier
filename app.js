@@ -644,26 +644,28 @@ const { data: order, error } = await supabase
        await loadActiveOrders(); // ✅ تحديث فوري للطلبات الجارية
   // خصم رصيد الموظف + الخروج من الوضع
   if (employeeMode) {
-    const { data: success } = await supabase.rpc(
-  "deduct_employee_balance",
-  {
-    p_employee_id: employeeMode.employee_id,
-    p_amount: total
-  }
-);
+  const { data: success } = await supabase.rpc(
+    "deduct_employee_balance",
+    {
+      p_employee_id: employeeMode.employee_id,
+      p_amount: total
+    }
+  );
 
-if (!success) {
-  alert("❌ فشل خصم الرصيد");
-  isSavingOrder = false;
-  if (completeBtn) completeBtn.disabled = false;
-  return;
-}
-  
-    employeeMode = null;
-  
-    const banner = document.getElementById("employeeBanner");
-    if (banner) banner.style.display = "none";
+  if (!success) {
+    alert("❌ فشل خصم الرصيد");
+    isSavingOrder = false;
+    if (completeBtn) completeBtn.disabled = false;
+    return;
   }
+
+  employeeMode = null;
+
+  document.body.classList.remove("employee-mode"); // ✅ هذا السطر المهم
+
+  const banner = document.getElementById("employeeBanner");
+  if (banner) banner.style.display = "none";
+}
        deliveryMode = null;
        clearForNewOrder();
       /* ===============================
@@ -1662,7 +1664,6 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     }, 500);
   };
   window.exitEmployeeMode = function () {
-    employeeMode = null;
   
     // ❌ إلغاء ستايل وضع الموظف
     employeeMode = null;
