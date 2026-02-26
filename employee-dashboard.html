@@ -1,167 +1,154 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>لوحة الموظف</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>لوحة الموظف</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+*{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      font-family: 'Cairo', sans-serif;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: #fff;
-      padding: 25px;
-    }
+body{
+  margin:0;
+  font-family:'Cairo',sans-serif;
+  background:#f4f6f9;
+  color:#1f2937;
+  padding:25px;
+}
 
-    .container {
-      max-width: 1200px;
-      margin: auto;
-    }
+.container{
+  max-width:1200px;
+  margin:auto;
+}
 
-    /* ===== Header ===== */
+/* Header */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
+.header h2{
+  font-weight:800;
+  font-size:20px;
+}
 
-    .header h2 {
-      font-weight: 800;
-      font-size: 22px;
-    }
+.logout{
+  background:#ef4444;
+  color:#fff;
+  border:none;
+  padding:8px 16px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.2s;
+}
 
-    .logout {
-      background: #ef4444;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 10px;
-      color: white;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
-    }
+.logout:hover{
+  background:#dc2626;
+}
 
-    .logout:hover {
-      background: #dc2626;
-      transform: translateY(-2px);
-    }
+/* Card */
+.card{
+  background:#ffffff;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.06);
+  margin-bottom:18px;
+}
 
-    /* ===== Cards Grid ===== */
+/* Grid */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+  margin-bottom:20px;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-bottom: 25px;
-    }
+.stat-card{
+  padding:18px;
+  border-radius:14px;
+  background:#ffffff;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+  transition:.2s;
+}
 
-    .card {
-      background: rgba(255,255,255,0.06);
-      backdrop-filter: blur(10px);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-      transition: 0.3s;
-    }
+.stat-card:hover{
+  transform:translateY(-3px);
+}
 
-    .card:hover {
-      transform: translateY(-5px);
-    }
+.stat-title{
+  font-size:13px;
+  font-weight:600;
+  color:#6b7280;
+}
 
-    .card h3 {
-      margin-top: 0;
-      font-size: 15px;
-      font-weight: 600;
-      color: #cbd5e1;
-    }
+.stat-number{
+  font-size:26px;
+  font-weight:800;
+  margin-top:6px;
+}
 
-    .stat {
-      font-size: 28px;
-      font-weight: 800;
-      margin-top: 8px;
-      color: #fff;
-    }
+/* Icon Colors */
+.blue{color:#3b82f6}
+.green{color:#10b981}
+.orange{color:#f59e0b}
+.purple{color:#8b5cf6}
+.red{color:#ef4444}
 
-    /* ===== Filter ===== */
+/* Filter */
+select,input[type="date"]{
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #d1d5db;
+  font-family:inherit;
+}
 
-    .filter-box {
-      margin-bottom: 20px;
-    }
+.apply-btn{
+  background:#3b82f6;
+  color:white;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
 
-    select, input[type="date"] {
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: none;
-      margin-left: 5px;
-      font-family: inherit;
-    }
+/* Lists */
+ul{
+  list-style:none;
+  padding:0;
+  margin-top:10px;
+}
 
-    .apply-btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
+ul li{
+  background:#f9fafb;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:6px;
+  font-size:14px;
+  display:flex;
+  justify-content:space-between;
+}
 
-    /* ===== Lists ===== */
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 10px 0 0 0;
-    }
-
-    ul li {
-      background: rgba(255,255,255,0.08);
-      padding: 10px 12px;
-      border-radius: 10px;
-      margin-bottom: 8px;
-      font-size: 14px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .highlight {
-      background: linear-gradient(90deg, #f59e0b, #f97316);
-      font-weight: 800;
-    }
-
-    /* ===== Section Title ===== */
-
-    .section-title {
-      font-weight: 700;
-      margin-bottom: 10px;
-      font-size: 16px;
-      color: #e2e8f0;
-    }
-
-  </style>
+.highlight{
+  background:#fff7ed;
+  font-weight:700;
+}
+</style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- Header -->
   <div class="header">
     <h2>👨‍🍳 <span id="employeeName"></span></h2>
     <button class="logout" onclick="logoutEmployee()">تسجيل خروج</button>
   </div>
 
-  <!-- Filter -->
-  <div class="card filter-box">
-    <label>عرض حسب:</label>
+  <div class="card">
+    عرض حسب:
     <select id="timeFilter" onchange="loadStats()">
       <option value="all">كل الوقت</option>
       <option value="today">اليوم</option>
@@ -169,7 +156,7 @@
       <option value="custom">فترة مخصصة</option>
     </select>
 
-    <div id="customDateBox" style="margin-top:10px; display:none;">
+    <div id="customDateBox" style="margin-top:10px;display:none;">
       من:
       <input type="date" id="dateFrom">
       إلى:
@@ -178,45 +165,42 @@
     </div>
   </div>
 
-  <!-- Stats -->
   <div class="grid">
-    <div class="card">
-      <h3>عدد الطلبات</h3>
-      <div class="stat" id="ordersCount">0</div>
+
+    <div class="stat-card">
+      <div class="stat-title blue">عدد الطلبات</div>
+      <div class="stat-number" id="ordersCount">0</div>
     </div>
 
-    <div class="card">
-      <h3>إجمالي المبيعات</h3>
-      <div class="stat" id="totalSales">0.000 د.ب</div>
+    <div class="stat-card">
+      <div class="stat-title green">إجمالي المبيعات</div>
+      <div class="stat-number" id="totalSales">0.000 د.ب</div>
     </div>
 
-    <div class="card">
-      <h3>🍔 الطعام</h3>
-      <div class="stat" id="foodCount">0</div>
+    <div class="stat-card">
+      <div class="stat-title orange">🍔 الطعام</div>
+      <div class="stat-number" id="foodCount">0</div>
     </div>
 
-    <div class="card">
-      <h3>🥤 المشروبات</h3>
-      <div class="stat" id="drinksCount">0</div>
+    <div class="stat-card">
+      <div class="stat-title purple">🥤 المشروبات</div>
+      <div class="stat-number" id="drinksCount">0</div>
     </div>
 
-    <div class="card">
-      <h3>🍟 الجانبية</h3>
-      <div class="stat" id="sidesCount">0</div>
+    <div class="stat-card">
+      <div class="stat-title red">🍟 الجانبية</div>
+      <div class="stat-number" id="sidesCount">0</div>
     </div>
+
   </div>
 
-  <!-- Linked Products -->
   <div class="card">
-    <div class="section-title">
-      الأصناف المرتبطة بك (<span id="linkedProductsCount">0</span>)
-    </div>
+    <strong>الأصناف المرتبطة بك (<span id="linkedProductsCount">0</span>)</strong>
     <ul id="linkedProductsList"></ul>
   </div>
 
-  <!-- Product Sales -->
   <div class="card">
-    <div class="section-title">تفصيل المبيعات حسب الصنف</div>
+    <strong>تفصيل المبيعات حسب الصنف</strong>
     <ul id="productSalesList"></ul>
   </div>
 
@@ -226,11 +210,10 @@
 <script type="module" src="employee-dashboard.js"></script>
 
 <script>
-  // إظهار/إخفاء فلترة مخصصة
-  document.getElementById("timeFilter").addEventListener("change", function () {
-    document.getElementById("customDateBox").style.display =
-      this.value === "custom" ? "block" : "none";
-  });
+document.getElementById("timeFilter").addEventListener("change",function(){
+  document.getElementById("customDateBox").style.display=
+  this.value==="custom"?"block":"none";
+});
 </script>
 
 </body>
