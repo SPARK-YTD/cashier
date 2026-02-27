@@ -195,14 +195,14 @@ window.openSupplyManager = async function(empId) {
     }
 
     await supabase
-      .from("employee_supplies")
-      .insert({
-        cycle_id: cycle.id,
-        employee_id: empId,
-        product_id: productId,
-        quantity: qty,
-        supplied_at: date ? new Date(date).toISOString() : new Date().toISOString()
-      });
+  .from("employee_supplies")
+  .insert({
+    cycle_id: cycle.id,
+    employee_id: empId,
+    product_id: productId,
+    qty: qty,
+    supplied_at: date ? new Date(date).toISOString() : new Date().toISOString()
+  });
 
     overlay.remove();
     alert("تم تسجيل التوريد بنجاح");
