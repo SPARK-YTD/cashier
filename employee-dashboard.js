@@ -10,6 +10,41 @@ document.getElementById("employeeName").textContent =
   `${session.name} (ID: ${session.code})`;
 
 /* ===============================
+   Cycle Logic
+================================ */
+
+async function getOrCreateOpenCycle(employeeId) {
+
+  const { data: existingCycle } = await supabase
+    .from("employee_cycles")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .eq("status", "open")
+    .maybeSingle();
+
+  if (existingCycle) {
+    return existingCycle;
+  }
+
+  const { data: newCycle, error } = await supabase
+    .from("employee_cycles")
+    .insert({
+      employee_id: employeeId,
+      calculation_mode: "supplied_only",
+      status: "open"
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating cycle:", error);
+    return null;
+  }
+
+  return newCycle;
+}
+
+/* ===============================
    UI Events
 ================================ */
 document.getElementById("timeFilter").addEventListener("change", () => {
@@ -31,8 +66,22 @@ window.loadStats = async function () {
   const requestId = ++currentRequest;
 
   /* ===============================
+     تأكد من وجود دورة
+  ================================ */
+
+  const cycle = await getOrCreateOpenCycle(session.id);
+  if (!cycle) {
+    alert("خطأ في إنشاء الدورة");
+    return;
+  }
+
+  // ممكن تستخدمها لاحقاً لحساب المستحق
+  window.currentCycle = cycle;
+
+  /* ===============================
      جلب أصناف الموظف
   ================================ */
+
   const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, name, category")
@@ -62,7 +111,7 @@ window.loadStats = async function () {
   const productIds = products.map(p => p.id);
 
   /* ===============================
-     بناء الاستعلام حسب الفلتر
+     الأداء العام (كما هو)
   ================================ */
 
   const filter = document.getElementById("timeFilter").value;
@@ -85,7 +134,6 @@ window.loadStats = async function () {
     .eq("order.status", "completed")
     .eq("order.is_employee_order", false);
 
-  /* ========= فلتر اليوم ========= */
   if (filter === "today") {
 
     const { data: businessDay } = await supabase
@@ -94,15 +142,11 @@ window.loadStats = async function () {
       .eq("is_open", true)
       .single();
 
-    if (!businessDay) {
-      console.warn("لا يوجد يوم مفتوح");
-      return;
-    }
+    if (!businessDay) return;
 
     query = query.eq("order.business_day_id", businessDay.id);
   }
 
-  /* ========= فلتر الشهر ========= */
   if (filter === "month") {
 
     const now = new Date();
@@ -114,7 +158,6 @@ window.loadStats = async function () {
       .lte("order.created_at", end.toISOString());
   }
 
-  /* ========= فلتر مخصص ========= */
   if (filter === "custom") {
 
     const fromDate = document.getElementById("dateFrom").value;
@@ -138,55 +181,31 @@ window.loadStats = async function () {
   }
 
   if (requestId !== currentRequest) return;
-  if (!items || items.length === 0) {
-
-    document.getElementById("ordersCount").textContent = 0;
-    document.getElementById("totalSales").textContent = "0.000 د.ب";
-    document.getElementById("foodCount").textContent = 0;
-    document.getElementById("drinksCount").textContent = 0;
-    document.getElementById("sidesCount").textContent = 0;
-    document.getElementById("productSalesList").innerHTML = "";
-
-    return;
-  }
 
   /* ===============================
-     الحسابات
+     الحسابات (الأداء فقط)
   ================================ */
 
   let totalSales = 0;
   const uniqueOrders = new Set();
-  const categoryStats = { food: 0, drinks: 0, sides: 0 };
   const productStats = {};
 
-  items.forEach(item => {
+  items?.forEach(item => {
 
     const value = item.qty * item.price;
     totalSales += value;
     uniqueOrders.add(item.order.id);
 
-    const product = products.find(p => p.id === item.product_id);
-    if (!product) return;
-
-    if (categoryStats[product.category] !== undefined) {
-      categoryStats[product.category] += item.qty;
-    }
-
-    if (!productStats[product.id]) {
-      productStats[product.id] = {
-        name: product.name,
+    if (!productStats[item.product_id]) {
+      productStats[item.product_id] = {
         qty: 0,
         value: 0
       };
     }
 
-    productStats[product.id].qty += item.qty;
-    productStats[product.id].value += value;
+    productStats[item.product_id].qty += item.qty;
+    productStats[item.product_id].value += value;
   });
-
-  /* ===============================
-     تحديث الواجهة
-  ================================ */
 
   document.getElementById("ordersCount").textContent =
     uniqueOrders.size;
@@ -194,38 +213,8 @@ window.loadStats = async function () {
   document.getElementById("totalSales").textContent =
     totalSales.toFixed(3) + " د.ب";
 
-  document.getElementById("foodCount").textContent =
-    categoryStats.food;
-
-  document.getElementById("drinksCount").textContent =
-    categoryStats.drinks;
-
-  document.getElementById("sidesCount").textContent =
-    categoryStats.sides;
-
-  const sortedProducts = Object.values(productStats)
-    .sort((a, b) => b.qty - a.qty);
-
-  const list = document.getElementById("productSalesList");
-  list.innerHTML = "";
-
-  sortedProducts.forEach((p, index) => {
-
-    const li = document.createElement("li");
-
-    if (index === 0) {
-      li.innerHTML =
-        `🏆 <strong>${p.name}</strong> — ${p.qty} قطعة — ${p.value.toFixed(3)} د.ب`;
-    } else {
-      li.textContent =
-        `${p.name} — ${p.qty} قطعة — ${p.value.toFixed(3)} د.ب`;
-    }
-
-    list.appendChild(li);
-  });
-
 };
-
+  
 /* ===============================
    Auto Load
 ================================ */
