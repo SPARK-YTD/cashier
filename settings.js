@@ -102,6 +102,20 @@ if (partnerCheckbox && partnerSelect) {
   });
 }
 
+  const payoutTypeSelect = document.getElementById("payoutType");
+const payoutPercentageInput = document.getElementById("payoutPercentage");
+
+if (payoutTypeSelect && payoutPercentageInput) {
+
+  // أول تحميل
+  payoutPercentageInput.style.display =
+    payoutTypeSelect.value === "percentage" ? "block" : "none";
+
+  payoutTypeSelect.addEventListener("change", () => {
+    payoutPercentageInput.style.display =
+      payoutTypeSelect.value === "percentage" ? "block" : "none";
+  });
+}
   const typeRadios = document.querySelectorAll('input[name="itemType"]');
   const variantsBox = document.getElementById("variantsBox");
 
@@ -189,6 +203,11 @@ window.addItem = async function () {
     const name = document.getElementById("itemName").value.trim();
     const isPartner = document.getElementById("isPartnerProduct")?.checked;
     const partnerId = document.getElementById("partnerSelect")?.value || null;
+    const payoutType = document.getElementById("payoutType")?.value || "full";
+    const payoutPercentage =
+    payoutType === "percentage"
+    ? parseFloat(document.getElementById("payoutPercentage")?.value || 100)
+    : 100;
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
 
@@ -250,7 +269,10 @@ if (editingItemId) {
   extras_list: extras.join("\n"),
   is_spicy: isSpicy,
 
-  partner_id: isPartner && partnerId ? partnerId : null   // 👈 أضف هذا هنا
+  partner_id: isPartner && partnerId ? partnerId : null,
+
+  payout_type: payoutType,
+  payout_percentage: payoutPercentage
 })
     .eq("id", editingItemId);
 }
@@ -267,6 +289,8 @@ query = supabase
     extras_list: extras.join("\n"),
     is_spicy: isSpicy,
     active: true,
+    payout_type: payoutType,
+    payout_percentage: payoutPercentage,
     sort_order: Date.now(),
 
     partner_id: isPartner && partnerId ? partnerId : null   // 👈 هذا أهم سطر
@@ -537,6 +561,17 @@ window.editItem = async function (id) {
   document.getElementById("itemExtras").value =
   item.extras_list || "";
   document.getElementById("itemSpicy").checked = !!item.is_spicy;
+  // ===== تحميل إعداد الدفع =====
+const payoutTypeSelect = document.getElementById("payoutType");
+const payoutPercentageInput = document.getElementById("payoutPercentage");
+
+if (payoutTypeSelect) {
+  payoutTypeSelect.value = item.payout_type || "full";
+}
+
+if (payoutPercentageInput) {
+  payoutPercentageInput.value = item.payout_percentage || 100;
+}
 
   // ===== تحديد نوع الصنف (normal / burger / sizes) =====
   let itemType = "normal";
