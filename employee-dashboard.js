@@ -83,7 +83,29 @@ window.loadStats = async function () {
 
   if (!products || products.length === 0) return;
 
-  const productIds = products.map(p => p.id);
+const productIds = products.map(p => p.id);
+
+/* ===============================
+   جلب يوم العمل المفتوح
+================================ */
+
+const { data: businessDay } = await supabase
+  .from("business_days")
+  .select("id, opened_at, closed_at, is_open")
+  .eq("is_open", true)
+  .order("opened_at", { ascending: false })
+  .limit(1)
+  .single();
+
+if (!businessDay) {
+  console.warn("لا يوجد يوم عمل مفتوح");
+  return;
+}
+
+const start = new Date(businessDay.opened_at);
+const end = businessDay.closed_at
+  ? new Date(businessDay.closed_at)
+  : new Date();
 
   /* ===============================
      بناء الاستعلام حسب الفلتر
@@ -97,45 +119,25 @@ window.loadStats = async function () {
     product_id,
     qty,
     price,
-    order:orders!inner(id, status, created_at, is_employee_order)
+    order:orders!inner(
+      id,
+      status,
+      created_at,
+      is_employee_order,
+      business_day_id
+    )
   `)
   .in("product_id", productIds)
   .eq("order.status", "completed")
-  .eq("order.is_employee_order", false);
+  .eq("order.is_employee_order", false)
+  .eq("order.business_day_id", businessDay.id)
+  .gte("order.created_at", start.toISOString())
+  .lte("order.created_at", end.toISOString());
 
-  if (filter === "today") {
-    const { start, end } = getDayRange();
-    query = query
-      .gte("order.created_at", start.toISOString())
-      .lte("order.created_at", end.toISOString());
-  }
+const { data: items } = await query;
 
-  if (filter === "month") {
-    const { start, end } = getMonthRange();
-    query = query
-      .gte("order.created_at", start.toISOString())
-      .lte("order.created_at", end.toISOString());
-  }
-
-  if (filter === "custom") {
-    const fromDate = document.getElementById("dateFrom").value;
-    const toDate = document.getElementById("dateTo").value;
-
-    if (fromDate) {
-      query = query.gte("order.created_at", new Date(fromDate).toISOString());
-    }
-
-    if (toDate) {
-      const endCustom = new Date(toDate);
-      endCustom.setHours(23,59,59,999);
-      query = query.lte("order.created_at", endCustom.toISOString());
-    }
-  }
-
-  const { data: items } = await query;
-
-  if (requestId !== currentRequest) return;
-  if (!items) return;
+if (requestId !== currentRequest) return;
+if (!items) return;
 
   /* ===============================
      الحسابات
