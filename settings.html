@@ -122,6 +122,29 @@
   </button>
 </div>
     
+    <!-- ===== نظام الدفع للموظف ===== -->
+<div style="margin-top:15px;padding:10px;border:1px dashed #22c55e;border-radius:8px">
+  <strong>💰 نظام احتساب مستحق الموظف</strong>
+
+  <div style="margin-top:10px">
+    <select id="payoutType">
+      <option value="full">دفع كامل (100%)</option>
+      <option value="percentage">نسبة مخصصة</option>
+    </select>
+  </div>
+
+  <input
+    id="payoutPercentage"
+    type="number"
+    step="1"
+    min="0"
+    max="100"
+    value="100"
+    placeholder="النسبة %"
+    style="margin-top:10px;display:none"
+  >
+</div>
+  
     <button class="btn success" onclick="addItem()">💾 حفظ الصنف</button>
 
     <hr>
