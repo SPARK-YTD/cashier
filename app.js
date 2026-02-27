@@ -1005,6 +1005,7 @@ window.markCompleted = async function (orderId) {
       return;
     }
     await deductConsumables(orderId);
+    await processEmployeePayout(orderId);
     await loadActiveOrders();
 
   } catch (err) {
@@ -1747,3 +1748,64 @@ window.goToStorage = () => location.href = "storage.html";
 window.goToEmployee = function() {
   window.location.href = "employee-login.html";
 };
+
+async function processEmployeePayout(orderId) {
+  try {
+
+    const { data: items } = await supabase
+      .from("order_items")
+      .select(`
+        id,
+        product_id,
+        qty,
+        price,
+        products (
+          partner_id,
+          payout_type,
+          payout_percentage
+        )
+      `)
+      .eq("order_id", orderId);
+
+    if (!items) return;
+
+    for (const item of items) {
+
+      const product = item.products;
+      if (!product?.partner_id) continue;
+
+      const saleTotal = Number(item.price) * Number(item.qty);
+
+      let payout = 0;
+
+      if (product.payout_type === "percentage") {
+        payout = saleTotal * (Number(product.payout_percentage) / 100);
+      } else {
+        payout = saleTotal;
+      }
+
+      // نجيب الدورة المفتوحة
+      const { data: cycle } = await supabase
+        .from("employee_cycles")
+        .select("id")
+        .eq("employee_id", product.partner_id)
+        .is("closed_at", null)
+        .single();
+
+      if (!cycle) continue;
+
+      await supabase.from("employee_sales").insert({
+        employee_id: product.partner_id,
+        product_id: item.product_id,
+        order_item_id: item.id,
+        cycle_id: cycle.id,
+        quantity: item.qty,
+        sale_price: item.price,
+        payout_amount: payout
+      });
+    }
+
+  } catch (err) {
+    console.error("PAYOUT ERROR:", err);
+  }
+}
