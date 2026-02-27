@@ -92,16 +92,16 @@ window.loadStats = async function () {
   const filter = document.getElementById("timeFilter").value;
 
   let query = supabase
-    .from("order_items")
-    .select(`
-      product_id,
-      qty,
-      price,
-      order:orders!inner(id, status, created_at)
-    `)
-    .in("product_id", productIds)
-    .eq("order.status", "completed");
-    .eq("order.is_employee_order", false)
+  .from("order_items")
+  .select(`
+    product_id,
+    qty,
+    price,
+    order:orders!inner(id, status, created_at, is_employee_order)
+  `)
+  .in("product_id", productIds)
+  .eq("order.status", "completed")
+  .eq("order.is_employee_order", false);
 
   if (filter === "today") {
     const { start, end } = getDayRange();
