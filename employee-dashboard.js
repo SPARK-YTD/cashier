@@ -101,6 +101,7 @@ window.loadStats = async function () {
     `)
     .in("product_id", productIds)
     .eq("order.status", "completed");
+    .eq("order.is_employee_order", false)
 
   if (filter === "today") {
     const { start, end } = getDayRange();
