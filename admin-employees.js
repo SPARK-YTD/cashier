@@ -75,10 +75,11 @@ async function loadEmployees() {
       </td>
       <td>${couponHtml}</td>
       <td>
-        <button class="primary" onclick="openEditEmployee('${emp.id}')">ملف</button>
-        <button class="secondary" onclick="openCouponManager('${emp.id}')">كوبون</button>
-        <button class="danger" onclick="deleteEmployee('${emp.id}')">حذف</button>
-      </td>
+  <button class="primary" onclick="openEditEmployee('${emp.id}')">ملف</button>
+  <button class="secondary" onclick="openCouponManager('${emp.id}')">كوبون</button>
+  <button class="secondary" onclick="openSupplyManager('${emp.id}')">توريد</button>
+  <button class="danger" onclick="deleteEmployee('${emp.id}')">حذف</button>
+</td>
     `;
 
     table.appendChild(row);
@@ -126,7 +127,87 @@ window.saveEmployee = async function () {
   closeModal();
   loadEmployees();
 };
+/* ================= SUPPLY ================= */
 
+window.openSupplyManager = async function(empId) {
+
+  // جلب الدورة المفتوحة أو إنشاء واحدة
+  let { data: cycle } = await supabase
+    .from("employee_cycles")
+    .select("*")
+    .eq("employee_id", empId)
+    .eq("status", "open")
+    .maybeSingle();
+
+  if (!cycle) {
+    const { data: newCycle } = await supabase
+      .from("employee_cycles")
+      .insert({
+        employee_id: empId,
+        status: "open",
+        calculation_mode: "supplied_only"
+      })
+      .select()
+      .single();
+
+    cycle = newCycle;
+  }
+
+  // جلب أصناف الموظف
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, name")
+    .eq("partner_id", empId);
+
+  const overlay = document.createElement("div");
+  overlay.className = "variant-overlay";
+
+  overlay.innerHTML = `
+    <div class="variant-box">
+      <h3>إضافة توريد</h3>
+
+      <select id="supplyProduct">
+        ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join("")}
+      </select>
+
+      <input type="number" id="supplyQty" placeholder="الكمية">
+
+      <input type="date" id="supplyDate">
+
+      <button class="variant-btn" id="saveSupply">حفظ</button>
+      <button class="variant-cancel">إغلاق</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
+
+  overlay.querySelector("#saveSupply").onclick = async () => {
+
+    const productId = document.getElementById("supplyProduct").value;
+    const qty = Number(document.getElementById("supplyQty").value);
+    const date = document.getElementById("supplyDate").value;
+
+    if (!productId || !qty || qty <= 0) {
+      alert("أدخل بيانات صحيحة");
+      return;
+    }
+
+    await supabase
+      .from("employee_supplies")
+      .insert({
+        cycle_id: cycle.id,
+        employee_id: empId,
+        product_id: productId,
+        quantity: qty,
+        supplied_at: date ? new Date(date).toISOString() : new Date().toISOString()
+      });
+
+    overlay.remove();
+    alert("تم تسجيل التوريد بنجاح");
+  };
+};
 /* ================= EDIT ================= */
 
 window.openEditEmployee = async function(id) {
