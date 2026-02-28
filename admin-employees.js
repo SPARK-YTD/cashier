@@ -532,3 +532,23 @@ window.openPayModal = async function(empId, cycleId, remaining){
   alert("تم تسجيل الدفع بنجاح");
   loadEmployees();
 };
+/* ================= RESET ALL COUPONS ================= */
+
+window.resetAllCoupons = async function () {
+
+  if (!confirm("⚠️ سيتم إعادة تعيين جميع كوبونات الموظفين للشهر الحالي")) {
+    return;
+  }
+
+  const { error } = await supabase
+    .rpc("reset_all_coupons_monthly");
+
+  if (error) {
+    alert("❌ فشل إعادة التعيين");
+    console.error(error);
+    return;
+  }
+
+  alert("✅ تم إعادة تعيين جميع الكوبونات بنجاح");
+  loadEmployees(); // تحديث الجدول فوراً
+};
