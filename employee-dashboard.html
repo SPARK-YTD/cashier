@@ -180,7 +180,21 @@ ul li{
 
   </div>
   
-  <div id="financeBox"></div>
+<div id="financeBox"></div>
+
+<div style="margin-bottom:20px">
+  <button id="downloadReportBtn"
+    style="
+      background:#111827;
+      color:white;
+      padding:10px 16px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+    🧾 تحميل كشف الحساب PDF
+  </button>
+</div>
 
   <div class="card">
     <strong>الأصناف المرتبطة بك (<span id="linkedProductsCount">0</span>)</strong>
@@ -195,6 +209,7 @@ ul li{
 </div>
 
 <script src="employee-guard.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="employee-dashboard.js"></script>
 
 <script>
