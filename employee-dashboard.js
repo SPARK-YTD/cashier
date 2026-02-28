@@ -327,6 +327,88 @@ if (sortedProducts.length > 0) {
 window.loadStats();
 
 /* ===============================
+   PDF REPORT
+================================ */
+
+document.addEventListener("click", async function(e){
+
+  if (e.target.id !== "downloadReportBtn") return;
+
+  if (!window.currentCycle){
+    alert("لا توجد دورة مفتوحة");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const cycle = window.currentCycle;
+
+  // جلب بيانات العمولة
+  const { data: sales } = await supabase
+    .from("employee_sales")
+    .select("payout_amount")
+    .eq("cycle_id", cycle.id);
+
+  let totalCommission = 0;
+  if (sales){
+    totalCommission = sales.reduce(
+      (s,i)=> s + Number(i.payout_amount || 0),
+      0
+    );
+  }
+
+  // جلب المدفوع
+  const { data: payouts } = await supabase
+    .from("employee_payouts")
+    .select("amount, paid_at")
+    .eq("cycle_id", cycle.id)
+    .order("paid_at", { ascending: false });
+
+  let totalPaid = 0;
+  if (payouts){
+    totalPaid = payouts.reduce(
+      (s,p)=> s + Number(p.amount || 0),
+      0
+    );
+  }
+
+  const remaining = Math.max(0, totalCommission - totalPaid);
+
+  // محتوى التقرير
+  doc.setFontSize(16);
+  doc.text("Employee Financial Report", 20, 20);
+
+  doc.setFontSize(12);
+  doc.text(`Employee: ${session.name}`, 20, 35);
+  doc.text(`Employee Code: ${session.code}`, 20, 42);
+
+  doc.text(`Total Commission: ${totalCommission.toFixed(3)} BHD`, 20, 55);
+  doc.text(`Total Paid: ${totalPaid.toFixed(3)} BHD`, 20, 62);
+  doc.text(`Remaining: ${remaining.toFixed(3)} BHD`, 20, 69);
+
+  doc.text("Payment History:", 20, 85);
+
+  let y = 95;
+
+  if (payouts && payouts.length){
+    payouts.forEach(p => {
+      doc.text(
+        `${Number(p.amount).toFixed(3)} BHD - ${new Date(p.paid_at).toLocaleDateString()}`,
+        20,
+        y
+      );
+      y += 8;
+    });
+  } else {
+    doc.text("No payments yet", 20, y);
+  }
+
+  doc.save(`report_${session.name}.pdf`);
+
+});
+
+/* ===============================
    Logout
 ================================ */
 window.logoutEmployee = function () {
