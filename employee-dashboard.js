@@ -340,8 +340,18 @@ document.addEventListener("click", async function(e){
   }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+const doc = new jsPDF();
 
+// تحميل الشعار
+const img = new Image();
+img.src = "assets/logo.png"; // ← هذا هو المسار الصحيح عندك
+
+await new Promise(resolve => {
+  img.onload = resolve;
+});
+
+// إضافة الشعار في الأعلى (منتصف الصفحة)
+doc.addImage(img, "PNG", 75, 10, 60, 25);
   const cycle = window.currentCycle;
 
   // جلب بيانات العمولة
@@ -377,19 +387,22 @@ document.addEventListener("click", async function(e){
 
   // محتوى التقرير
   doc.setFontSize(16);
-  doc.text("Employee Financial Report", 20, 20);
+  doc.text("Employee Financial Report", 20, 45);
 
-  doc.setFontSize(12);
-  doc.text(`Employee: ${session.name}`, 20, 35);
-  doc.text(`Employee Code: ${session.code}`, 20, 42);
+  doc.setFontSize(16);
+doc.text("Employee Financial Report", 20, 50);
 
-  doc.text(`Total Commission: ${totalCommission.toFixed(3)} BHD`, 20, 55);
-  doc.text(`Total Paid: ${totalPaid.toFixed(3)} BHD`, 20, 62);
-  doc.text(`Remaining: ${remaining.toFixed(3)} BHD`, 20, 69);
+doc.setFontSize(12);
+doc.text(`Employee: ${session.name}`, 20, 60);
+doc.text(`Employee Code: ${session.code}`, 20, 67);
 
-  doc.text("Payment History:", 20, 85);
+doc.text(`Total Commission: ${totalCommission.toFixed(3)} BHD`, 20, 80);
+doc.text(`Total Paid: ${totalPaid.toFixed(3)} BHD`, 20, 87);
+doc.text(`Remaining: ${remaining.toFixed(3)} BHD`, 20, 94);
 
-  let y = 95;
+doc.text("Payment History:", 20, 110);
+
+  let y = 120;
 
   if (payouts && payouts.length){
     payouts.forEach(p => {
