@@ -1761,7 +1761,6 @@ async function processEmployeePayout(orderId) {
         price,
         products (
           partner_id,
-          payout_type,
           payout_percentage
         )
       `)
@@ -1771,38 +1770,70 @@ async function processEmployeePayout(orderId) {
 
     for (const item of items) {
 
-      const product = item.products;
-      if (!product?.partner_id) continue;
-
       const saleTotal = Number(item.price) * Number(item.qty);
 
-      let payout = 0;
+      // 🔹 أولاً: نبحث عن موظفين متعددين
+      const { data: productEmployees } = await supabase
+        .from("product_employees")
+        .select("employee_id, commission_percent")
+        .eq("product_id", item.product_id);
 
-      if (product.payout_type === "percentage") {
-        payout = saleTotal * (Number(product.payout_percentage) / 100);
+      if (productEmployees && productEmployees.length > 0) {
+
+        // ✅ نظام متعدد
+        for (const pe of productEmployees) {
+
+          const payout =
+            saleTotal * (Number(pe.commission_percent) / 100);
+
+          const { data: cycle } = await supabase
+            .from("employee_cycles")
+            .select("id")
+            .eq("employee_id", pe.employee_id)
+            .is("closed_at", null)
+            .single();
+
+          if (!cycle) continue;
+
+          await supabase.from("employee_sales").insert({
+            employee_id: pe.employee_id,
+            product_id: item.product_id,
+            order_item_id: item.id,
+            cycle_id: cycle.id,
+            quantity: item.qty,
+            sale_price: item.price,
+            payout_amount: payout
+          });
+        }
+
       } else {
-        payout = saleTotal;
+
+        // 🔁 النظام القديم (موظف واحد فقط)
+        const product = item.products;
+        if (!product?.partner_id) continue;
+
+        const payout =
+          saleTotal * (Number(product.payout_percentage) / 100);
+
+        const { data: cycle } = await supabase
+          .from("employee_cycles")
+          .select("id")
+          .eq("employee_id", product.partner_id)
+          .is("closed_at", null)
+          .single();
+
+        if (!cycle) continue;
+
+        await supabase.from("employee_sales").insert({
+          employee_id: product.partner_id,
+          product_id: item.product_id,
+          order_item_id: item.id,
+          cycle_id: cycle.id,
+          quantity: item.qty,
+          sale_price: item.price,
+          payout_amount: payout
+        });
       }
-
-      // نجيب الدورة المفتوحة
-      const { data: cycle } = await supabase
-        .from("employee_cycles")
-        .select("id")
-        .eq("employee_id", product.partner_id)
-        .is("closed_at", null)
-        .single();
-
-      if (!cycle) continue;
-
-      await supabase.from("employee_sales").insert({
-        employee_id: product.partner_id,
-        product_id: item.product_id,
-        order_item_id: item.id,
-        cycle_id: cycle.id,
-        quantity: item.qty,
-        sale_price: item.price,
-        payout_amount: payout
-      });
     }
 
   } catch (err) {
