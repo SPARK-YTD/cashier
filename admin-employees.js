@@ -46,6 +46,66 @@ async function loadEmployees() {
     }
 
     const row = document.createElement("tr");
+    
+    /* ================= CYCLE ================= */
+
+const { data: openCycle } = await supabase
+  .from("employee_cycles")
+  .select("*")
+  .eq("employee_id", emp.id)
+  .eq("status", "open")
+  .maybeSingle();
+
+let cycleHtml = `<span style="color:#9ca3af">لا يوجد دورة</span>
+<br>
+<button class="primary" onclick="openCycleManual('${emp.id}')">
+فتح دورة
+</button>`;
+
+if (openCycle) {
+
+  const { data: sales } = await supabase
+    .from("employee_sales")
+    .select("payout_amount, sale_price, quantity")
+    .eq("cycle_id", openCycle.id);
+
+  let totalSales = 0;
+  let totalCommission = 0;
+  let operations = 0;
+
+  if (sales) {
+    operations = sales.length;
+
+    totalCommission = sales.reduce(
+      (s,i)=>s+Number(i.payout_amount||0),0
+    );
+
+    totalSales = sales.reduce(
+      (s,i)=> s + (Number(i.sale_price||0) * Number(i.quantity||0)),0
+    );
+  }
+
+  cycleHtml = `
+    <div style="color:#16a34a;font-weight:700">
+      🟢 دورة مفتوحة
+    </div>
+
+    <div style="font-size:12px;color:#6b7280">
+      ${openCycle.calculation_mode}
+    </div>
+
+    <div style="margin-top:6px;font-size:13px">
+      💰 مبيعات: ${totalSales.toFixed(3)} د.ب<br>
+      🧮 عمولة: ${totalCommission.toFixed(3)} د.ب<br>
+      📦 عمليات: ${operations}
+    </div>
+
+    <button class="danger" style="margin-top:6px"
+      onclick="closeCycle('${emp.id}')">
+      إغلاق الدورة
+    </button>
+  `;
+}
 
     let couponHtml = `<span style="color:#9ca3af">لا يوجد</span>`;
 
@@ -74,6 +134,7 @@ async function loadEmployees() {
         </span>
       </td>
       <td>${couponHtml}</td>
+      <td>${cycleHtml}</td>
       <td>
   <button class="primary" onclick="openEditEmployee('${emp.id}')">ملف</button>
   <button class="secondary" onclick="openCouponManager('${emp.id}')">كوبون</button>
@@ -359,3 +420,46 @@ window.deleteEmployee = async function(id) {
 };
 
 loadEmployees();
+
+/* ================= OPEN CYCLE ================= */
+
+window.openCycleManual = async function(empId) {
+
+  const mode = prompt("نوع الحساب:\n1 = all_sales\n2 = supplied_only");
+
+  let calculation_mode = "all_sales";
+  if (mode === "2") calculation_mode = "supplied_only";
+
+  const { error } = await supabase
+    .from("employee_cycles")
+    .insert({
+      employee_id: empId,
+      status: "open",
+      calculation_mode
+    });
+
+  if (error) {
+    alert("يوجد دورة مفتوحة بالفعل");
+    return;
+  }
+
+  loadEmployees();
+};
+
+/* ================= CLOSE CYCLE ================= */
+
+window.closeCycle = async function(empId) {
+
+  if (!confirm("هل تريد إغلاق الدورة؟")) return;
+
+  await supabase
+    .from("employee_cycles")
+    .update({
+      status: "closed",
+      closed_at: new Date().toISOString()
+    })
+    .eq("employee_id", empId)
+    .eq("status", "open");
+
+  loadEmployees();
+};
