@@ -299,6 +299,49 @@ query = supabase
 
 const { data: product, error } = await query.select().single();
 if (error) throw error;
+
+// ===============================
+// حفظ الموظفين المتعددين
+// ===============================
+
+await supabase
+  .from("product_employees")
+  .delete()
+  .eq("product_id", product.id);
+
+const multiRows = document.querySelectorAll(".multi-emp-row");
+
+const multiInsert = [];
+
+multiRows.forEach(row => {
+  const empId = row.querySelector(".multi-emp-select")?.value;
+  const percent = parseFloat(
+    row.querySelector(".multi-emp-percent")?.value || 0
+  );
+
+  if (empId && percent > 0) {
+    multiInsert.push({
+      product_id: product.id,
+      employee_id: empId,
+      commission_percent: percent
+    });
+  }
+});
+
+if (multiInsert.length > 0) {
+  await supabase
+    .from("products")
+    .update({ partner_id: null })
+    .eq("id", product.id);
+}
+
+if (multiInsert.length) {
+  await supabase
+    .from("product_employees")
+    .insert(multiInsert);
+}
+
+
     /* حفظ المواد الاستهلاكية المرتبطة بالصنف */
 const rows = document.querySelectorAll("#consumablesBox > div");
 
@@ -553,6 +596,31 @@ window.editItem = async function (id) {
   }
 
   editingItemId = id;
+  
+  // تحميل نسب الموظفين
+const { data: multiEmployees } = await supabase
+  .from("product_employees")
+  .select("*")
+  .eq("product_id", id);
+
+const box = document.getElementById("multiEmployeesBox");
+if (box) box.innerHTML = "";
+
+if (multiEmployees?.length) {
+  multiEmployees.forEach(me => {
+    addMultiEmployeeRow();
+
+    const lastRow = document.querySelector(
+      "#multiEmployeesBox .multi-emp-row:last-child"
+    );
+
+    lastRow.querySelector(".multi-emp-select").value =
+      me.employee_id;
+
+    lastRow.querySelector(".multi-emp-percent").value =
+      me.commission_percent;
+  });
+}
 
   // تعبئة البيانات الأساسية
   document.getElementById("itemName").value = item.name;
@@ -642,6 +710,41 @@ if (item.partner_id) {
 }
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
+
+// ===============================
+// نظام الموظفين المتعدد
+// ===============================
+
+window.addMultiEmployeeRow = function () {
+  const box = document.getElementById("multiEmployeesBox");
+  if (!box) return;
+
+  const div = document.createElement("div");
+  div.className = "multi-emp-row";
+  div.style.marginBottom = "8px";
+
+  div.innerHTML = `
+    <select class="multi-emp-select">
+      <option value="">اختر موظف</option>
+      ${employeesList.map(e => `
+        <option value="${e.id}">${e.name}</option>
+      `).join("")}
+    </select>
+
+    <input 
+      type="number" 
+      class="multi-emp-percent"
+      placeholder="النسبة %"
+      min="0"
+      max="100"
+      style="width:90px"
+    >
+
+    <button type="button" onclick="this.parentElement.remove()">❌</button>
+  `;
+
+  box.appendChild(div);
+};
 /* ===============================
    أدوات
 ================================ */
@@ -660,6 +763,9 @@ function clearForm() {
   document.getElementById("partnerSelect").style.display = "block";
   document.getElementById("partnerSelect").disabled = true;
   document.getElementById("partnerSelect").value = "";
+  
+  const multiBox = document.getElementById("multiEmployeesBox");
+  if (multiBox) multiBox.innerHTML = "";
 }
 
 /* ===============================
