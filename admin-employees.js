@@ -77,13 +77,32 @@ if (openCycle) {
     operations = sales.length;
 
     totalCommission = sales.reduce(
-      (s,i)=>s+Number(i.payout_amount||0),0
+      (s,i)=> s + Number(i.payout_amount || 0),
+      0
     );
 
     totalSales = sales.reduce(
-      (s,i)=> s + (Number(i.sale_price||0) * Number(i.quantity||0)),0
+      (s,i)=> s + (Number(i.sale_price || 0) * Number(i.quantity || 0)),
+      0
     );
   }
+
+  // ===== حساب المدفوع =====
+  const { data: payouts } = await supabase
+    .from("employee_payouts")
+    .select("amount")
+    .eq("cycle_id", openCycle.id);
+
+  let totalPaid = 0;
+
+  if (payouts) {
+    totalPaid = payouts.reduce(
+      (s,p)=> s + Number(p.amount || 0),
+      0
+    );
+  }
+
+  const remaining = totalCommission - totalPaid;
 
   cycleHtml = `
     <div style="color:#16a34a;font-weight:700">
@@ -97,10 +116,17 @@ if (openCycle) {
     <div style="margin-top:6px;font-size:13px">
       💰 مبيعات: ${totalSales.toFixed(3)} د.ب<br>
       🧮 عمولة: ${totalCommission.toFixed(3)} د.ب<br>
-      📦 عمليات: ${operations}
+      💵 مدفوع: ${totalPaid.toFixed(3)} د.ب<br>
+      ⚖️ المتبقي: ${remaining.toFixed(3)} د.ب
     </div>
 
-    <button class="danger" style="margin-top:6px"
+    <button class="secondary"
+      onclick="openPayModal('${emp.id}','${openCycle.id}',${remaining})">
+      💰 دفع
+    </button>
+
+    <button class="danger"
+      style="margin-top:6px"
       onclick="closeCycle('${emp.id}')">
       إغلاق الدورة
     </button>
@@ -461,5 +487,48 @@ window.closeCycle = async function(empId) {
     .eq("employee_id", empId)
     .eq("status", "open");
 
+  loadEmployees();
+};
+
+  /* ================= PAYOUT ================= */
+
+window.openPayModal = async function(empId, cycleId, remaining){
+
+  if (remaining <= 0){
+    alert("لا يوجد مبلغ مستحق");
+    return;
+  }
+
+  const amount = prompt(
+    "أدخل مبلغ الدفع\nالمتبقي: " +
+    remaining.toFixed(3) + " د.ب"
+  );
+
+  const value = Number(amount);
+
+  if (!value || value <= 0){
+    alert("مبلغ غير صحيح");
+    return;
+  }
+
+  if (value > remaining){
+    alert("لا يمكن دفع أكثر من المستحق");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("employee_payouts")
+    .insert({
+      employee_id: empId,
+      cycle_id: cycleId,
+      amount: value
+    });
+
+  if (error){
+    alert("حدث خطأ أثناء تسجيل الدفع");
+    return;
+  }
+
+  alert("تم تسجيل الدفع بنجاح");
   loadEmployees();
 };
