@@ -9,11 +9,11 @@ if (!session) window.location.href = "employee-login.html";
 document.getElementById("employeeName").textContent =
   `${session.name} (ID: ${session.code})`;
 
-/* ===============================
+  /* ===============================
    Cycle Logic
 ================================ */
 
-async function getOrCreateOpenCycle(employeeId) {
+async function getOpenCycle(employeeId) {
 
   const { data: existingCycle } = await supabase
     .from("employee_cycles")
@@ -22,26 +22,7 @@ async function getOrCreateOpenCycle(employeeId) {
     .eq("status", "open")
     .maybeSingle();
 
-  if (existingCycle) {
-    return existingCycle;
-  }
-
-  const { data: newCycle, error } = await supabase
-    .from("employee_cycles")
-    .insert({
-      employee_id: employeeId,
-      calculation_mode: "supplied_only",
-      status: "open"
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creating cycle:", error);
-    return null;
-  }
-
-  return newCycle;
+  return existingCycle || null;
 }
 
 /* ===============================
@@ -69,12 +50,19 @@ window.loadStats = async function () {
      تأكد من وجود دورة
   ================================ */
 
-  const cycle = await getOrCreateOpenCycle(session.id);
+  const cycle = await getOpenCycle(session.id);
   if (!cycle) {
-    alert("خطأ في إنشاء الدورة");
-    return;
+  const financeBox = document.getElementById("financeBox");
+  if (financeBox) {
+    financeBox.innerHTML = `
+      <div class="card">
+        <strong>لا توجد دورة مفتوحة حالياً</strong>
+      </div>
+    `;
   }
-
+  return;
+}
+  
   // ممكن تستخدمها لاحقاً لحساب المستحق
   window.currentCycle = cycle;
   
@@ -291,6 +279,46 @@ if (financeBox) {
   document.getElementById("totalSales").textContent =
     totalSales.toFixed(3) + " د.ب";
 
+  /* ===============================
+   عرض المبيعات حسب الصنف (مرتب)
+================================ */
+
+const productSalesList = document.getElementById("productSalesList");
+productSalesList.innerHTML = "";
+
+// ترتيب من الأعلى مبيعاً للأقل
+const sortedProducts = Object.entries(productStats)
+  .sort((a,b)=> b[1].value - a[1].value);
+
+if (sortedProducts.length > 0) {
+
+  const maxValue = sortedProducts[0][1].value;
+
+  sortedProducts.forEach(([productId, stats]) => {
+
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <span>${product.name}</span>
+      <span>
+        ${stats.qty} قطعة —
+        ${stats.value.toFixed(3)} د.ب
+      </span>
+    `;
+
+    // تمييز أعلى صنف
+    if (stats.value === maxValue) {
+      li.classList.add("highlight");
+    }
+
+    productSalesList.appendChild(li);
+  });
+
+}
+  
 };
   
 /* ===============================
