@@ -113,7 +113,7 @@ if (payouts) {
   );
 }
 
-const remaining = totalCommission - totalPaid;
+const remaining = Math.max(0, totalCommission - totalPaid);
 
 // 3️⃣ عرض النتائج
 const financeBox = document.getElementById("financeBox");
