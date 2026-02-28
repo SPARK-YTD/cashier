@@ -319,7 +319,7 @@ multiRows.forEach(row => {
     row.querySelector(".multi-emp-percent")?.value || 0
   );
 
-  if (empId && percent > 0) {
+  if (empId && percent > 0 && percent <= 100) {
     multiInsert.push({
       product_id: product.id,
       employee_id: empId,
@@ -327,6 +327,24 @@ multiRows.forEach(row => {
     });
   }
 });
+
+// ✅ منع تكرار نفس الموظف
+const employeeIds = multiInsert.map(e => e.employee_id);
+const hasDuplicate = new Set(employeeIds).size !== employeeIds.length;
+
+if (hasDuplicate) {
+  return alert("لا يمكن اختيار نفس الموظف أكثر من مرة");
+}
+
+// ✅ تحقق أن مجموع النسب = 100
+const totalPercent = multiInsert.reduce(
+  (s, e) => s + e.commission_percent,
+  0
+);
+
+if (multiInsert.length > 0 && Math.round(totalPercent) !== 100) {
+  return alert("مجموع النسب يجب أن يساوي 100%");
+}
 
 if (multiInsert.length > 0) {
   await supabase
@@ -573,6 +591,11 @@ window.toggleItem = async function (id, state) {
 
   await supabase
     .from("product_consumables")
+    .delete()
+    .eq("product_id", id);
+    
+  await supabase
+    .from("product_employees")
     .delete()
     .eq("product_id", id);
 
