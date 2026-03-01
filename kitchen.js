@@ -1,7 +1,21 @@
+import { supabase } from "./supabase.js";
+
+/* ===============================
+   🔔 تنبيه الطلبات الجديدة
+================================ */
+let knownOrders = new Set();
+let newOrderSound = new Audio("notification.mp3");
+newOrderSound.volume = 1;
+
 /* ===============================
    🔐 حماية شاشة المطبخ
 ================================ */
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // 🔓 تفعيل الصوت بعد أول تفاعل
+  document.body.addEventListener("click", () => {
+    newOrderSound.play().then(() => newOrderSound.pause());
+  }, { once: true });
 
   const kitchenAuth = sessionStorage.getItem("kitchen_auth");
 
@@ -21,15 +35,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   subscribeKitchenOrders();
   setInterval(loadKitchenOrders, 60000);
 });
-import { supabase } from "./supabase.js";
-
-/* ===============================
-   🔔 تنبيه الطلبات الجديدة
-================================ */
-
-let knownOrders = new Set();
-let newOrderSound = new Audio("notification.mp3");
-newOrderSound.volume = 1;
 
 /* ===============================
    تحميل طلبات المطبخ
@@ -64,6 +69,7 @@ async function loadKitchenOrders() {
   }
 
   renderKitchenOrders(data || []);
+  knownOrders = new Set((data || []).map(o => o.id));
 }
 
 /* ===============================
