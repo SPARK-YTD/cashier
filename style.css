@@ -794,3 +794,12 @@ hr {
 body.employee-mode .topbar {
   background: #7c3aed;
 }
+
+.flash {
+  animation: flashBg 0.4s alternate 6;
+}
+
+@keyframes flashBg {
+  from { background: #0f172a; }
+  to { background: #facc15; }
+}
