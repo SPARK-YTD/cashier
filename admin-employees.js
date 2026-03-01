@@ -539,12 +539,19 @@ window.openPayModal = async function(empId, cycleId, remaining){
 
 window.resetAllCoupons = async function () {
 
-  if (!confirm("⚠️ سيتم إعادة تعيين جميع كوبونات الموظفين للشهر الحالي")) {
+  const pass = prompt("🔐 أدخل كلمة مرور المدير لتأكيد العملية");
+
+  if (pass !== "1998") {   // غيرها لكلمة سر خاصة
+    alert("❌ كلمة المرور غير صحيحة");
+    return;
+  }
+
+  if (!confirm("⚠️ سيتم إعادة تعيين جميع كوبونات الموظفين")) {
     return;
   }
 
   const { error } = await supabase
-    .rpc("reset_all_coupons_monthly");
+    .rpc("monthly_coupon_reset");
 
   if (error) {
     alert("❌ فشل إعادة التعيين");
@@ -552,6 +559,6 @@ window.resetAllCoupons = async function () {
     return;
   }
 
-  alert("✅ تم إعادة تعيين جميع الكوبونات بنجاح");
-  loadEmployees(); // تحديث الجدول فوراً
+  alert("✅ تم إعادة تعيين الكوبونات بنجاح");
+  loadEmployees();
 };
