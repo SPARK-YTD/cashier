@@ -394,21 +394,24 @@ window.openCouponManager = async function(empId) {
 
     await supabase.from("employee_coupons")
       .update({
-        total_amount: value,
-        remaining_amount: newRemaining
-      })
+     base_amount: value,           
+    total_amount: value,
+    remaining_amount: newRemaining
+    })
+    
       .eq("id", coupon.id);
 
   } else {
 
     await supabase.from("employee_coupons")
-      .insert({
-        employee_id: empId,
-        month,
-        total_amount: value,
-        remaining_amount: value,
-        active: true
-      });
+  .insert({
+    employee_id: empId,
+    month,
+    base_amount: value,       
+    total_amount: value,
+    remaining_amount: value,
+    active: true
+  });
 
   }
 
