@@ -24,14 +24,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 import { supabase } from "./supabase.js";
 
 /* ===============================
-   INIT
+   🔔 تنبيه الطلبات الجديدة
 ================================ */
-document.addEventListener("DOMContentLoaded", async () => {
 
-  loadKitchenOrders();
-  subscribeKitchenOrders();
-  setInterval(loadKitchenOrders, 60000); // تحديث كل دقيقة
-});
+let knownOrders = new Set();
+let newOrderSound = new Audio("notification.mp3");
+newOrderSound.volume = 1;
 
 /* ===============================
    تحميل طلبات المطبخ
@@ -181,8 +179,10 @@ window.markKitchenReady = async function (orderId) {
    REALTIME – بدون رفرش
 ================================ */
 function subscribeKitchenOrders() {
+
   supabase
     .channel("kitchen-orders")
+
     .on(
       "postgres_changes",
       {
@@ -190,10 +190,26 @@ function subscribeKitchenOrders() {
         schema: "public",
         table: "orders"
       },
-      () => {
-        loadKitchenOrders();
+      (payload) => {
+
+        const order = payload.new;
+
+        // نتأكد إنه طلب فعلي للمطبخ
+        if (order.status === "active" && !order.kitchen_ready) {
+
+          // 🔥 إذا الطلب جديد فعلاً
+          if (!knownOrders.has(order.id)) {
+
+            knownOrders.add(order.id);
+
+            triggerKitchenAlert();
+          }
+
+          loadKitchenOrders();
+        }
       }
     )
+
     .on(
       "postgres_changes",
       {
@@ -205,5 +221,19 @@ function subscribeKitchenOrders() {
         loadKitchenOrders();
       }
     )
+
     .subscribe();
+}
+
+function triggerKitchenAlert() {
+
+  // 🔔 تشغيل الصوت
+  newOrderSound.play().catch(() => {});
+
+  // ✨ وميض الشاشة
+  document.body.classList.add("flash");
+
+  setTimeout(() => {
+    document.body.classList.remove("flash");
+  }, 2000);
 }
