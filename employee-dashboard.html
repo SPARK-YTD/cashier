@@ -149,7 +149,7 @@ ul li{
 
   <div class="card">
     عرض حسب:
-    <select id="timeFilter" onchange="loadStats()">
+    <select id="timeFilter">
       <option value="all">كل الوقت</option>
       <option value="today">اليوم</option>
       <option value="month">هذا الشهر</option>
@@ -180,7 +180,7 @@ ul li{
 
   </div>
   
-<div id="financeBox"></div>
+<div id="financeBox" class="card"></div>
 
 <div style="margin-bottom:20px">
   <button id="downloadReportBtn"
@@ -212,12 +212,6 @@ ul li{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="employee-dashboard.js"></script>
 
-<script>
-document.getElementById("timeFilter").addEventListener("change",function(){
-  document.getElementById("customDateBox").style.display=
-  this.value==="custom"?"block":"none";
-});
-</script>
 
 </body>
 </html>
