@@ -84,21 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadConsumables();
   loadEmployees();
   
-
-  const payoutTypeSelect = document.getElementById("payoutType");
-const payoutPercentageInput = document.getElementById("payoutPercentage");
-
-if (payoutTypeSelect && payoutPercentageInput) {
-
-  // أول تحميل
-  payoutPercentageInput.style.display =
-    payoutTypeSelect.value === "percentage" ? "block" : "none";
-
-  payoutTypeSelect.addEventListener("change", () => {
-    payoutPercentageInput.style.display =
-      payoutTypeSelect.value === "percentage" ? "block" : "none";
-  });
-}
+  
   const typeRadios = document.querySelectorAll('input[name="itemType"]');
   const variantsBox = document.getElementById("variantsBox");
 
@@ -184,11 +170,6 @@ window.addItem = async function () {
       
     const isSpicy = document.getElementById("itemSpicy")?.checked || false;
     const name = document.getElementById("itemName").value.trim();
-    const payoutType = document.getElementById("payoutType")?.value || "full";
-    const payoutPercentage =
-    payoutType === "percentage"
-    ? parseFloat(document.getElementById("payoutPercentage")?.value || 100)
-    : 100;
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
 
@@ -251,8 +232,6 @@ if (editingItemId) {
   is_spicy: isSpicy,
 
 
-  payout_type: payoutType,
-  payout_percentage: payoutPercentage
 })
     .eq("id", editingItemId);
 }
@@ -269,8 +248,6 @@ query = supabase
     extras_list: extras.join("\n"),
     is_spicy: isSpicy,
     active: true,
-    payout_type: payoutType,
-    payout_percentage: payoutPercentage,
     sort_order: Date.now(),
 
   });
@@ -311,38 +288,46 @@ multiRows.forEach(row => {
   });
 });
 
-// 2️⃣ لازم يكون فيه موظف واحد على الأقل
-if (multiInsert.length === 0) {
-  throw new Error("❌ يجب اختيار موظف واحد على الأقل");
-}
 
-// 3️⃣ منع التكرار
-const employeeIds = multiInsert.map(e => e.employee_id);
-if (new Set(employeeIds).size !== employeeIds.length) {
-  throw new Error("❌ لا يمكن اختيار نفس الموظف أكثر من مرة");
-}
+// إذا فيه موظفين مضافين → تحقق من النسب
+if (multiInsert.length > 0) {
 
-// 4️⃣ تحقق مجموع النسب
-const totalPercent = multiInsert.reduce(
-  (s, e) => s + e.commission_percent,
-  0
-);
+  // منع التكرار
+  const employeeIds = multiInsert.map(e => e.employee_id);
+  if (new Set(employeeIds).size !== employeeIds.length) {
+    throw new Error("❌ لا يمكن اختيار نفس الموظف أكثر من مرة");
+  }
 
-if (Math.abs(totalPercent - 100) > 0.001) {
-  throw new Error(
-    `❌ مجموع النسب يجب أن يساوي 100% (الحالي: ${totalPercent}%)`
+  // تحقق مجموع النسب
+  const totalPercent = multiInsert.reduce(
+    (s, e) => s + e.commission_percent,
+    0
   );
+
+  if (Math.abs(totalPercent - 100) > 0.001) {
+    throw new Error(
+      `❌ مجموع النسب يجب أن يساوي 100% (الحالي: ${totalPercent}%)`
+    );
+  }
+
+  // حذف القديم وإضافة الجديد
+  await supabase
+    .from("product_employees")
+    .delete()
+    .eq("product_id", product.id);
+
+  await supabase
+    .from("product_employees")
+    .insert(multiInsert);
+
+} else {
+
+  // لا يوجد موظفين → نحذف أي ربط قديم فقط
+  await supabase
+    .from("product_employees")
+    .delete()
+    .eq("product_id", product.id);
 }
-
-// 5️⃣ بعد التحقق نحذف القديم ونضيف الجديد
-await supabase
-  .from("product_employees")
-  .delete()
-  .eq("product_id", product.id);
-
-await supabase
-  .from("product_employees")
-  .insert(multiInsert);
 
     /* حفظ المواد الاستهلاكية المرتبطة بالصنف */
 const rows = document.querySelectorAll("#consumablesBox > div");
@@ -636,17 +621,6 @@ if (multiEmployees?.length) {
   document.getElementById("itemExtras").value =
   item.extras_list || "";
   document.getElementById("itemSpicy").checked = !!item.is_spicy;
-  // ===== تحميل إعداد الدفع =====
-const payoutTypeSelect = document.getElementById("payoutType");
-const payoutPercentageInput = document.getElementById("payoutPercentage");
-
-if (payoutTypeSelect) {
-  payoutTypeSelect.value = item.payout_type || "full";
-}
-
-if (payoutPercentageInput) {
-  payoutPercentageInput.value = item.payout_percentage || 100;
-}
 
   // ===== تحديد نوع الصنف (normal / burger / sizes) =====
   let itemType = "normal";
