@@ -44,28 +44,6 @@
 
     <input type="file" id="itemImage" accept="image/*">
       
-      <!-- ===== نظام الدفع للموظف ===== -->
-<div style="margin-top:15px;padding:10px;border:1px dashed #22c55e;border-radius:8px">
-  <strong>💰 نظام احتساب مستحق الموظف</strong>
-
-  <div style="margin-top:10px">
-    <select id="payoutType">
-      <option value="full">دفع كامل (100%)</option>
-      <option value="percentage">نسبة مخصصة</option>
-    </select>
-  </div>
-
-  <input
-    id="payoutPercentage"
-    type="number"
-    step="1"
-    min="0"
-    max="100"
-    value="100"
-    placeholder="النسبة %"
-    style="margin-top:10px;display:none"
-  >
-</div>
       
 <!-- ===== نوع الصنف ===== -->
 <div style="margin-top:15px;padding:10px;border:1px dashed #ccc;border-radius:8px">
@@ -229,16 +207,7 @@ typeRadios.forEach(radio => {
 updateUI(
   document.querySelector('input[name="itemType"]:checked').value
 );
-// ===== التحكم بخيار منتج موظف =====
-const isPartnerCheckbox = document.getElementById("isPartnerProduct");
-const partnerSelectBox = document.getElementById("partnerSelectBox");
 
-if (isPartnerCheckbox && partnerSelectBox) {
-  isPartnerCheckbox.addEventListener("change", () => {
-    partnerSelectBox.style.display =
-      isPartnerCheckbox.checked ? "block" : "none";
-  });
-}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>
