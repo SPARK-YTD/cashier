@@ -1790,8 +1790,8 @@ async function processEmployeePayout(orderId) {
             .from("employee_cycles")
             .select("id")
             .eq("employee_id", pe.employee_id)
-            .is("closed_at", null)
-            .single();
+            .eq("status", "open")
+            .maybeSingle();
 
           if (!cycle) continue;
 
