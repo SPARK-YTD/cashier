@@ -1804,6 +1804,13 @@ async function processEmployeePayout(orderId) {
 
 window.recalculateTodayPayouts = async function () {
 
+  const pass = prompt("أدخل رمز الإدارة");
+
+  if (pass !== "9898") {
+    alert("غير مصرح");
+    return;
+  }
+
   const { data: orders } = await supabase
     .from("orders")
     .select("id")
