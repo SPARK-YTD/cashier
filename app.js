@@ -1754,16 +1754,7 @@ async function processEmployeePayout(orderId) {
 
     const { data: items } = await supabase
       .from("order_items")
-      .select(`
-        id,
-        product_id,
-        qty,
-        price,
-        products (
-          partner_id,
-          payout_percentage
-        )
-      `)
+      .select("id, product_id, qty, price")
       .eq("order_id", orderId);
 
     if (!items) return;
@@ -1772,60 +1763,30 @@ async function processEmployeePayout(orderId) {
 
       const saleTotal = Number(item.price) * Number(item.qty);
 
-      // 🔹 أولاً: نبحث عن موظفين متعددين
       const { data: productEmployees } = await supabase
         .from("product_employees")
         .select("employee_id, commission_percent")
         .eq("product_id", item.product_id);
 
-      if (productEmployees && productEmployees.length > 0) {
+      if (!productEmployees || productEmployees.length === 0)
+        continue;
 
-        // ✅ نظام متعدد
-        for (const pe of productEmployees) {
-
-          const payout =
-            saleTotal * (Number(pe.commission_percent) / 100);
-
-          const { data: cycle } = await supabase
-            .from("employee_cycles")
-            .select("id")
-            .eq("employee_id", pe.employee_id)
-            .eq("status", "open")
-            .maybeSingle();
-
-          if (!cycle) continue;
-
-          await supabase.from("employee_sales").insert({
-            employee_id: pe.employee_id,
-            product_id: item.product_id,
-            order_item_id: item.id,
-            cycle_id: cycle.id,
-            quantity: item.qty,
-            sale_price: item.price,
-            payout_amount: payout
-          });
-        }
-
-      } else {
-
-        // 🔁 النظام القديم (موظف واحد فقط)
-        const product = item.products;
-        if (!product?.partner_id) continue;
+      for (const pe of productEmployees) {
 
         const payout =
-          saleTotal * (Number(product.payout_percentage) / 100);
+          saleTotal * (Number(pe.commission_percent) / 100);
 
         const { data: cycle } = await supabase
           .from("employee_cycles")
           .select("id")
-          .eq("employee_id", product.partner_id)
-          .is("closed_at", null)
-          .single();
+          .eq("employee_id", pe.employee_id)
+          .eq("status", "open")
+          .maybeSingle();
 
         if (!cycle) continue;
 
         await supabase.from("employee_sales").insert({
-          employee_id: product.partner_id,
+          employee_id: pe.employee_id,
           product_id: item.product_id,
           order_item_id: item.id,
           cycle_id: cycle.id,
