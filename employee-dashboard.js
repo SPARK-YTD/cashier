@@ -42,7 +42,9 @@ document.getElementById("timeFilter").addEventListener("change", () => {
 
 let currentRequest = 0;
 
-window.loadStats = async function () {
+  window.loadStats = async function () {
+  console.log("Session:", session);
+  console.log("Session ID:", session.id);
 
   const requestId = ++currentRequest;
 
@@ -51,6 +53,7 @@ window.loadStats = async function () {
   ================================ */
 
   const cycle = await getOpenCycle(session.id);
+  console.log("Open Cycle Result:", cycle);
   if (!cycle) {
   const financeBox = document.getElementById("financeBox");
   if (financeBox) {
