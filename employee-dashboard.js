@@ -52,9 +52,10 @@ let currentRequest = 0;
      تأكد من وجود دورة
   ================================ */
 
-  const cycle = await getOpenCycle(session.id);
-  console.log("Open Cycle Result:", cycle);
-  if (!cycle) {
+const cycle = await getOpenCycle(session.id);
+
+if (!cycle) {
+
   const financeBox = document.getElementById("financeBox");
   if (financeBox) {
     financeBox.innerHTML = `
@@ -63,88 +64,59 @@ let currentRequest = 0;
       </div>
     `;
   }
-  return;
-}
-  
-  // ممكن تستخدمها لاحقاً لحساب المستحق
+
+  window.currentCycle = null;
+
+} else {
+
   window.currentCycle = cycle;
-  
+
   /* ===============================
-   الحساب المالي للدورة
-================================ */
+     الحساب المالي للدورة
+  ================================ */
 
-// 1️⃣ حساب العمولة من employee_sales
-const { data: sales } = await supabase
-  .from("employee_sales")
-  .select("payout_amount")
-  .eq("cycle_id", cycle.id);
+  const { data: sales } = await supabase
+    .from("employee_sales")
+    .select("payout_amount")
+    .eq("cycle_id", cycle.id);
 
-let totalCommission = 0;
+  let totalCommission = 0;
+  if (sales) {
+    totalCommission = sales.reduce(
+      (s,i)=> s + Number(i.payout_amount || 0),
+      0
+    );
+  }
 
-if (sales) {
-  totalCommission = sales.reduce(
-    (s,i)=> s + Number(i.payout_amount || 0),
-    0
-  );
-}
+  const { data: payouts } = await supabase
+    .from("employee_payouts")
+    .select("amount, paid_at")
+    .eq("cycle_id", cycle.id)
+    .order("paid_at", { ascending: false });
 
-// 2️⃣ حساب المدفوع
-const { data: payouts } = await supabase
-  .from("employee_payouts")
-  .select("amount, paid_at")
-  .eq("cycle_id", cycle.id)
-  .order("paid_at", { ascending: false });
+  let totalPaid = 0;
+  if (payouts) {
+    totalPaid = payouts.reduce(
+      (s,p)=> s + Number(p.amount || 0),
+      0
+    );
+  }
 
-let totalPaid = 0;
+  const remaining = Math.max(0, totalCommission - totalPaid);
 
-if (payouts) {
-  totalPaid = payouts.reduce(
-    (s,p)=> s + Number(p.amount || 0),
-    0
-  );
-}
+  const financeBox = document.getElementById("financeBox");
 
-const remaining = Math.max(0, totalCommission - totalPaid);
-
-// 3️⃣ عرض النتائج
-const financeBox = document.getElementById("financeBox");
-
-if (financeBox) {
-  financeBox.innerHTML = `
-    <div style="
-      background:white;
-      padding:20px;
-      border-radius:12px;
-      box-shadow:0 6px 20px rgba(0,0,0,0.05);
-    ">
-      <h3 style="margin-top:0">💼 حساب الدورة الحالية</h3>
-
-      <div style="margin-bottom:10px">
-        🧮 إجمالي العمولة: <strong>${totalCommission.toFixed(3)} د.ب</strong><br>
-        💵 المدفوع: <strong>${totalPaid.toFixed(3)} د.ب</strong><br>
-        ⚖️ المتبقي: 
-        <strong style="color:${remaining > 0 ? '#dc2626' : '#16a34a'}">
-          ${remaining.toFixed(3)} د.ب
-        </strong>
+  if (financeBox) {
+    financeBox.innerHTML = `
+      <div>
+        <h3>💼 حساب الدورة الحالية</h3>
+        إجمالي العمولة: ${totalCommission.toFixed(3)} د.ب <br>
+        المدفوع: ${totalPaid.toFixed(3)} د.ب <br>
+        المتبقي: ${remaining.toFixed(3)} د.ب
       </div>
+    `;
+  }
 
-      <div style="margin-top:15px">
-        <strong>📜 سجل الدفعات:</strong>
-        ${
-          payouts && payouts.length
-            ? payouts.map(p => `
-                <div style="font-size:13px;margin-top:6px">
-                  ${Number(p.amount).toFixed(3)} د.ب
-                  - ${new Date(p.paid_at).toLocaleDateString()}
-                </div>
-              `).join("")
-            : `<div style="font-size:13px;color:#64748b;margin-top:6px">
-                لا توجد دفعات بعد
-              </div>`
-        }
-      </div>
-    </div>
-  `;
 }
 
   /* ===============================
