@@ -151,15 +151,26 @@ if (financeBox) {
      جلب أصناف الموظف
   ================================ */
 
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("id, name, category")
-    .eq("partner_id", session.id);
+ const { data: linked, error: productsError } = await supabase
+  .from("product_employees")
+  .select(`
+    product_id,
+    products (
+      id,
+      name,
+      category
+    )
+  `)
+  .eq("employee_id", session.id);
 
-  if (productsError) {
-    console.error(productsError);
-    return;
-  }
+if (productsError) {
+  console.error(productsError);
+  return;
+}
+
+const products = linked
+  ? linked.map(l => l.products).filter(Boolean)
+  : [];
 
   if (requestId !== currentRequest) return;
 
