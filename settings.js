@@ -280,62 +280,69 @@ const { data: product, error } = await query.select().single();
 if (error) throw error;
 
 // ===============================
-// حفظ الموظفين المتعددين
+// حفظ الموظفين المتعددين (نسخة آمنة 100%)
 // ===============================
 
-await supabase
-  .from("product_employees")
-  .delete()
-  .eq("product_id", product.id);
-
 const multiRows = document.querySelectorAll(".multi-emp-row");
-
 const multiInsert = [];
 
+// 1️⃣ جمع البيانات + التحقق
 multiRows.forEach(row => {
-  const empId = row.querySelector(".multi-emp-select")?.value;
-  const percent = parseFloat(
-    row.querySelector(".multi-emp-percent")?.value || 0
-  );
 
-  if (empId && percent > 0 && percent <= 100) {
-    multiInsert.push({
-      product_id: product.id,
-      employee_id: empId,
-      commission_percent: percent
-    });
+  const empId = row.querySelector(".multi-emp-select")?.value;
+  const percentValue = row.querySelector(".multi-emp-percent")?.value;
+
+  if (!empId) return;
+
+  if (percentValue === "") {
+    throw new Error("❌ يجب إدخال نسبة لكل موظف");
   }
+
+  const percent = parseFloat(percentValue);
+
+  if (isNaN(percent) || percent <= 0 || percent > 100) {
+    throw new Error("❌ النسبة يجب أن تكون بين 1 و 100");
+  }
+
+  multiInsert.push({
+    product_id: product.id,
+    employee_id: empId,
+    commission_percent: percent
+  });
 });
 
-// ✅ منع تكرار نفس الموظف
-const employeeIds = multiInsert.map(e => e.employee_id);
-const hasDuplicate = new Set(employeeIds).size !== employeeIds.length;
-
-if (hasDuplicate) {
-  return alert("لا يمكن اختيار نفس الموظف أكثر من مرة");
+// 2️⃣ لازم يكون فيه موظف واحد على الأقل
+if (multiInsert.length === 0) {
+  throw new Error("❌ يجب اختيار موظف واحد على الأقل");
 }
 
-// ✅ تحقق أن مجموع النسب = 100
+// 3️⃣ منع التكرار
+const employeeIds = multiInsert.map(e => e.employee_id);
+if (new Set(employeeIds).size !== employeeIds.length) {
+  throw new Error("❌ لا يمكن اختيار نفس الموظف أكثر من مرة");
+}
+
+// 4️⃣ تحقق مجموع النسب
 const totalPercent = multiInsert.reduce(
   (s, e) => s + e.commission_percent,
   0
 );
 
-if (multiInsert.length === 0) {
-  return alert("يجب اختيار موظف واحد على الأقل");
+if (Math.abs(totalPercent - 100) > 0.001) {
+  throw new Error(
+    `❌ مجموع النسب يجب أن يساوي 100% (الحالي: ${totalPercent}%)`
+  );
 }
 
-if (Math.round(totalPercent) !== 100) {
-  return alert("مجموع النسب يجب أن يساوي 100%");
-}
+// 5️⃣ بعد التحقق نحذف القديم ونضيف الجديد
+await supabase
+  .from("product_employees")
+  .delete()
+  .eq("product_id", product.id);
 
-
-if (multiInsert.length) {
-  await supabase
-    .from("product_employees")
-    .insert(multiInsert);
-}
-
+await supabase
+  .from("product_employees")
+  .insert(multiInsert);
 
     /* حفظ المواد الاستهلاكية المرتبطة بالصنف */
 const rows = document.querySelectorAll("#consumablesBox > div");
