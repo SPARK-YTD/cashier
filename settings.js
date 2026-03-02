@@ -18,15 +18,6 @@ async function loadEmployees() {
 
   employeesList = data || [];
 
-  const select = document.getElementById("partnerSelect");
-  if (!select) return;
-
-  select.innerHTML = `
-    <option value="">اختر الموظف</option>
-    ${employeesList.map(e => `
-      <option value="${e.id}">${e.name}</option>
-    `).join("")}
-  `;
 }
 /* ===============================
    المواد الاستهلاكية
@@ -93,14 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadConsumables();
   loadEmployees();
   
-  const partnerCheckbox = document.getElementById("isPartnerProduct");
-const partnerSelect = document.getElementById("partnerSelect");
-
-if (partnerCheckbox && partnerSelect) {
-  partnerCheckbox.addEventListener("change", () => {
-    partnerSelect.disabled = !partnerCheckbox.checked;
-  });
-}
 
   const payoutTypeSelect = document.getElementById("payoutType");
 const payoutPercentageInput = document.getElementById("payoutPercentage");
@@ -201,8 +184,6 @@ window.addItem = async function () {
       
     const isSpicy = document.getElementById("itemSpicy")?.checked || false;
     const name = document.getElementById("itemName").value.trim();
-    const isPartner = document.getElementById("isPartnerProduct")?.checked;
-    const partnerId = document.getElementById("partnerSelect")?.value || null;
     const payoutType = document.getElementById("payoutType")?.value || "full";
     const payoutPercentage =
     payoutType === "percentage"
@@ -269,7 +250,6 @@ if (editingItemId) {
   extras_list: extras.join("\n"),
   is_spicy: isSpicy,
 
-  partner_id: isPartner && partnerId ? partnerId : null,
 
   payout_type: payoutType,
   payout_percentage: payoutPercentage
@@ -293,7 +273,6 @@ query = supabase
     payout_percentage: payoutPercentage,
     sort_order: Date.now(),
 
-    partner_id: isPartner && partnerId ? partnerId : null   // 👈 هذا أهم سطر
   });
 }
 
@@ -342,16 +321,14 @@ const totalPercent = multiInsert.reduce(
   0
 );
 
-if (multiInsert.length > 0 && Math.round(totalPercent) !== 100) {
+if (multiInsert.length === 0) {
+  return alert("يجب اختيار موظف واحد على الأقل");
+}
+
+if (Math.round(totalPercent) !== 100) {
   return alert("مجموع النسب يجب أن يساوي 100%");
 }
 
-if (multiInsert.length > 0) {
-  await supabase
-    .from("products")
-    .update({ partner_id: null })
-    .eq("id", product.id);
-}
 
 if (multiInsert.length) {
   await supabase
@@ -717,20 +694,6 @@ if (payoutPercentageInput) {
 // ===== تحميل ربط الموظف =====
 await loadEmployees();  
 
-const checkbox = document.getElementById("isPartnerProduct");
-const select = document.getElementById("partnerSelect");
-
-select.style.display = "block";    
-
-if (item.partner_id) {
-  checkbox.checked = true;
-  select.disabled = false;
-  select.value = item.partner_id;
-} else {
-  checkbox.checked = false;
-  select.disabled = true;
-  select.value = "";
-}
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
@@ -782,10 +745,6 @@ function clearForm() {
   document.getElementById("priceLarge").value = "";
   document.getElementById("itemExtras").value = "";
   document.getElementById("itemSpicy").checked = false;
-  document.getElementById("isPartnerProduct").checked = false;
-  document.getElementById("partnerSelect").style.display = "block";
-  document.getElementById("partnerSelect").disabled = true;
-  document.getElementById("partnerSelect").value = "";
   
   const multiBox = document.getElementById("multiEmployeesBox");
   if (multiBox) multiBox.innerHTML = "";
