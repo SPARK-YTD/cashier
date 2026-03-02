@@ -1801,27 +1801,3 @@ async function processEmployeePayout(orderId) {
     console.error("PAYOUT ERROR:", err);
   }
 }
-
-window.recalculateTodayPayouts = async function () {
-
-  const pass = prompt("أدخل رمز الإدارة");
-
-  if (pass !== "9898") {
-    alert("غير مصرح");
-    return;
-  }
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("status", "completed")
-    .eq("business_day_id", currentBusinessDay.id);
-
-  if (!orders) return;
-
-  for (const order of orders) {
-    await processEmployeePayout(order.id);
-  }
-
-  alert("✅ تم إعادة احتساب عمولات اليوم");
-};
