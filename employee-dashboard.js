@@ -169,7 +169,11 @@ if (productsError) {
 }
 
 const products = linked
-  ? linked.map(l => l.products).filter(Boolean)
+  ? [...new Map(linked
+      .map(l => l.products)
+      .filter(Boolean)
+      .map(p => [p.id, p])
+    ).values()]
   : [];
 
   if (requestId !== currentRequest) return;
