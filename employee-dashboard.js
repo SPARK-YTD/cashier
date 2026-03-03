@@ -515,7 +515,7 @@ if (remaining === 0){
   doc.text("Authorized Signature", pageWidth-80, pageHeight-55);
 
   doc.setFontSize(14);
-  doc.text("Khath Lak Break", pageWidth-80, pageHeight-40);
+  doc.text("Geat a Break", pageWidth-80, pageHeight-40);
 
   /* =========================
      Footer
