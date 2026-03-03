@@ -502,15 +502,20 @@ window.loadStats();
   element.innerHTML = reportHTML;
 
   html2pdf()
-  .set({
-    margin: 10,
-    filename: `Financial_Report_${session.code}.pdf`,
-    html2canvas: { scale: 1 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all'] }
-  })
-  .from(element)
-  .save();
+.set({
+  margin: 0,
+  filename: `Financial_Report_${session.code}.pdf`,
+  html2canvas: { 
+    scale: 2,
+    useCORS: true,
+    letterRendering: true
+  },
+  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  pagebreak: { mode: ['avoid-all'] }
+})
+.from(element)
+.save();
+
 });
 
   
