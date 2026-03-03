@@ -383,19 +383,19 @@ window.loadStats();
       </div>
     </div>
 
-    <img src="/cashier/assets/logo.png"
+    <img src="${window.location.origin}/cashier/assets/logo.png"
          width="60"
          style="background:white;padding:6px;border-radius:10px;">
   </div>
 
   <!-- CONTENT -->
   <div style="
-    flex:1;
-    padding:25px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-  ">
+    <div style="
+  flex:1;
+  padding:25px;
+  display:flex;
+  flex-direction:column;
+">
 
     <div>
 
