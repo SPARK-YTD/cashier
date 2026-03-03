@@ -508,7 +508,7 @@ window.loadStats();
   .set({
     margin: 0,
     filename: `Financial_Report_${session.code}.pdf`,
-    html2canvas: { scale: 2 },
+    html2canvas: { scale: 1 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   })
   .from(element)
