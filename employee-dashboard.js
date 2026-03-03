@@ -329,17 +329,10 @@ window.loadStats();
     return;
   }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
   const cycle = window.currentCycle;
   const today = new Date();
-  const pageHeight = doc.internal.pageSize.height;
 
-  /* =========================
-     جلب البيانات
-  ========================= */
-
+  // حساب البيانات
   const { data: sales } = await supabase
     .from("employee_sales")
     .select("payout_amount")
@@ -361,174 +354,69 @@ window.loadStats();
 
   const remaining = Math.max(0,totalCommission-totalPaid);
 
-  /* =========================
-     HEADER
-  ========================= */
+  // إنشاء HTML للتقرير
+  const reportHTML = `
+  <div style="font-family:Arial; direction:rtl; padding:30px">
 
-  const logo = new Image();
-logo.src = "assets/logo.png";
-await new Promise(r => logo.onload = r);
+    <div style="text-align:center; margin-bottom:20px">
+      <img src="assets/logo.png" width="120"><br>
+      <h2>تقرير مالي للموظف</h2>
+      <small>${today.toLocaleDateString()}</small>
+    </div>
 
-const pageWidth = doc.internal.pageSize.width;
+    <hr>
 
-// خلفية داكنة
-doc.setFillColor(20, 20, 20);
-doc.rect(0, 0, pageWidth, 55, "F");
+    <p><strong>اسم الموظف:</strong> ${session.name}</p>
+    <p><strong>كود الموظف:</strong> ${session.code}</p>
+    <p><strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}</p>
 
-// خط فاصل ذهبي خفيف تحت الهيدر
-doc.setFillColor(212, 175, 55);
-doc.rect(0, 55, pageWidth, 2, "F");
+    <hr>
 
-// حساب التوسيط بدقة
-const logoWidth = 45;
-const logoHeight = 22;
-const logoX = (pageWidth - logoWidth) / 2;
+    <h3>الملخص المالي</h3>
+    <p>إجمالي العمولة: ${totalCommission.toFixed(3)} د.ب</p>
+    <p>المدفوع: ${totalPaid.toFixed(3)} د.ب</p>
+    <p style="color:${remaining>0?'red':'green'}">
+      المتبقي: ${remaining.toFixed(3)} د.ب
+    </p>
 
-doc.addImage(logo, "PNG", logoX, 10, logoWidth, logoHeight);
+    <hr>
 
-// عنوان التقرير
-doc.setTextColor(255,255,255);
-doc.setFontSize(18);
-doc.text(
-  "EMPLOYEE FINANCIAL REPORT",
-  pageWidth/2,
-  45,
-  { align: "center" }
-);
+    <h3>سجل الدفعات</h3>
+    ${
+      payouts && payouts.length
+      ? payouts.map(p=>`
+        <p>
+        ${new Date(p.paid_at).toLocaleDateString()}
+        — ${Number(p.amount).toFixed(3)} د.ب
+        </p>
+      `).join("")
+      : "<p>لا توجد دفعات</p>"
+    }
 
-doc.setTextColor(0,0,0);
+    <div style="margin-top:50px; text-align:left">
+      ___________________________<br>
+      اعتماد رسمي<br>
+      خذ لك بريك
+    </div>
 
-  /* =========================
-     معلومات الموظف
-  ========================= */
+  </div>
+  `;
 
-  doc.setFillColor(245,245,245);
-  doc.roundedRect(15,65,pageWidth-30,35,3,3,"F");
+  const element = document.createElement("div");
+  element.innerHTML = reportHTML;
 
-  doc.setFontSize(12);
-  doc.text("Employee: " + session.name, 20, 82);
-  doc.text("Employee Code: " + session.code, 20, 90);
-
-  doc.text("Cycle ID: " + cycle.id.substring(0,8), pageWidth-80, 82);
-  doc.text("Status: " + cycle.status.toUpperCase(), pageWidth-80, 90);
-
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text("Report Date: " + today.toLocaleDateString(), 20, 100);
-  doc.setTextColor(0,0,0);
-
-
-  /* =========================
-     Financial Summary Box
-  ========================= */
-
-  doc.setFillColor(255,255,255);
-  doc.roundedRect(15,110,pageWidth-30,45,3,3,"F");
-
-  doc.setDrawColor(230);
-  doc.roundedRect(15,110,pageWidth-30,45,3,3);
-
-  doc.setFontSize(14);
-  doc.text("Financial Summary", 20, 125);
-
-doc.setFontSize(12);
-
-doc.text("Total Commission", 25, 140);
-doc.text(totalCommission.toFixed(3) + " BHD", pageWidth-40, 140, { align:"right" });
-
-doc.text("Total Paid", 25, 150);
-doc.text(totalPaid.toFixed(3) + " BHD", pageWidth-40, 150, { align:"right" });
-
-doc.text("Remaining", 25, 160);
-doc.text(
-  remaining.toFixed(3) + " BHD",
-  pageWidth-40,
-  160,
-  { align:"right" }
-);
-
-doc.setFont(undefined,"normal");
-doc.setTextColor(0,0,0);
-
-// ختم مدفوع بالكامل
-if (remaining === 0){
-  doc.setFontSize(16);
-  doc.setTextColor(22,163,74);
-  doc.text("PAID IN FULL", pageWidth/2, 170, { align:"center" });
-  doc.setTextColor(0,0,0);
-}
-
-  /* =========================
-     Payment Table
-  ========================= */
-
-  doc.setFontSize(14);
-  doc.text("Payment History", 15, 185);
-
-  let y = 195;
-
-  if (payouts && payouts.length){
-
-    doc.setFillColor(240,240,240);
-    doc.rect(15,y-5,pageWidth-30,10,"F");
-
-    doc.setFontSize(11);
-    doc.text("Date", 20, y);
-    doc.text("Amount (BHD)", pageWidth-40, y, { align:"right" });
-
-    y += 10;
-
-    payouts.forEach(p=>{
-      doc.text(
-        new Date(p.paid_at).toLocaleDateString(),
-        20,
-        y
-      );
-
-      doc.text(
-        Number(p.amount).toFixed(3),
-        pageWidth-40,
-        y,
-        { align:"right" }
-      );
-
-      y += 8;
-    });
-
-  } else {
-    doc.setFontSize(12);
-    doc.text("No payments recorded", 20, y);
-  }
-
-  /* =========================
-     Signature Section
-  ========================= */
-
-  doc.setDrawColor(180);
-  doc.line(pageWidth-80, pageHeight-50, pageWidth-20, pageHeight-50);
-
-  doc.setFontSize(10);
-  doc.text("Authorized Signature", pageWidth-80, pageHeight-55);
-
-  doc.setFontSize(14);
-  doc.text("Geat a Break", pageWidth-80, pageHeight-40);
-
-  /* =========================
-     Footer
-  ========================= */
-
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text(
-    "Confidential Document - System Generated Report",
-    pageWidth/2,
-    pageHeight-10,
-    { align: "center" }
-  );
-
-  doc.save(`Financial_Report_${session.code}.pdf`);
+  html2pdf()
+    .set({
+      margin: 10,
+      filename: `Financial_Report_${session.code}.pdf`,
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    })
+    .from(element)
+    .save();
 });
 
+  
 /* ===============================
    Logout
 ================================ */
