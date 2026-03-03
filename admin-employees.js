@@ -479,83 +479,37 @@ window.openCycleManual = async function(empId) {
 
 window.closeCycle = async function(empId) {
 
-  // جلب الدورة المفتوحة
-  const { data: cycle } = await supabase
-    .from("employee_cycles")
-    .select("*")
-    .eq("employee_id", empId)
-    .eq("status", "open")
-    .maybeSingle();
-
-  if (!cycle) {
-    alert("لا توجد دورة مفتوحة");
-    return;
-  }
-
-  // جلب المبيعات
-  const { data: sales } = await supabase
-    .from("employee_sales")
-    .select("payout_amount")
-    .eq("cycle_id", cycle.id);
-
-  const totalCommission = sales?.reduce(
-    (s,i)=> s + Number(i.payout_amount || 0),
-    0
-  ) || 0;
-
-  // جلب المدفوع
-  const { data: payouts } = await supabase
-    .from("employee_payouts")
-    .select("amount")
-    .eq("cycle_id", cycle.id);
-
-  const totalPaid = payouts?.reduce(
-    (s,p)=> s + Number(p.amount || 0),
-    0
-  ) || 0;
-
-  const remaining = totalCommission - totalPaid;
-
-  // 🚫 منع الإغلاق إذا فيه متبقي
-  if (remaining > 0.001) {
-    alert(
-      "❌ لا يمكن إغلاق الدورة\nيوجد مبلغ متبقي: " +
-      remaining.toFixed(3) + " د.ب"
-    );
-    return;
-  }
-
-  // 🔐 طلب PIN المدير
   const managerPin = prompt("🔐 أدخل رقم المدير لإغلاق الدورة");
-
   if (!managerPin) return;
 
-  const { data: manager } = await supabase
-    .from("employees")
-    .select("*")
-    .eq("pin_hash", managerPin)
-    .eq("role", "manager")
-    .eq("active", true)
-    .maybeSingle();
+  const { error } = await supabase
+    .rpc("secure_close_cycle", {
+      p_employee_id: empId,
+      p_manager_pin: managerPin
+    });
 
-  if (!manager) {
-    alert("❌ رقم المدير غير صحيح");
+  if (error) {
+
+    if (error.message.includes("INVALID_MANAGER_PIN")) {
+      alert("❌ رقم المدير غير صحيح");
+    }
+    else if (error.message.includes("CYCLE_HAS_REMAINING")) {
+      alert("❌ لا يمكن إغلاق الدورة — يوجد مبلغ متبقي");
+    }
+    else if (error.message.includes("NO_OPEN_CYCLE")) {
+      alert("لا توجد دورة مفتوحة");
+    }
+    else {
+      alert("حدث خطأ أثناء الإغلاق");
+      console.error(error);
+    }
+
     return;
   }
-
-  // إغلاق الدورة
-  await supabase
-    .from("employee_cycles")
-    .update({
-      status: "closed",
-      closed_at: new Date().toISOString()
-    })
-    .eq("id", cycle.id);
 
   alert("✅ تم إغلاق الدورة بنجاح");
   loadEmployees();
 };
-
   /* ================= PAYOUT ================= */
 
 window.openPayModal = async function(empId, cycleId, remaining){
