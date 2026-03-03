@@ -358,8 +358,6 @@ window.loadStats();
 <div style="
   font-family:Cairo, Arial;
   direction:rtl;
-  width:210mm;
-  min-height:297mm;
   margin:0;
   padding:0;
   box-sizing:border-box;
@@ -506,10 +504,11 @@ window.loadStats();
 
   html2pdf()
   .set({
-    margin: 0,
+    margin: 10,
     filename: `Financial_Report_${session.code}.pdf`,
     html2canvas: { scale: 1 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all'] }
   })
   .from(element)
   .save();
