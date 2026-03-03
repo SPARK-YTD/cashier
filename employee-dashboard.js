@@ -354,7 +354,6 @@ window.loadStats();
 
   const remaining = Math.max(0,totalCommission-totalPaid);
 
-
   const reportHTML = `
 <div style="
   font-family:Cairo, Arial;
