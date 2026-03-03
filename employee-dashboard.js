@@ -358,11 +358,15 @@ window.loadStats();
   const reportHTML = `
   <div style="font-family:Arial; direction:rtl; padding:30px">
 
-    <div style="text-align:center; margin-bottom:20px">
-      <img src="assets/logo.png" width="120"><br>
-      <h2>تقرير مالي للموظف</h2>
-      <small>${today.toLocaleDateString()}</small>
-    </div>
+    <div style="background:#111827; color:white; padding:30px; text-align:center">
+  <img src="${window.location.origin}/assets/logo.png"
+       width="140"
+       style="margin-bottom:10px;">
+  <h2 style="margin:0;">تقرير مالي للموظف</h2>
+  <div style="opacity:.8; font-size:14px; margin-top:5px;">
+    ${today.toLocaleDateString('ar-EG')}
+  </div>
+</div>
 
     <hr>
 
