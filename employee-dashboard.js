@@ -412,42 +412,38 @@ doc.setTextColor(0,0,0);
   doc.text("Cycle ID: " + cycle.id.substring(0,8), pageWidth-80, 82);
   doc.text("Status: " + cycle.status.toUpperCase(), pageWidth-80, 90);
 
-  doc.text("Report Date: " + today.toLocaleDateString(), 20, 102);
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text("Report Date: " + today.toLocaleDateString(), 20, 100);
+  doc.setTextColor(0,0,0);
+
 
   /* =========================
      Financial Summary Box
   ========================= */
 
   doc.setFillColor(255,255,255);
-  doc.roundedRect(15,100,pageWidth-30,45,3,3,"F");
+  doc.roundedRect(15,110,pageWidth-30,45,3,3,"F");
 
   doc.setDrawColor(230);
-  doc.roundedRect(15,100,pageWidth-30,45,3,3);
+  doc.roundedRect(15,110,pageWidth-30,45,3,3);
 
   doc.setFontSize(14);
-  doc.text("Financial Summary", 20, 115);
+  doc.text("Financial Summary", 20, 125);
 
-  doc.setFontSize(12);
+doc.setFontSize(12);
 
-  doc.text("Total Commission", 25, 130);
-  doc.text(totalCommission.toFixed(3) + " BHD", pageWidth-40, 130, { align:"right" });
+doc.text("Total Commission", 25, 140);
+doc.text(totalCommission.toFixed(3) + " BHD", pageWidth-40, 140, { align:"right" });
 
-  doc.text("Total Paid", 25, 140);
-  doc.text(totalPaid.toFixed(3) + " BHD", pageWidth-40, 140, { align:"right" });
+doc.text("Total Paid", 25, 150);
+doc.text(totalPaid.toFixed(3) + " BHD", pageWidth-40, 150, { align:"right" });
 
-// تلوين المتبقي حسب الحالة
-if (remaining > 0) {
-  doc.setTextColor(220,38,38); // أحمر لو فيه مبلغ
-} else {
-  doc.setTextColor(22,163,74); // أخضر لو مدفوع كامل
-}
-
-doc.setFont(undefined,"bold");
-doc.text("Remaining", 25, 150);
+doc.text("Remaining", 25, 160);
 doc.text(
   remaining.toFixed(3) + " BHD",
   pageWidth-40,
-  150,
+  160,
   { align:"right" }
 );
 
