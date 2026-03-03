@@ -356,7 +356,7 @@ window.loadStats();
 
   // إنشاء HTML للتقرير
   const reportHTML = `
-  <div style="font-family:Arial; direction:rtl; padding:30px">
+    <div style="font-family:Cairo, Arial; direction:rtl; padding:0; background:#f3f4f6">
 
     <div style="background:#111827; color:white; padding:30px; text-align:center">
   <img src="${window.location.origin}/assets/logo.png"
