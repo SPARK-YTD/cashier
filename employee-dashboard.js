@@ -359,7 +359,7 @@ window.loadStats();
   font-family:Cairo, Arial;
   direction:rtl;
   width:210mm;
-  height:297mm;
+  min-height:297mm;
   margin:0;
   padding:0;
   box-sizing:border-box;
