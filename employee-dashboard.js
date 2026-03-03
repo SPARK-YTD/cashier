@@ -356,55 +356,127 @@ window.loadStats();
 
   // إنشاء HTML للتقرير
   const reportHTML = `
-    <div style="font-family:Cairo, Arial; direction:rtl; padding:0; background:#f3f4f6">
+<div style="
+  font-family:Cairo, Arial;
+  direction:rtl;
+  width:210mm;
+  height:297mm;
+  padding:0;
+  margin:0;
+  box-sizing:border-box;
+">
 
-    <div style="background:#111827; color:white; padding:30px; text-align:center">
-<img src="/cashier/assets/logo.png"
-     width="140"
-     style="margin-bottom:10px;">
-  <h2 style="margin:0;">تقرير مالي للموظف</h2>
-  <div style="opacity:.8; font-size:14px; margin-top:5px;">
-    ${today.toLocaleDateString('ar-EG')}
+  <!-- HEADER -->
+  <div style="
+    background:#0f172a;
+    color:white;
+    text-align:center;
+    padding:25px 20px;
+  ">
+    <img src="/cashier/assets/logo.png"
+         width="90"
+         style="margin-bottom:10px;">
+    <h2 style="margin:0; font-weight:700;">
+      تقرير مالي للموظف
+    </h2>
+    <div style="opacity:.8; font-size:13px; margin-top:6px;">
+      ${today.toLocaleDateString('ar-EG')}
+    </div>
   </div>
-</div>
 
-    <hr>
+  <!-- BODY -->
+  <div style="padding:25px;">
 
-    <p><strong>اسم الموظف:</strong> ${session.name}</p>
-    <p><strong>كود الموظف:</strong> ${session.code}</p>
-    <p><strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}</p>
+    <!-- Employee Info -->
+    <div style="
+      background:#f1f5f9;
+      padding:15px;
+      border-radius:8px;
+      margin-bottom:20px;
+      line-height:1.9;
+    ">
+      <strong>اسم الموظف:</strong> ${session.name}<br>
+      <strong>كود الموظف:</strong> ${session.code}<br>
+      <strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}
+    </div>
 
-    <hr>
+    <!-- Financial Summary -->
+    <div style="
+      background:white;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      padding:18px;
+      margin-bottom:25px;
+    ">
+      <h3 style="margin-top:0; margin-bottom:15px;">
+        الملخص المالي
+      </h3>
 
-    <h3>الملخص المالي</h3>
-    <p>إجمالي العمولة: ${totalCommission.toFixed(3)} د.ب</p>
-    <p>المدفوع: ${totalPaid.toFixed(3)} د.ب</p>
-    <p style="color:${remaining>0?'red':'green'}">
-      المتبقي: ${remaining.toFixed(3)} د.ب
-    </p>
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span>إجمالي العمولة</span>
+        <strong>${totalCommission.toFixed(3)} د.ب</strong>
+      </div>
 
-    <hr>
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span>المدفوع</span>
+        <strong>${totalPaid.toFixed(3)} د.ب</strong>
+      </div>
 
-    <h3>سجل الدفعات</h3>
-    ${
-      payouts && payouts.length
-      ? payouts.map(p=>`
-        <p>
-        ${new Date(p.paid_at).toLocaleDateString()}
-        — ${Number(p.amount).toFixed(3)} د.ب
-        </p>
-      `).join("")
-      : "<p>لا توجد دفعات</p>"
-    }
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        font-size:16px;
+        color:${remaining>0 ? '#dc2626' : '#16a34a'};
+      ">
+        <span><strong>المتبقي</strong></span>
+        <strong>${remaining.toFixed(3)} د.ب</strong>
+      </div>
+    </div>
 
-    <div style="margin-top:50px; text-align:left">
-      ___________________________<br>
-      اعتماد رسمي<br>
-      خذ لك بريك
+    <!-- Payments -->
+    <div style="
+      background:#f9fafb;
+      padding:15px;
+      border-radius:8px;
+    ">
+      <h3 style="margin-top:0;">
+        سجل الدفعات
+      </h3>
+
+      ${
+        payouts && payouts.length
+        ? payouts.map(p=>`
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:6px 0;
+              border-bottom:1px solid #e5e7eb;
+            ">
+              <span>${new Date(p.paid_at).toLocaleDateString('ar-EG')}</span>
+              <strong>${Number(p.amount).toFixed(3)} د.ب</strong>
+            </div>
+          `).join("")
+        : "<div style='opacity:.7;'>لا توجد دفعات</div>"
+      }
     </div>
 
   </div>
-  `;
+
+  <!-- FOOTER / SIGNATURE -->
+  <div style="
+    position:absolute;
+    bottom:40px;
+    right:30px;
+    left:30px;
+    text-align:right;
+  ">
+    <div style="border-top:1px dashed #9ca3af; width:250px; margin-bottom:6px;"></div>
+    اعتماد رسمي<br>
+    خذ لك بريك
+  </div>
+
+</div>
+`;
 
   const element = document.createElement("div");
   element.innerHTML = reportHTML;
