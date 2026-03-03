@@ -334,7 +334,6 @@ window.loadStats();
 
   const cycle = window.currentCycle;
   const today = new Date();
-  const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
 
   /* =========================
@@ -404,17 +403,16 @@ doc.setTextColor(0,0,0);
   ========================= */
 
   doc.setFillColor(245,245,245);
-  doc.roundedRect(15,55,pageWidth-30,30,3,3,"F");
+  doc.roundedRect(15,65,pageWidth-30,35,3,3,"F");
 
   doc.setFontSize(12);
-  doc.text("Employee: " + session.name, 20, 70);
-  doc.text("Employee Code: " + session.code, 20, 78);
+  doc.text("Employee: " + session.name, 20, 82);
+  doc.text("Employee Code: " + session.code, 20, 90);
 
-  doc.text("Cycle ID: " + cycle.id.substring(0,8), pageWidth-80, 70);
-  doc.text("Status: " + cycle.status.toUpperCase(), pageWidth-80, 78);
+  doc.text("Cycle ID: " + cycle.id.substring(0,8), pageWidth-80, 82);
+  doc.text("Status: " + cycle.status.toUpperCase(), pageWidth-80, 90);
 
-  doc.setFontSize(10);
-  doc.text("Report Date: " + today.toLocaleDateString(), 20, 90);
+  doc.text("Report Date: " + today.toLocaleDateString(), 20, 102);
 
   /* =========================
      Financial Summary Box
@@ -437,17 +435,32 @@ doc.setTextColor(0,0,0);
   doc.text("Total Paid", 25, 140);
   doc.text(totalPaid.toFixed(3) + " BHD", pageWidth-40, 140, { align:"right" });
 
-  doc.setFont(undefined,"bold");
-  doc.text("Remaining", 25, 150);
-  doc.text(remaining.toFixed(3) + " BHD", pageWidth-40, 150, { align:"right" });
-  doc.setFont(undefined,"normal");
+// تلوين المتبقي حسب الحالة
+if (remaining > 0) {
+  doc.setTextColor(220,38,38); // أحمر لو فيه مبلغ
+} else {
+  doc.setTextColor(22,163,74); // أخضر لو مدفوع كامل
+}
 
-  if (remaining === 0){
-    doc.setTextColor(22,163,74);
-    doc.setFontSize(16);
-    doc.text("PAID IN FULL", pageWidth/2, 165, { align:"center" });
-    doc.setTextColor(0,0,0);
-  }
+doc.setFont(undefined,"bold");
+doc.text("Remaining", 25, 150);
+doc.text(
+  remaining.toFixed(3) + " BHD",
+  pageWidth-40,
+  150,
+  { align:"right" }
+);
+
+doc.setFont(undefined,"normal");
+doc.setTextColor(0,0,0);
+
+// ختم مدفوع بالكامل
+if (remaining === 0){
+  doc.setFontSize(16);
+  doc.setTextColor(22,163,74);
+  doc.text("PAID IN FULL", pageWidth/2, 170, { align:"center" });
+  doc.setTextColor(0,0,0);
+}
 
   /* =========================
      Payment Table
