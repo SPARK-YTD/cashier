@@ -325,92 +325,138 @@ document.addEventListener("click", async function(e){
   if (e.target.id !== "downloadReportBtn") return;
 
   if (!window.currentCycle){
-    alert("لا توجد دورة مفتوحة");
+    alert("لا توجد دورة");
     return;
   }
 
   const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
+  const doc = new jsPDF();
 
-// تحميل الشعار
-const img = new Image();
-img.src = "assets/logo.png"; // ← هذا هو المسار الصحيح عندك
-
-await new Promise(resolve => {
-  img.onload = resolve;
-});
-
-// إضافة الشعار في الأعلى (منتصف الصفحة)
-doc.addImage(img, "PNG", 75, 10, 60, 25);
   const cycle = window.currentCycle;
+  const today = new Date();
 
-  // جلب بيانات العمولة
+  /* ===== حساب البيانات ===== */
+
   const { data: sales } = await supabase
     .from("employee_sales")
     .select("payout_amount")
     .eq("cycle_id", cycle.id);
 
-  let totalCommission = 0;
-  if (sales){
-    totalCommission = sales.reduce(
-      (s,i)=> s + Number(i.payout_amount || 0),
-      0
-    );
-  }
+  const totalCommission = sales?.reduce(
+    (s,i)=> s + Number(i.payout_amount || 0),0
+  ) || 0;
 
-  // جلب المدفوع
   const { data: payouts } = await supabase
     .from("employee_payouts")
     .select("amount, paid_at")
     .eq("cycle_id", cycle.id)
-    .order("paid_at", { ascending: false });
+    .order("paid_at",{ascending:false});
 
-  let totalPaid = 0;
-  if (payouts){
-    totalPaid = payouts.reduce(
-      (s,p)=> s + Number(p.amount || 0),
-      0
-    );
+  const totalPaid = payouts?.reduce(
+    (s,p)=> s + Number(p.amount || 0),0
+  ) || 0;
+
+  const remaining = Math.max(0,totalCommission-totalPaid);
+
+  /* ===== Header ===== */
+
+  doc.setFillColor(245,245,245);
+  doc.rect(0,0,210,35,"F");
+
+  doc.setFontSize(18);
+  doc.text("EMPLOYEE FINANCIAL REPORT", 105, 18, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.text("Report Date: " + today.toLocaleDateString(), 15, 30);
+
+  /* ===== Employee Info ===== */
+
+  doc.setDrawColor(200);
+  doc.rect(15,40,180,30);
+
+  doc.setFontSize(12);
+  doc.text("Employee: " + session.name, 20, 50);
+  doc.text("Employee Code: " + session.code, 20, 58);
+  doc.text("Cycle ID: " + cycle.id.substring(0,8), 120, 50);
+  doc.text("Status: " + cycle.status.toUpperCase(), 120, 58);
+
+  /* ===== Financial Summary ===== */
+
+  doc.setFontSize(14);
+  doc.text("Financial Summary", 15, 85);
+
+  doc.setFontSize(12);
+  doc.text("Total Commission:", 20, 95);
+  doc.text(totalCommission.toFixed(3) + " BHD", 150, 95);
+
+  doc.text("Total Paid:", 20, 105);
+  doc.text(totalPaid.toFixed(3) + " BHD", 150, 105);
+
+  doc.text("Remaining:", 20, 115);
+  doc.text(remaining.toFixed(3) + " BHD", 150, 115);
+
+  if (remaining === 0){
+    doc.setTextColor(22,163,74);
+    doc.setFontSize(16);
+    doc.text("PAID IN FULL", 105, 130, { align:"center" });
+    doc.setTextColor(0,0,0);
   }
 
-  const remaining = Math.max(0, totalCommission - totalPaid);
+  /* ===== Payment History ===== */
 
-  // محتوى التقرير
-  doc.setFontSize(16);
-  doc.text("Employee Financial Report", 20, 45);
+  doc.setFontSize(14);
+  doc.text("Payment History", 15, 150);
 
-  doc.setFontSize(16);
-doc.text("Employee Financial Report", 20, 50);
-
-doc.setFontSize(12);
-doc.text(`Employee: ${session.name}`, 20, 60);
-doc.text(`Employee Code: ${session.code}`, 20, 67);
-
-doc.text(`Total Commission: ${totalCommission.toFixed(3)} BHD`, 20, 80);
-doc.text(`Total Paid: ${totalPaid.toFixed(3)} BHD`, 20, 87);
-doc.text(`Remaining: ${remaining.toFixed(3)} BHD`, 20, 94);
-
-doc.text("Payment History:", 20, 110);
-
-  let y = 120;
+  let y = 160;
 
   if (payouts && payouts.length){
-    payouts.forEach(p => {
+    payouts.forEach(p=>{
       doc.text(
-        `${Number(p.amount).toFixed(3)} BHD - ${new Date(p.paid_at).toLocaleDateString()}`,
+        new Date(p.paid_at).toLocaleDateString(),
         20,
         y
       );
-      y += 8;
+      doc.text(
+        Number(p.amount).toFixed(3) + " BHD",
+        150,
+        y
+      );
+      y+=8;
     });
   } else {
     doc.text("No payments yet", 20, y);
   }
 
-  doc.save(`report_${session.name}.pdf`);
+  /* ===== Footer & Signature ===== */
+
+/* ===== Footer & Signature ===== */
+
+const pageHeight = doc.internal.pageSize.height;
+
+// خط التوقيع
+doc.setDrawColor(180);
+doc.line(130, pageHeight - 50, 190, pageHeight - 50);
+
+// عنوان الاعتماد
+doc.setFontSize(10);
+doc.text("اعتماد رسمي", 130, pageHeight - 55);
+
+// اسم العربة
+doc.setFontSize(14);
+doc.text("خذ لك بريك", 130, pageHeight - 40);
+
+// سطر النظام
+doc.setFontSize(9);
+doc.text(
+  "System Generated Report - Khath Lak Break",
+  105,
+  pageHeight - 10,
+  { align: "center" }
+);
+
+doc.save(`Financial_Report_${session.code}.pdf`);
 
 });
-
 /* ===============================
    Logout
 ================================ */
