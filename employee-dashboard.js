@@ -359,9 +359,9 @@ window.loadStats();
     <div style="font-family:Cairo, Arial; direction:rtl; padding:0; background:#f3f4f6">
 
     <div style="background:#111827; color:white; padding:30px; text-align:center">
-  <img src="${window.location.origin}/assets/logo.png"
-       width="140"
-       style="margin-bottom:10px;">
+<img src="https://spark-ytd.github.io/assets/logo.png"
+     width="140"
+     style="margin-bottom:10px;">
   <h2 style="margin:0;">تقرير مالي للموظف</h2>
   <div style="opacity:.8; font-size:14px; margin-top:5px;">
     ${today.toLocaleDateString('ar-EG')}
