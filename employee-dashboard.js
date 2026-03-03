@@ -363,139 +363,139 @@ window.loadStats();
   margin:0;
   padding:0;
   box-sizing:border-box;
-  position:relative;
-  background:#ffffff;
+  background:white;
+  display:flex;
+  flex-direction:column;
 ">
 
   <!-- HEADER -->
   <div style="
     background:linear-gradient(135deg,#0f172a,#1e293b);
     color:white;
-    padding:25px 30px;
+    padding:20px 25px;
     display:flex;
     justify-content:space-between;
     align-items:center;
   ">
-
-    <!-- Right -->
-    <div style="text-align:right;">
-      <div style="font-size:22px;font-weight:700;">
+    <div>
+      <div style="font-size:20px;font-weight:700;">
         تقرير مالي للموظف
       </div>
-      <div style="font-size:13px;opacity:.8;margin-top:6px;">
+      <div style="font-size:12px;opacity:.8;margin-top:4px;">
         ${today.toLocaleDateString('en-GB')}
       </div>
     </div>
 
-    <!-- Left Logo -->
     <img src="/cashier/assets/logo.png"
-         width="70"
-         style="background:white;padding:6px;border-radius:12px;">
+         width="60"
+         style="background:white;padding:6px;border-radius:10px;">
   </div>
 
-  <!-- BODY -->
-  <div style="padding:30px;">
-
-    <!-- Employee Card -->
-    <div style="
-      background:#f8fafc;
-      border-radius:14px;
-      padding:18px 22px;
-      margin-bottom:25px;
-      box-shadow:0 4px 12px rgba(0,0,0,.05);
-      line-height:1.9;
-      font-size:14px;
-    ">
-      <div><strong>اسم الموظف:</strong> ${session.name}</div>
-      <div><strong>كود الموظف:</strong> ${session.code}</div>
-      <div><strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}</div>
-    </div>
-
-    <!-- Financial Summary -->
-    <div style="
-      border-radius:14px;
-      padding:20px;
-      background:white;
-      box-shadow:0 6px 18px rgba(0,0,0,.07);
-      margin-bottom:25px;
-    ">
-      <div style="
-        font-size:18px;
-        font-weight:700;
-        margin-bottom:15px;
-      ">
-        الملخص المالي
-      </div>
-
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-        <span>إجمالي العمولة</span>
-        <strong>${totalCommission.toFixed(3)} BHD</strong>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-        <span>المدفوع</span>
-        <strong>${totalPaid.toFixed(3)} BHD</strong>
-      </div>
-
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        font-size:18px;
-        font-weight:700;
-        margin-top:10px;
-        padding-top:10px;
-        border-top:1px solid #e5e7eb;
-        color:${remaining>0 ? '#dc2626' : '#16a34a'};
-      ">
-        <span>المتبقي</span>
-        <span>${remaining.toFixed(3)} BHD</span>
-      </div>
-    </div>
-
-    <!-- Payments -->
-    <div style="
-      background:#f1f5f9;
-      padding:18px;
-      border-radius:14px;
-      font-size:14px;
-    ">
-      <div style="font-weight:700;margin-bottom:12px;">
-        سجل الدفعات
-      </div>
-
-      ${
-        payouts && payouts.length
-        ? payouts.map(p=>`
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            padding:6px 0;
-            border-bottom:1px solid #e2e8f0;
-          ">
-            <span>${new Date(p.paid_at).toLocaleDateString('en-GB')}</span>
-            <strong>${Number(p.amount).toFixed(3)} BHD</strong>
-          </div>
-        `).join("")
-        : "<div style='opacity:.7;'>No Payments Recorded</div>"
-      }
-    </div>
-
-  </div>
-
-  <!-- SIGNATURE -->
+  <!-- CONTENT -->
   <div style="
-    position:absolute;
-    bottom:35px;
-    right:40px;
-    font-size:13px;
+    flex:1;
+    padding:25px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
   ">
+
+    <div>
+
+      <!-- Employee Info -->
+      <div style="
+        background:#f1f5f9;
+        border-radius:12px;
+        padding:14px 18px;
+        margin-bottom:20px;
+        font-size:13px;
+        line-height:1.8;
+      ">
+        <strong>اسم الموظف:</strong> ${session.name}<br>
+        <strong>كود الموظف:</strong> ${session.code}<br>
+        <strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}
+      </div>
+
+      <!-- Financial Summary -->
+      <div style="
+        border-radius:12px;
+        padding:18px;
+        background:white;
+        border:1px solid #e5e7eb;
+        margin-bottom:20px;
+      ">
+        <div style="font-weight:700;margin-bottom:12px;">
+          الملخص المالي
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span>إجمالي العمولة</span>
+          <strong>${totalCommission.toFixed(3)} BHD</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span>المدفوع</span>
+          <strong>${totalPaid.toFixed(3)} BHD</strong>
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          font-weight:700;
+          margin-top:10px;
+          padding-top:10px;
+          border-top:1px solid #e5e7eb;
+          color:${remaining>0 ? '#dc2626' : '#16a34a'};
+        ">
+          <span>المتبقي</span>
+          <span>${remaining.toFixed(3)} BHD</span>
+        </div>
+      </div>
+
+      <!-- Payments -->
+      <div style="
+        background:#f8fafc;
+        padding:14px;
+        border-radius:12px;
+        font-size:13px;
+      ">
+        <div style="font-weight:700;margin-bottom:10px;">
+          سجل الدفعات
+        </div>
+
+        ${
+          payouts && payouts.length
+          ? payouts.map(p=>`
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:5px 0;
+              border-bottom:1px solid #e2e8f0;
+            ">
+              <span>${new Date(p.paid_at).toLocaleDateString('en-GB')}</span>
+              <strong>${Number(p.amount).toFixed(3)} BHD</strong>
+            </div>
+          `).join("")
+          : "<div style='opacity:.7;'>No Payments Recorded</div>"
+        }
+      </div>
+
+    </div>
+
+    <!-- SIGNATURE -->
     <div style="
-      border-top:1px dashed #9ca3af;
-      width:220px;
-      margin-bottom:6px;
-    "></div>
-    Authorized Signature<br>
-    خذ لك بريك
+      text-align:right;
+      font-size:12px;
+    ">
+      <div style="
+        border-top:1px dashed #9ca3af;
+        width:200px;
+        margin-bottom:6px;
+      "></div>
+      Authorized Signature<br>
+      خذ لك بريك
+    </div>
+
   </div>
 
 </div>
