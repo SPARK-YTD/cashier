@@ -354,124 +354,148 @@ window.loadStats();
 
   const remaining = Math.max(0,totalCommission-totalPaid);
 
-  // إنشاء HTML للتقرير
+
   const reportHTML = `
 <div style="
   font-family:Cairo, Arial;
   direction:rtl;
   width:210mm;
   height:297mm;
-  padding:0;
   margin:0;
+  padding:0;
   box-sizing:border-box;
+  position:relative;
+  background:#ffffff;
 ">
 
   <!-- HEADER -->
   <div style="
-    background:#0f172a;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
     color:white;
-    text-align:center;
-    padding:25px 20px;
+    padding:25px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
   ">
-    <img src="/cashier/assets/logo.png"
-         width="90"
-         style="margin-bottom:10px;">
-    <h2 style="margin:0; font-weight:700;">
-      تقرير مالي للموظف
-    </h2>
-    <div style="opacity:.8; font-size:13px; margin-top:6px;">
-      ${today.toLocaleDateString('ar-EG')}
+
+    <!-- Right -->
+    <div style="text-align:right;">
+      <div style="font-size:22px;font-weight:700;">
+        تقرير مالي للموظف
+      </div>
+      <div style="font-size:13px;opacity:.8;margin-top:6px;">
+        ${today.toLocaleDateString('en-GB')}
+      </div>
     </div>
+
+    <!-- Left Logo -->
+    <img src="/cashier/assets/logo.png"
+         width="70"
+         style="background:white;padding:6px;border-radius:12px;">
   </div>
 
   <!-- BODY -->
-  <div style="padding:25px;">
+  <div style="padding:30px;">
 
-    <!-- Employee Info -->
+    <!-- Employee Card -->
     <div style="
-      background:#f1f5f9;
-      padding:15px;
-      border-radius:8px;
-      margin-bottom:20px;
+      background:#f8fafc;
+      border-radius:14px;
+      padding:18px 22px;
+      margin-bottom:25px;
+      box-shadow:0 4px 12px rgba(0,0,0,.05);
       line-height:1.9;
+      font-size:14px;
     ">
-      <strong>اسم الموظف:</strong> ${session.name}<br>
-      <strong>كود الموظف:</strong> ${session.code}<br>
-      <strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}
+      <div><strong>اسم الموظف:</strong> ${session.name}</div>
+      <div><strong>كود الموظف:</strong> ${session.code}</div>
+      <div><strong>رقم الدورة:</strong> ${cycle.id.substring(0,8)}</div>
     </div>
 
     <!-- Financial Summary -->
     <div style="
+      border-radius:14px;
+      padding:20px;
       background:white;
-      border:1px solid #e5e7eb;
-      border-radius:8px;
-      padding:18px;
+      box-shadow:0 6px 18px rgba(0,0,0,.07);
       margin-bottom:25px;
     ">
-      <h3 style="margin-top:0; margin-bottom:15px;">
+      <div style="
+        font-size:18px;
+        font-weight:700;
+        margin-bottom:15px;
+      ">
         الملخص المالي
-      </h3>
-
-      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-        <span>إجمالي العمولة</span>
-        <strong>${totalCommission.toFixed(3)} د.ب</strong>
       </div>
 
-      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <span>إجمالي العمولة</span>
+        <strong>${totalCommission.toFixed(3)} BHD</strong>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
         <span>المدفوع</span>
-        <strong>${totalPaid.toFixed(3)} د.ب</strong>
+        <strong>${totalPaid.toFixed(3)} BHD</strong>
       </div>
 
       <div style="
         display:flex;
         justify-content:space-between;
-        font-size:16px;
+        font-size:18px;
+        font-weight:700;
+        margin-top:10px;
+        padding-top:10px;
+        border-top:1px solid #e5e7eb;
         color:${remaining>0 ? '#dc2626' : '#16a34a'};
       ">
-        <span><strong>المتبقي</strong></span>
-        <strong>${remaining.toFixed(3)} د.ب</strong>
+        <span>المتبقي</span>
+        <span>${remaining.toFixed(3)} BHD</span>
       </div>
     </div>
 
     <!-- Payments -->
     <div style="
-      background:#f9fafb;
-      padding:15px;
-      border-radius:8px;
+      background:#f1f5f9;
+      padding:18px;
+      border-radius:14px;
+      font-size:14px;
     ">
-      <h3 style="margin-top:0;">
+      <div style="font-weight:700;margin-bottom:12px;">
         سجل الدفعات
-      </h3>
+      </div>
 
       ${
         payouts && payouts.length
         ? payouts.map(p=>`
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:6px 0;
-              border-bottom:1px solid #e5e7eb;
-            ">
-              <span>${new Date(p.paid_at).toLocaleDateString('ar-EG')}</span>
-              <strong>${Number(p.amount).toFixed(3)} د.ب</strong>
-            </div>
-          `).join("")
-        : "<div style='opacity:.7;'>لا توجد دفعات</div>"
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            padding:6px 0;
+            border-bottom:1px solid #e2e8f0;
+          ">
+            <span>${new Date(p.paid_at).toLocaleDateString('en-GB')}</span>
+            <strong>${Number(p.amount).toFixed(3)} BHD</strong>
+          </div>
+        `).join("")
+        : "<div style='opacity:.7;'>No Payments Recorded</div>"
       }
     </div>
 
   </div>
 
-  <!-- FOOTER / SIGNATURE -->
+  <!-- SIGNATURE -->
   <div style="
     position:absolute;
-    bottom:40px;
-    right:30px;
-    left:30px;
-    text-align:right;
+    bottom:35px;
+    right:40px;
+    font-size:13px;
   ">
-    <div style="border-top:1px dashed #9ca3af; width:250px; margin-bottom:6px;"></div>
-    اعتماد رسمي<br>
+    <div style="
+      border-top:1px dashed #9ca3af;
+      width:220px;
+      margin-bottom:6px;
+    "></div>
+    Authorized Signature<br>
     خذ لك بريك
   </div>
 
