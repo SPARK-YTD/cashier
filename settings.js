@@ -77,6 +77,27 @@ window.addConsumableRow = function () {
 
   box.appendChild(row);
 };
+
+/* ===============================
+   الإضافات المدفوعة (Add-ons)
+================================ */
+
+window.addAddonRow = function () {
+  const box = document.getElementById("addonsBox");
+  if (!box) return;
+
+  const row = document.createElement("div");
+  row.className = "variant-row addon-row";
+
+  row.innerHTML = `
+    <input type="text" class="addon-name" placeholder="اسم الإضافة">
+    <input type="number" step="0.001" min="0" class="addon-price" placeholder="السعر">
+    <button type="button" onclick="this.parentElement.remove()">❌</button>
+  `;
+
+  box.appendChild(row);
+};
+
 /* ===============================
    INIT
 ================================ */
@@ -364,6 +385,32 @@ if (consumableRows.length) {
   if (cErr) throw cErr;
 }
 
+    /* حفظ الإضافات المدفوعة (Add-ons) */
+    if (editingItemId) {
+      await supabase
+        .from("product_addons")
+        .delete()
+        .eq("product_id", product.id);
+    }
+
+    const addonRows = [];
+    document.querySelectorAll("#addonsBox .addon-row").forEach(row => {
+      const name = row.querySelector(".addon-name")?.value.trim();
+      const price = parseFloat(row.querySelector(".addon-price")?.value);
+
+      if (name && !isNaN(price)) {
+        addonRows.push({ product_id: product.id, name, price, active: true });
+      }
+    });
+
+    if (addonRows.length) {
+      const { error: addonErr } = await supabase
+        .from("product_addons")
+        .insert(addonRows);
+
+      if (addonErr) throw addonErr;
+    }
+
     /* === الأحجام / الوجبات === */
     if (hasVariants) {
       if (editingItemId) {
@@ -562,9 +609,14 @@ window.toggleItem = async function (id, state) {
     .from("product_consumables")
     .delete()
     .eq("product_id", id);
-    
+
   await supabase
     .from("product_employees")
+    .delete()
+    .eq("product_id", id);
+
+  await supabase
+    .from("product_addons")
     .delete()
     .eq("product_id", id);
 
@@ -673,7 +725,23 @@ if (multiEmployees?.length) {
     });
   }
 // ===== تحميل ربط الموظف =====
-await loadEmployees();  
+await loadEmployees();
+
+  // تحميل الإضافات المدفوعة
+  const addonsBox = document.getElementById("addonsBox");
+  if (addonsBox) addonsBox.innerHTML = "";
+
+  const { data: addons } = await supabase
+    .from("product_addons")
+    .select("*")
+    .eq("product_id", id);
+
+  addons?.forEach(a => {
+    addAddonRow();
+    const lastRow = document.querySelector("#addonsBox .addon-row:last-child");
+    lastRow.querySelector(".addon-name").value = a.name;
+    lastRow.querySelector(".addon-price").value = a.price;
+  });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -729,6 +797,9 @@ function clearForm() {
   
   const multiBox = document.getElementById("multiEmployeesBox");
   if (multiBox) multiBox.innerHTML = "";
+
+  const addonsBox = document.getElementById("addonsBox");
+  if (addonsBox) addonsBox.innerHTML = "";
 }
 
 /* ===============================
