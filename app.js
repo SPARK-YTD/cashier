@@ -2,7 +2,6 @@
   import { supabase } from "./supabase.js";
   import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 
-  
   /*********************************
    * Get-Break | Cashier System
    *********************************/
@@ -105,10 +104,10 @@ setInterval(() => {
     // 🚀 واجهة فورية
   
     renderCart();
-  
+
   // 📦 تحميل البيانات بعد التأكد من الدخول
   currentBusinessDay = await getOrCreateBusinessDay();
-  
+
   if (!currentBusinessDay) {
     alert("❌ خطأ في إنشاء يوم العمل");
     return;
@@ -152,6 +151,19 @@ setInterval(() => {
       ? p.extras_list.split("\n").map(e => e.trim()).filter(Boolean)
       : []
   }));
+
+  const ids = items.map(i => i.id);
+  if (ids.length) {
+    const { data: addonsData } = await supabase
+      .from("product_addons")
+      .select("*")
+      .in("product_id", ids)
+      .eq("active", true);
+
+    items.forEach(item => {
+      item.addons = addonsData?.filter(a => a.product_id === item.id) || [];
+    });
+  }
 
   renderItems();
 }
@@ -204,6 +216,7 @@ setInterval(() => {
   
     if (
   (Array.isArray(item.extras) && item.extras.length > 0) ||
+  (Array.isArray(item.addons) && item.addons.length > 0) ||
   item.is_spicy
 ) {
   showExtrasPopup(item);
@@ -272,6 +285,22 @@ setInterval(() => {
   </div>
 ` : ""}
 
+  ${item.addons?.length ? `
+  <hr style="margin:10px 0">
+  <p style="font-size:14px;color:#555;margin-bottom:10px">
+    إضافات مدفوعة
+  </p>
+
+  <div style="text-align:right;max-height:200px;overflow:auto">
+    ${item.addons.map(a => `
+      <label style="display:block;margin-bottom:6px">
+        <input type="checkbox" class="addon-checkbox" value="${a.id}" data-name="${a.name}" data-price="${a.price}">
+        ${a.name} (+${Number(a.price).toFixed(3)} د.ب)
+      </label>
+    `).join("")}
+  </div>
+` : ""}
+
    ${item.is_spicy ? `
   <hr style="margin:10px 0">
 
@@ -293,8 +322,15 @@ setInterval(() => {
     // زر التأكيد
    overlay.querySelector("#confirmExtras").onclick = () => {
   const unchecked = [...overlay.querySelectorAll("input[type=checkbox]")]
-  .filter(cb => cb.id !== "spicyOption" && !cb.checked)
+  .filter(cb => cb.id !== "spicyOption" && !cb.classList.contains("addon-checkbox") && !cb.checked)
   .map(cb => cb.value);
+
+const selectedAddons = [...overlay.querySelectorAll(".addon-checkbox:checked")]
+  .map(cb => ({
+    id: cb.value,
+    name: cb.dataset.name,
+    price: Number(cb.dataset.price)
+  }));
 
 const isSpicy =
   overlay.querySelector("#spicyOption")?.checked || false;
@@ -311,15 +347,23 @@ if (unchecked.length > 0) {
   nameWithExtras += ` (بدون: ${unchecked.join("، ")})`;
 }
 
+// ➕ الإضافات المدفوعة
+if (selectedAddons.length > 0) {
+  nameWithExtras += ` (+ ${selectedAddons.map(a => a.name).join("، ")})`;
+}
+
+const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0);
+
 addToCart({
   id: item.id,
   name: nameWithExtras,
-  price: item.price,
+  price: item.price + addonsTotal,
   variant_id: item.variant_id || null,
   extras_removed: unchecked,
-  is_spicy: isSpicy
+  is_spicy: isSpicy,
+  addons: selectedAddons
 });
-  
+
       overlay.remove();
     };
   }
@@ -329,6 +373,7 @@ addToCart({
 
   if (
     (baseItem?.extras?.length > 0) ||
+    (baseItem?.addons?.length > 0) ||
     baseItem?.is_spicy
   ) {
     showExtrasPopup({
@@ -342,7 +387,8 @@ addToCart({
       id: productId,
       name: `${name} (${label})`,
       price,
-      variant_id: variantId
+      variant_id: variantId,
+      addons: []
     });
   }
 
@@ -358,9 +404,10 @@ addToCart({
   i.id === item.id &&
   i.variant_id === (item.variant_id || null) &&
   i.is_spicy === (item.is_spicy || false) &&
-  JSON.stringify(i.extras_removed || []) === JSON.stringify(item.extras_removed || [])
+  JSON.stringify(i.extras_removed || []) === JSON.stringify(item.extras_removed || []) &&
+  JSON.stringify((i.addons || []).map(a => a.id)) === JSON.stringify((item.addons || []).map(a => a.id))
 );
-  
+
     if (existing) {
       existing.qty += 1;
     } else {
@@ -372,7 +419,8 @@ addToCart({
   qty: 1,
   variant_id: item.variant_id || null,
   extras_removed: item.extras_removed || [],
-  is_spicy: item.is_spicy || false
+  is_spicy: item.is_spicy || false,
+  addons: item.addons || []
 });
     }
   
@@ -394,6 +442,7 @@ addToCart({
     cart.forEach((item, i) => {
       const sum = item.qty * item.price;
       total += sum;
+
       tbody.innerHTML += `
         <tr>
           <td>${item.name}</td>
@@ -453,7 +502,8 @@ addToCart({
           item_name: i.name,
           qty: i.qty,
           price: i.price,
-          extras_removed: i.extras_removed || []
+          extras_removed: i.extras_removed || [],
+          addons: i.addons || []
         })),
         total: cart.reduce((s, i) => s + i.qty * i.price, 0),
         business_day_id: currentBusinessDay.id,
@@ -517,7 +567,8 @@ addToCart({
         item_name: i.name,
         qty: i.qty,
         price: i.price,
-        extras_removed: i.extras_removed || []
+        extras_removed: i.extras_removed || [],
+        addons: i.addons || []
       }))
     });
   
@@ -629,7 +680,7 @@ const { data: order, error } = await supabase
           throw new Error("فشل إنشاء الطلب");
         }
   
-        await supabase.from("order_items").insert(
+               await supabase.from("order_items").insert(
           cart.map(i => ({
             order_id: order.id,
             product_id: i.id,
@@ -637,7 +688,8 @@ const { data: order, error } = await supabase
             item_name: i.name,
             qty: i.qty,
             price: i.price,
-            extras_removed: i.extras_removed || []
+            extras_removed: i.extras_removed || [],
+            addons: i.addons || []
           }))
         );
       }
@@ -931,14 +983,14 @@ const { data: order, error } = await supabase
     currentInvoiceNo = order?.invoice_no || null;
     const { data } = await supabase
       .from("order_items")
-      .select("qty, price, item_name, product_id, variant_id, extras_removed")
+      .select("qty, price, item_name, product_id, variant_id, extras_removed, addons")
       .eq("order_id", orderId);
-  
+
     if (!data || data.length === 0) {
       alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
       return;
     }
-  
+
     cart = data.map(i => ({
       row_id: crypto.randomUUID(), // 🔑 فريد لكل سطر
       id: i.product_id,
@@ -946,7 +998,8 @@ const { data: order, error } = await supabase
       price: i.price,
       qty: i.qty,
       variant_id: i.variant_id || null,
-      extras_removed: i.extras_removed || []
+      extras_removed: i.extras_removed || [],
+      addons: i.addons || []
     }));
   
     renderCart();
@@ -1344,21 +1397,21 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   window.viewOrder = async function (orderId) {
     const { data: items } = await supabase
       .from("order_items")
-      .select("qty, price, item_name, extras_removed")
+      .select("qty, price, item_name, extras_removed, addons")
       .eq("order_id", orderId);
-  
+
     if (!items || items.length === 0) {
       alert("لا توجد بيانات للفاتورة");
       return;
     }
-  
+
     const overlay = document.createElement("div");
     overlay.className = "variant-overlay";
-  
+
     overlay.innerHTML = `
       <div class="variant-box" id="invoiceContent" style="max-width:500px">
         <h3>🧾 تفاصيل الفاتورة</h3>
-  
+
         <div style="text-align:right;max-height:300px;overflow:auto">
           ${items.map(i => `
             <div style="border-bottom:1px dashed #ddd;padding:8px 0">
@@ -1367,6 +1420,13 @@ overlay.querySelector("#tabBenefit").onclick = () => {
                 i.extras_removed?.length
                   ? `<div style="font-size:13px;color:#555">
                        بدون: ${i.extras_removed.join("، ")}
+                     </div>`
+                  : ""
+              }
+              ${
+                i.addons?.length
+                  ? `<div style="font-size:13px;color:#16a34a">
+                       + ${i.addons.map(a => a.name).join("، ")}
                      </div>`
                   : ""
               }
@@ -1578,6 +1638,11 @@ overlay.querySelector("#tabBenefit").onclick = () => {
         ${
           item.extras_removed?.length
             ? `<div class="extras">بدون: ${item.extras_removed.join("، ")}</div>`
+            : ""
+        }
+        ${
+          item.addons?.length
+            ? `<div class="extras">+ ${item.addons.map(a => a.name).join("، ")}</div>`
             : ""
         }
       </div>
@@ -1800,4 +1865,5 @@ async function processEmployeePayout(orderId) {
   } catch (err) {
     console.error("PAYOUT ERROR:", err);
   }
+  
 }
