@@ -1337,3 +1337,220 @@ table tbody tr:hover td {
     background: #0F172A;
   }
 }
+/* =============== DAY DETAIL MODAL =============== */
+.day-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  direction: rtl;
+  animation: slideDown 0.4s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #E2E8F0;
+  background: linear-gradient(135deg, #0F172A, #1E293B);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.detail-summary {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #F8FAFC;
+  border-radius: 8px;
+  border-right: 4px solid #3B82F6;
+}
+
+.detail-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+}
+
+.detail-date .label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.detail-date .value {
+  font-weight: 700;
+  color: #0F172A;
+  font-size: 18px;
+}
+
+.detail-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.detail-card:hover {
+  border-color: #3B82F6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.card-label {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.card-unit {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 4px;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #0F172A;
+  font-weight: 700;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.detail-table thead {
+  background: #F1F5F9;
+}
+
+.detail-table th {
+  padding: 10px 12px;
+  text-align: right;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.detail-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #E2E8F0;
+  color: #0F172A;
+}
+
+.detail-table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  padding: 16px 24px;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  border-radius: 0 0 16px 16px;
+}
+
+.modal-footer button {
+  flex: 1;
+}
+
+@media print {
+  .day-detail-modal {
+    display: block;
+    background: white;
+  }
+  
+  .modal-backdrop {
+    display: none;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .modal-footer {
+    display: none;
+  }
+}
