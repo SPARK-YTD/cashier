@@ -193,8 +193,155 @@ function updateSummary(days, totalSales, totalOrders) {
 
 // =============== ACTIONS ===============
 async function viewReport(dayId) {
-  // فتح صفحة تفاصيل اليوم (نفس صفحة اليوم الحالي)
-  window.location.href = `index.html?view=${dayId}`;
+  const day = allBusinessDays.find(d => d.id === dayId);
+  if (!day) return;
+  
+  // احصل على الطلبات
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("business_day_id", dayId)
+    .eq("is_paid", true);
+  
+  const dayOrders = orders || [];
+  
+  // احصل على order_items
+  const { data: items } = await supabase
+    .from("order_items")
+    .select("*")
+    .in("order_id", dayOrders.map(o => o.id));
+  
+  const dayItems = items || [];
+  
+  // احسبها
+  const totalSales = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const cashAmount = dayOrders.reduce((sum, o) => sum + (o.cash_amount || 0), 0);
+  const cardAmount = dayOrders.reduce((sum, o) => sum + (o.benefit_amount || 0), 0);
+  
+  // أفضل 5 منتجات
+  const productCounts = {};
+  dayItems.forEach(item => {
+    productCounts[item.item_name] = (productCounts[item.item_name] || 0) + item.qty;
+  });
+  const topProducts = Object.entries(productCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  
+  // عدد الموظفين
+  const uniqueStaff = new Set(
+    dayOrders.filter(o => o.is_employee_order && o.employee_code).map(o => o.employee_code)
+  );
+  
+  // اعرض الـ Modal
+  showDayDetailModal(day, dayOrders, totalSales, cashAmount, cardAmount, topProducts, uniqueStaff.size);
+}
+
+function showDayDetailModal(day, orders, totalSales, cashAmount, cardAmount, topProducts, staffCount) {
+  const modal = document.createElement("div");
+  modal.className = "day-detail-modal";
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📊 تقرير اليوم</h2>
+        <button class="modal-close" onclick="this.closest('.day-detail-modal').remove()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- SUMMARY -->
+        <div class="detail-summary">
+          <div class="detail-date">
+            <span class="label">📅 التاريخ:</span>
+            <span class="value">${formatDate(day.day_date)}</span>
+          </div>
+        </div>
+        
+        <!-- CARDS -->
+        <div class="detail-cards">
+          <div class="detail-card">
+            <div class="card-label">الطلبات</div>
+            <div class="card-value">${orders.length}</div>
+          </div>
+          <div class="detail-card">
+            <div class="card-label">المبيعات</div>
+            <div class="card-value">${totalSales.toFixed(3)}</div>
+            <div class="card-unit">د.ب</div>
+          </div>
+          <div class="detail-card">
+            <div class="card-label">الكاش</div>
+            <div class="card-value" style="color: #EF4444;">${cashAmount.toFixed(3)}</div>
+            <div class="card-unit">د.ب</div>
+          </div>
+          <div class="detail-card">
+            <div class="card-label">الكارت</div>
+            <div class="card-value" style="color: #3B82F6;">${cardAmount.toFixed(3)}</div>
+            <div class="card-unit">د.ب</div>
+          </div>
+          <div class="detail-card">
+            <div class="card-label">الموظفون</div>
+            <div class="card-value">👤 ${staffCount}</div>
+          </div>
+        </div>
+        
+        <!-- TOP PRODUCTS -->
+        <div class="detail-section">
+          <h3>🏆 أفضل 5 منتجات</h3>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>المنتج</th>
+                <th>الكمية</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topProducts.map((p, i) => `
+                <tr>
+                  <td>${i + 1}. ${p[0]}</td>
+                  <td>${p[1]}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- ORDERS LIST -->
+        <div class="detail-section">
+          <h3>📋 الطلبات (${orders.length})</h3>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>الفاتورة</th>
+                <th>المبلغ</th>
+                <th>الدفع</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders.map(o => `
+                <tr>
+                  <td>#${o.invoice_no}</td>
+                  <td>${o.total.toFixed(3)} د.ب</td>
+                  <td>${o.cash_amount > 0 ? '💵 كاش' : '💳 كارت'}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="this.closest('.day-detail-modal').remove()">إغلاق</button>
+        <button class="btn-primary" onclick="printDetailReport('${day.day_date}')">🖨️ طباعة</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+}
+
+function printDetailReport(dateStr) {
+  window.print();
 }
 
 async function printReport(dayId) {
