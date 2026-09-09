@@ -1635,3 +1635,30 @@ table * {
   color: #0F172A !important;
   opacity: 1 !important;
 }
+/* =============== BACK TO CASHIER BUTTON =============== */
+.back-to-cashier {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.back-to-cashier:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.back-to-cashier:active {
+  transform: translateY(-50%) scale(0.95);
+}
