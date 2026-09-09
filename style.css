@@ -403,6 +403,8 @@ html, body {
   padding: 24px 16px;
   text-align: center;
   box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  position: relative;        /* ✅ أضف */
+  z-index: 100;              /* ✅ أضف */
 }
 
 .report-header h1 {
@@ -421,6 +423,36 @@ html, body {
   margin-top: 8px;
   font-size: 13px;
   opacity: .85;
+}
+
+/* ✅ أضف هالـ الكود الجديد */
+.back-to-cashier {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  pointer-events: auto !important;
+  z-index: 101 !important;
+}
+
+.back-to-cashier:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.back-to-cashier:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 /* ===== Container ===== */
