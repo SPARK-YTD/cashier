@@ -3,6 +3,12 @@ import { supabase } from "./supabase.js";
 let allBusinessDays = [];
 let filteredDays = [];
 
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.viewReport = viewReport;
+window.printReport = printReport;
+window.deleteReportPrompt = deleteReportPrompt;
+
 // =============== INITIALIZATION ===============
 document.addEventListener("DOMContentLoaded", async () => {
   // تعيين التواريخ الافتراضية
