@@ -840,3 +840,500 @@ body.employee-mode .topbar {
   font-style: italic;
   display: block;
 }
+/* ===============================================
+   🎨 REPORTS PAGE - PROFESSIONAL STYLING
+   =============================================== */
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* =============== REPORTS CONTAINER =============== */
+.reports-container {
+  animation: slideDown 0.5s ease-out;
+}
+
+/* =============== HEADER =============== */
+.header {
+  animation: slideDown 0.6s ease-out;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.1), transparent);
+  pointer-events: none;
+}
+
+.header h1 {
+  position: relative;
+  z-index: 1;
+  letter-spacing: 1px;
+}
+
+/* =============== FILTERS SECTION =============== */
+.filters-section {
+  animation: slideDown 0.7s ease-out;
+  transition: all 0.3s ease;
+}
+
+.filters-section:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.filters-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group input,
+.filter-group select {
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* =============== BUTTONS =============== */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-secondary {
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:active {
+  transform: scale(0.95);
+}
+
+/* =============== SUMMARY CARDS =============== */
+.summary-section {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.summary-card {
+  animation: slideDown 0.8s ease-out;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.summary-card:hover::before {
+  opacity: 1;
+}
+
+.summary-value {
+  animation: fadeIn 1s ease-out;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =============== TABLE SECTION =============== */
+.table-section {
+  animation: slideDown 0.9s ease-out;
+  transition: all 0.3s ease;
+}
+
+.table-section:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+table tbody tr {
+  animation: fadeIn 0.5s ease-out;
+  transition: all 0.2s ease;
+}
+
+table tbody tr:hover {
+  background: #F1F5F9;
+  box-shadow: inset 0 0 0 1px #E2E8F0;
+}
+
+table thead th {
+  background: linear-gradient(135deg, #F1F5F9, #F8FAFC);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+table td {
+  transition: color 0.2s ease;
+}
+
+table tbody tr:hover td {
+  color: #0F172A;
+}
+
+/* =============== ACTION BUTTONS =============== */
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-action {
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.btn-action:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.15) rotate(5deg);
+}
+
+.btn-action.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.btn-action.print:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.btn-action.view:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* =============== EMPTY STATE =============== */
+.empty-state {
+  animation: fadeIn 0.5s ease-out;
+  color: #94A3B8;
+}
+
+/* =============== RESPONSIVE DESIGN =============== */
+@media (max-width: 1024px) {
+  .summary-section {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 12px;
+  }
+  
+  .header {
+    padding: 20px;
+  }
+  
+  .header h1 {
+    font-size: 22px;
+  }
+  
+  .filters-section,
+  .summary-card,
+  .table-section {
+    padding: 16px;
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .summary-section {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .summary-card {
+    padding: 16px;
+  }
+  
+  .summary-value {
+    font-size: 24px;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table th,
+  table td {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .actions {
+    gap: 4px;
+  }
+  
+  .btn-action {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-container {
+    padding: 8px;
+  }
+  
+  .header {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .header h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+  
+  .filters-section {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .filters-section h2 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .filter-grid {
+    gap: 10px;
+  }
+  
+  .filter-group input,
+  .filter-group select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .filter-buttons {
+    gap: 8px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex: 1;
+  }
+  
+  .summary-section {
+    gap: 10px;
+  }
+  
+  .summary-card {
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .summary-label {
+    font-size: 11px;
+  }
+  
+  .summary-value {
+    font-size: 20px;
+  }
+  
+  .table-title {
+    padding: 12px;
+    font-size: 14px;
+  }
+  
+  table {
+    font-size: 11px;
+  }
+  
+  table th {
+    padding: 6px;
+  }
+  
+  table td {
+    padding: 6px;
+  }
+  
+  .actions {
+    justify-content: center;
+  }
+  
+  .btn-action {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+}
+
+/* =============== PRINT STYLES =============== */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .reports-container {
+    max-width: 100%;
+  }
+  
+  .filters-section,
+  .filter-buttons {
+    display: none;
+  }
+  
+  .header {
+    background: white !important;
+    color: black !important;
+    border-bottom: 2px solid black;
+    box-shadow: none;
+  }
+  
+  .summary-card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #E2E8F0;
+  }
+  
+  .table-section {
+    page-break-inside: avoid;
+    box-shadow: none;
+  }
+  
+  table {
+    border-collapse: collapse;
+  }
+  
+  table th,
+  table td {
+    border: 1px solid #E2E8F0;
+    padding: 8px;
+  }
+  
+  .btn-action {
+    display: none;
+  }
+}
+
+/* =============== DARK MODE (Optional) =============== */
+@media (prefers-color-scheme: dark) {
+  .filters-section,
+  .summary-card,
+  .table-section {
+    background: #1E293B;
+    color: #E2E8F0;
+  }
+  
+  .summary-label {
+    color: #94A3B8;
+  }
+  
+  .summary-value {
+    color: #F1F5F9;
+  }
+  
+  table thead {
+    background: #0F172A;
+  }
+  
+  table th {
+    color: #CBD5E1;
+  }
+  
+  table td {
+    color: #E2E8F0;
+  }
+  
+  table tbody tr:hover {
+    background: #0F172A;
+  }
+}
