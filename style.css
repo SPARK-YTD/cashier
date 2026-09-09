@@ -1567,3 +1567,71 @@ table tbody tr:hover td {
     display: none;
   }
 }
+/* ===============================================
+   🔥 FORCE TABLE VISIBILITY - NO TRANSPARENCY
+   =============================================== */
+
+/* جميع الجداول */
+table {
+  background: white !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+/* رؤوس الجداول */
+table thead,
+table thead th,
+table th {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border: 1px solid #CBD5E1 !important;
+  padding: 12px !important;
+  font-weight: 700 !important;
+  text-align: right !important;
+}
+
+/* خلايا الجداول */
+table tbody,
+table tbody tr,
+table tbody td,
+table td {
+  background: white !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 10px 12px !important;
+}
+
+/* عند الـ Hover */
+table tbody tr:hover {
+  background: #F8FAFC !important;
+}
+
+/* إزالة أي شفافية */
+table * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* الفاتورة تحديداً */
+.invoice-table,
+.invoice-table * {
+  background: white !important;
+  color: #0F172A !important;
+  opacity: 1 !important;
+}
+
+/* جدول التقرير */
+.table-box table,
+.table-box table * {
+  background: white !important;
+  color: #0F172A !important;
+  opacity: 1 !important;
+}
+
+/* جدول تفاصيل اليوم */
+.detail-table,
+.detail-table * {
+  background: white !important;
+  color: #0F172A !important;
+  opacity: 1 !important;
+}
