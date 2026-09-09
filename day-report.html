@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تقرير اليوم</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #F8FAFC;
+      padding: 20px;
+    }
+    
+    .report-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    
+    .report-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #E2E8F0;
+    }
+    
+    .report-header h1 {
+      margin: 0 0 10px 0;
+      color: #0F172A;
+      font-size: 28px;
+    }
+    
+    .report-date {
+      font-size: 16px;
+      color: #64748B;
+      font-weight: 500;
+    }
+    
+    .report-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #F8FAFC, #F1F5F9);
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #3B82F6;
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+    
+    .stat-unit {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-top: 4px;
+    }
+    
+    .report-section {
+      margin-bottom: 30px;
+    }
+    
+    .report-section h2 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      color: #0F172A;
+      font-weight: 700;
+      border-bottom: 2px solid #3B82F6;
+      padding-bottom: 10px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    table th {
+      background: #F1F5F9;
+      padding: 12px;
+      text-align: right;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #E2E8F0;
+      font-size: 13px;
+    }
+    
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #E2E8F0;
+      color: #0F172A;
+      font-size: 14px;
+    }
+    
+    table tbody tr:hover {
+      background: #F8FAFC;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #E2E8F0;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: #3B82F6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563EB;
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+    
+    .btn-secondary:hover {
+      background: #CBD5E1;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748B;
+    }
+    
+    @media print {
+      body {
+        padding: 0;
+        background: white;
+      }
+      
+      .report-container {
+        box-shadow: none;
+        max-width: 100%;
+      }
+      
+      .action-buttons {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="report-container">
+  <div class="report-header">
+    <h1>📊 تقرير اليوم</h1>
+    <div class="report-date" id="reportDate">جاري التحميل...</div>
+  </div>
+  
+  <div class="report-stats" id="reportStats">
+    <div class="loading">⏳ جاري تحميل البيانات...</div>
+  </div>
+  
+  <div class="report-section">
+    <h2>🏆 أفضل 5 منتجات</h2>
+    <table id="topProductsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>المنتج</th>
+          <th>الكمية</th>
+        </tr>
+      </thead>
+      <tbody id="topProductsBody">
+        <tr><td colspan="3" style="text-align: center;">⏳ جاري التحميل...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="report-section">
+    <h2>💳 توزيع الدفع</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>طريقة الدفع</th>
+          <th>المبلغ</th>
+          <th>النسبة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>💵 كاش</td>
+          <td id="cashAmount">0.000 د.ب</td>
+          <td id="cashPercent">0%</td>
+        </tr>
+        <tr>
+          <td>💳 كارت</td>
+          <td id="cardAmount">0.000 د.ب</td>
+          <td id="cardPercent">0%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="report-section">
+    <h2>📋 الطلبات (<span id="orderCount">0</span>)</h2>
+    <table id="ordersTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الفاتورة</th>
+          <th>المبلغ</th>
+          <th>الدفع</th>
+          <th>الوقت</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody">
+        <tr><td colspan="5" style="text-align: center;">⏳ جاري التحميل...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="action-buttons">
+    <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+    <button class="btn btn-secondary" onclick="window.close()">إغلاق</button>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase } from "./supabase.js";
+  
+  const params = new URLSearchParams(window.location.search);
+  const dayId = params.get("dayId");
+  
+  if (!dayId) {
+    document.querySelector(".report-container").innerHTML = "<p style='text-align: center; color: #EF4444;'>❌ لم يتم تحديد اليوم</p>";
+    throw new Error("No dayId provided");
+  }
+  
+  loadDayReport();
+  
+  async function loadDayReport() {
+    try {
+      // احصل على بيانات اليوم
+      const { data: day } = await supabase
+        .from("business_days")
+        .select("*")
+        .eq("id", dayId)
+        .single();
+      
+      if (!day) throw new Error("Day not found");
+      
+      // احصل على الطلبات
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("business_day_id", dayId)
+        .eq("is_paid", true)
+        .order("created_at", { ascending: false });
+      
+      const dayOrders = orders || [];
+      
+      // احصل على order_items
+      const { data: items } = await supabase
+        .from("order_items")
+        .select("*")
+        .in("order_id", dayOrders.map(o => o.id));
+      
+      const dayItems = items || [];
+      
+      // احسب الإحصائيات
+      const totalSales = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const cashAmount = dayOrders.reduce((sum, o) => sum + (o.cash_amount || 0), 0);
+      const cardAmount = dayOrders.reduce((sum, o) => sum + (o.benefit_amount || 0), 0);
+      
+      const cashPercent = totalSales > 0 ? ((cashAmount / totalSales) * 100).toFixed(1) : 0;
+      const cardPercent = totalSales > 0 ? ((cardAmount / totalSales) * 100).toFixed(1) : 0;
+      
+      // أفضل 5 منتجات
+      const productCounts = {};
+      dayItems.forEach(item => {
+        productCounts[item.item_name] = (productCounts[item.item_name] || 0) + item.qty;
+      });
+      const topProducts = Object.entries(productCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      
+      // عدد الموظفين الفريدين
+      const uniqueStaff = new Set(
+        dayOrders.filter(o => o.is_employee_order && o.employee_code).map(o => o.employee_code)
+      );
+      
+      // عرض البيانات
+      document.getElementById("reportDate").textContent = formatDate(day.day_date);
+      
+      document.getElementById("reportStats").innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">الطلبات</div>
+          <div class="stat-value">${dayOrders.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">المبيعات</div>
+          <div class="stat-value">${totalSales.toFixed(3)}</div>
+          <div class="stat-unit">د.ب</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">المتوسط</div>
+          <div class="stat-value">${dayOrders.length > 0 ? (totalSales / dayOrders.length).toFixed(3) : "0"}</div>
+          <div class="stat-unit">د.ب</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">الموظفون</div>
+          <div class="stat-value">👤 ${uniqueStaff.size}</div>
+        </div>
+      `;
+      
+      // أفضل المنتجات
+      document.getElementById("topProductsBody").innerHTML = topProducts.map((p, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${p[0]}</td>
+          <td>${p[1]}</td>
+        </tr>
+      `).join("");
+      
+      // توزيع الدفع
+      document.getElementById("cashAmount").textContent = `${cashAmount.toFixed(3)} د.ب`;
+      document.getElementById("cardAmount").textContent = `${cardAmount.toFixed(3)} د.ب`;
+      document.getElementById("cashPercent").textContent = `${cashPercent}%`;
+      document.getElementById("cardPercent").textContent = `${cardPercent}%`;
+      
+      // الطلبات
+      document.getElementById("orderCount").textContent = dayOrders.length;
+      document.getElementById("ordersBody").innerHTML = dayOrders.map((o, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>#${o.invoice_no}</td>
+          <td>${o.total.toFixed(3)} د.ب</td>
+          <td>${o.cash_amount > 0 ? "💵 كاش" : "💳 كارت"}</td>
+          <td>${formatTime(o.created_at)}</td>
+        </tr>
+      `).join("");
+      
+    } catch (error) {
+      console.error("Error loading report:", error);
+      document.querySelector(".report-container").innerHTML = `<p style='text-align: center; color: #EF4444;'>❌ خطأ في تحميل التقرير</p>`;
+    }
+  }
+  
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    return date.toLocaleDateString("ar-SA", options);
+  }
+  
+  function formatTime(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  }
+</script>
+
+</body>
+</html>
