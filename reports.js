@@ -21,13 +21,13 @@ function setDefaultDates() {
 }
 
 // =============== LOAD REPORTS ===============
+// =============== LOAD REPORTS ===============
 async function loadReports() {
   try {
     const { data, error } = await supabase
       .from("business_days")
       .select("*")
-      .eq("is_open", true)
-      .order("day_date", { ascending: false });
+      .order("day_date", { ascending: false }); 
     
     if (error) throw error;
     
