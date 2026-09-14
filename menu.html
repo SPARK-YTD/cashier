@@ -642,7 +642,7 @@ function showCartModal() {
     <div class="cart-modal-content">
       <div class="cart-modal-header">
         <h2>🛒 السلة</h2>
-        <button class="cart-close" onclick="closeCartModal()">✕</button>
+        <button class="cart-close" onclick="document.getElementById('cartModal').remove()">✕</button>
       </div>
       
       <div class="cart-modal-body">
@@ -662,13 +662,39 @@ function showCartModal() {
                 <td>${item.name}</td>
                 <td>${item.price.toFixed(3)}</td>
                 <td>
-                  <button onclick="updateCartQty(${index}, ${item.qty - 1})">−</button>
-                  ${item.qty}
-                  <button onclick="updateCartQty(${index}, ${item.qty + 1})">+</button>
+                  <div style="display: flex; gap: 4px; align-items: center;">
+                    <button style="width: 24px; height: 24px; border: none; background: #E2E8F0; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="(function() {
+                      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                      if (cart[${index}].qty > 1) {
+                        cart[${index}].qty--;
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        updateCartCount();
+                        showCartModal();
+                      }
+                    })()">−</button>
+                    <span>${item.qty}</span>
+                    <button style="width: 24px; height: 24px; border: none; background: #E2E8F0; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="(function() {
+                      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                      cart[${index}].qty++;
+                      localStorage.setItem('cart', JSON.stringify(cart));
+                      updateCartCount();
+                      showCartModal();
+                    })()">+</button>
+                  </div>
                 </td>
                 <td>${(item.price * item.qty).toFixed(3)}</td>
                 <td>
-                  <button onclick="removeFromCart(${index})" class="btn-remove">🗑️</button>
+                  <button style="background: #FEE2E2; border: none; cursor: pointer; border-radius: 4px; padding: 4px 8px;" onclick="(function() {
+                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    cart.splice(${index}, 1);
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    updateCartCount();
+                    if (cart.length === 0) {
+                      document.getElementById('cartModal').remove();
+                    } else {
+                      showCartModal();
+                    }
+                  })()">🗑️</button>
                 </td>
               </tr>
             `).join("")}
@@ -681,7 +707,7 @@ function showCartModal() {
           <span>الإجمالي:</span>
           <span class="total-amount">${total.toFixed(3)} د.ب</span>
         </div>
-        <button class="btn btn-primary" onclick="proceedToOrder()" style="width: 100%; margin-top: 12px;">
+        <button class="btn btn-primary" onclick="document.getElementById('cartModal').remove(); showOrderForm();" style="width: 100%; margin-top: 12px;">
           متابعة الطلب ➜
         </button>
       </div>
@@ -689,7 +715,7 @@ function showCartModal() {
   `;
 
   document.body.appendChild(modal);
-  modal.querySelector(".cart-modal-backdrop").onclick = closeCartModal;
+  modal.querySelector(".cart-modal-backdrop").onclick = () => modal.remove();
 }
 
 function closeCartModal() {
