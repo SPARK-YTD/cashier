@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المنيو - Get-Break</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #F8FAFC;
+      font-family: inherit;
+      padding-bottom: 100px;
+    }
+
+    /* =============== HEADER =============== */
+    .menu-header {
+      background: linear-gradient(135deg, #0F172A, #1E293B);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .menu-header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .menu-header p {
+      margin: 4px 0 0 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* =============== CONTAINER =============== */
+    .menu-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* =============== CATEGORY FILTER =============== */
+    .category-filter {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 24px;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .category-btn {
+      background: white;
+      border: 2px solid #E2E8F0;
+      color: #475569;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .category-btn:hover {
+      border-color: #3B82F6;
+      color: #3B82F6;
+    }
+
+    .category-btn.active {
+      background: #3B82F6;
+      color: white;
+      border-color: #3B82F6;
+    }
+
+    /* =============== PRODUCTS GRID =============== */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .product-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(135deg, #E0E7FF, #F3E8FF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      overflow: hidden;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-info {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-name {
+      font-weight: 700;
+      color: #0F172A;
+      font-size: 14px;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .product-category {
+      font-size: 11px;
+      color: #94A3B8;
+      margin-bottom: 8px;
+    }
+
+    .product-price {
+      font-weight: 800;
+      color: #10B981;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .product-btn {
+      background: #3B82F6;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.2s ease;
+      margin-top: auto;
+    }
+
+    .product-btn:hover {
+      background: #2563EB;
+      transform: scale(1.05);
+    }
+
+    .product-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* =============== CART BUTTON =============== */
+    .cart-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      left: 20px;
+      max-width: calc(100% - 40px);
+      background: #10B981;
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+      transition: all 0.3s ease;
+      z-index: 50;
+    }
+
+    .cart-button:hover {
+      background: #059669;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
+    }
+
+    .cart-button:active {
+      transform: translateY(-2px);
+    }
+
+    .cart-count {
+      display: inline-block;
+      background: #EF4444;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    /* =============== EMPTY STATE =============== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94A3B8;
+    }
+
+    .empty-state p {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    /* =============== LOADING =============== */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748B;
+    }
+
+    /* =============== RESPONSIVE =============== */
+    @media (max-width: 768px) {
+      .menu-header h1 {
+        font-size: 20px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+
+      .product-card {
+        border-radius: 10px;
+      }
+
+      .product-image {
+        height: 100px;
+      }
+
+      .product-info {
+        padding: 10px;
+      }
+
+      .cart-button {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        max-width: calc(100% - 32px);
+        padding: 14px;
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .menu-container {
+        padding: 12px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+      }
+
+      .product-name {
+        font-size: 12px;
+      }
+
+      .product-price {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="menu-header">
+  <h1>🍽️ المنيو</h1>
+  <p>Get-Break Café</p>
+</div>
+
+<!-- CONTAINER -->
+<div class="menu-container">
+  <!-- CATEGORY FILTER -->
+  <div class="category-filter" id="categoryFilter">
+    <button class="category-btn active" onclick="filterByCategory('all')">
+      الكل
+    </button>
+  </div>
+
+  <!-- PRODUCTS GRID -->
+  <div class="products-grid" id="productsGrid">
+    <div class="loading">⏳ جاري تحميل المنيو...</div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState" style="display: none;">
+    <p>📭 لا توجد أصناف متاحة</p>
+  </div>
+</div>
+
+<!-- CART BUTTON -->
+<button class="cart-button" onclick="goToCart()">
+  🛒 اذهب للسلة
+  <span class="cart-count" id="cartCount" style="display: none;">0</span>
+</button>
+
+<script type="module">
+  import { supabase } from "./supabase.js";
+
+  let allProducts = [];
+  let filteredProducts = [];
+  let cartCount = 0;
+
+  // تحميل الصفحة
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadProducts();
+    subscribeToProductChanges();
+    updateCartCount();
+  });
+
+  // تحميل الأصناف
+  async function loadProducts() {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("active", true)
+        .eq("is_visible", true)  // ✅ فقط المفعّلة
+        .order("sort_order");
+
+      if (error) throw error;
+
+      allProducts = data || [];
+      filteredProducts = [...allProducts];
+
+      // تحديث الفئات
+      updateCategories();
+
+      // عرض الأصناف
+      renderProducts();
+    } catch (error) {
+      console.error("Error loading products:", error);
+      document.getElementById("productsGrid").innerHTML = `
+        <div class="empty-state">
+          <p>❌ خطأ في تحميل المنيو</p>
+        </div>
+      `;
+    }
+  }
+
+  // تحديث الفئات
+  function updateCategories() {
+    const categories = new Set(allProducts.map(p => p.category || "أخرى"));
+    const filterContainer = document.getElementById("categoryFilter");
+
+    filterContainer.innerHTML = `
+      <button class="category-btn active" onclick="filterByCategory('all')">
+        الكل
+      </button>
+      ${Array.from(categories)
+        .filter(cat => cat)
+        .map(cat => `
+          <button class="category-btn" onclick="filterByCategory('${cat}')">
+            ${cat}
+          </button>
+        `)
+        .join("")}
+    `;
+  }
+
+  // تصفية حسب الفئة
+  window.filterByCategory = (category) => {
+    // تحديث الأزرار النشطة
+    document.querySelectorAll(".category-btn").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    event.target.classList.add("active");
+
+    // تصفية الأصناف
+    if (category === "all") {
+      filteredProducts = [...allProducts];
+    } else {
+      filteredProducts = allProducts.filter(p => p.category === category);
+    }
+
+    renderProducts();
+  };
+
+  // عرض الأصناف
+  function renderProducts() {
+    const grid = document.getElementById("productsGrid");
+    const emptyState = document.getElementById("emptyState");
+
+    if (filteredProducts.length === 0) {
+      grid.style.display = "none";
+      emptyState.style.display = "block";
+      return;
+    }
+
+    grid.style.display = "grid";
+    emptyState.style.display = "none";
+
+    grid.innerHTML = filteredProducts.map(product => `
+      <div class="product-card">
+        <div class="product-image">
+          ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '🍽️'}
+        </div>
+        <div class="product-info">
+          <div class="product-name">${product.name}</div>
+          <div class="product-category">${product.category || '—'}</div>
+          <div class="product-price">${product.price.toFixed(3)} د.ب</div>
+          <button class="product-btn" onclick="addToCart('${product.id}', '${product.name}', ${product.price})">
+            أضف ➕
+          </button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // إضافة للسلة
+  window.addToCart = (productId, productName, price) => {
+    // احفظ في localStorage
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    
+    const existingItem = cart.find(item => item.id === productId);
+    if (existingItem) {
+      existingItem.qty++;
+    } else {
+      cart.push({
+        id: productId,
+        name: productName,
+        price: price,
+        qty: 1
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartCount();
+
+    // Animation
+    const btn = event.target;
+    btn.textContent = "✅ تمت الإضافة";
+    btn.style.background = "#10B981";
+    setTimeout(() => {
+      btn.textContent = "أضف ➕";
+      btn.style.background = "#3B82F6";
+    }, 1500);
+  };
+
+  // تحديث عدد العناصر في السلة
+  function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cartCount = cart.length;
+
+    const countBadge = document.getElementById("cartCount");
+    if (cartCount > 0) {
+      countBadge.textContent = cartCount;
+      countBadge.style.display = "flex";
+    } else {
+      countBadge.style.display = "none";
+    }
+  }
+
+  // الذهاب للسلة
+  window.goToCart = () => {
+    window.location.href = "index.html";
+  };
+
+  // الاستماع للتحديثات الحية
+  function subscribeToProductChanges() {
+    const subscription = supabase
+      .channel("products-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "products"
+        },
+        (payload) => {
+          // عند أي تغيير → أعد تحميل
+          loadProducts();
+        }
+      )
+      .subscribe();
+  }
+</script>
+
+</body>
+</html>
