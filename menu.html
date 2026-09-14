@@ -454,6 +454,90 @@
         gap: 10px;
       }
     }
+    /* =============== VARIANT MODAL =============== */
+.variant-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.variant-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.variant-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 300px;
+  width: 90%;
+  animation: slideUp 0.3s ease;
+}
+
+.variant-content h3 {
+  margin: 0 0 8px 0;
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.variant-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.variant-btn:hover {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.variant-btn:active {
+  transform: scale(0.95);
+}
+
+.variant-cancel {
+  width: 100%;
+  padding: 10px;
+  background: #E2E8F0;
+  color: #0F172A;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.variant-cancel:hover {
+  background: #CBD5E1;
+}
   </style>
 </head>
 <body>
@@ -598,33 +682,93 @@
     `).join("");
   }
 
-  // إضافة للسلة
-  window.addToCart = (productId, productName, price) => {
-    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    
-    const existingItem = cart.find(item => item.id === productId);
-    if (existingItem) {
-      existingItem.qty++;
+ // إضافة للسلة مع التحقق من Variants
+window.addToCart = async (productId, productName, price) => {
+  try {
+    const { data: variants, error } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("active", true);
+
+    if (error) throw error;
+
+    const activeVariants = variants || [];
+
+    if (activeVariants.length > 0) {
+      showVariantModal(productId, productName, activeVariants);
     } else {
-      cart.push({
-        id: productId,
-        name: productName,
-        price: price,
-        qty: 1
-      });
+      addItemToCart(productId, productName, price || 0);
     }
+  } catch (error) {
+    console.error("Error checking variants:", error);
+    addItemToCart(productId, productName, price || 0);
+  }
+};
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    updateCartCount();
+function addItemToCart(productId, productName, price) {
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  
+  const existingItem = cart.find(item => item.id === productId && item.price === price);
+  if (existingItem) {
+    existingItem.qty++;
+  } else {
+    cart.push({
+      id: productId,
+      name: productName,
+      price: price,
+      qty: 1
+    });
+  }
 
-    const btn = event.target;
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+
+  const btn = event?.target;
+  if (btn) {
     btn.textContent = "✅ تمت الإضافة";
     btn.style.background = "#10B981";
     setTimeout(() => {
       btn.textContent = "أضف ➕";
       btn.style.background = "#3B82F6";
     }, 1500);
-  };
+  }
+}
+
+function showVariantModal(productId, productName, variants) {
+  const modal = document.createElement("div");
+  modal.className = "variant-modal";
+  
+  modal.innerHTML = `
+    <div class="variant-backdrop"></div>
+    <div class="variant-content">
+      <h3>${productName}</h3>
+      <p style="color: #64748B; font-size: 13px; margin-bottom: 16px;">اختر الحجم:</p>
+      
+      <div class="variant-list">
+        ${variants.map(v => `
+          <button class="variant-btn" onclick="window.selectVariant('${productId}', '${productName}', '${v.label}', ${v.price})">
+            <span>${v.label}</span>
+            <span style="color: #10B981; font-weight: 700;">${v.price.toFixed(3)} د.ب</span>
+          </button>
+        `).join("")}
+      </div>
+      
+      <button class="variant-cancel" onclick="document.querySelector('.variant-modal').remove()">
+        إلغاء
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector(".variant-backdrop").onclick = () => modal.remove();
+}
+
+window.selectVariant = (productId, productName, variantLabel, price) => {
+  const finalName = `${productName} - ${variantLabel}`;
+  addItemToCart(productId, finalName, price);
+  document.querySelector(".variant-modal").remove();
+};
 
   // تحديث عدد العناصر
   function updateCartCount() {
