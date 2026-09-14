@@ -290,6 +290,140 @@
         font-size: 14px;
       }
     }
+
+    /* =============== CART MODAL =============== */
+    .cart-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .cart-modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .cart-modal-content {
+      position: relative;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideUp 0.4s ease;
+    }
+
+    .cart-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 2px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    .cart-modal-header h2 {
+      margin: 0;
+      color: #0F172A;
+      font-size: 20px;
+    }
+
+    .cart-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748B;
+    }
+
+    .cart-modal-body {
+      padding: 20px 24px;
+    }
+
+    .cart-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .cart-table th {
+      background: #F1F5F9;
+      padding: 10px;
+      text-align: right;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #E2E8F0;
+    }
+
+    .cart-table td {
+      padding: 10px;
+      border-bottom: 1px solid #E2E8F0;
+      color: #0F172A;
+    }
+
+    .cart-table button {
+      background: #E2E8F0;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .cart-table button:hover {
+      background: #CBD5E1;
+    }
+
+    .btn-remove {
+      background: #FEE2E2 !important;
+      color: #EF4444 !important;
+    }
+
+    .cart-modal-footer {
+      padding: 20px 24px;
+      border-top: 2px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 16px;
+    }
+
+    .total-amount {
+      color: #10B981;
+      font-size: 18px;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -484,9 +618,111 @@ function renderProducts() {
   }
 
   // الذهاب للسلة
-  window.goToCart = () => {
-    window.location.href = "index.html";
-  };
+ // فتح السلة Modal
+window.goToCart = () => {
+  showCartModal();
+};
+
+function showCartModal() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  
+  if (cart.length === 0) {
+    alert("السلة فارغة!");
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.id = "cartModal";
+  modal.className = "cart-modal";
+  
+  const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  
+  modal.innerHTML = `
+    <div class="cart-modal-backdrop"></div>
+    <div class="cart-modal-content">
+      <div class="cart-modal-header">
+        <h2>🛒 السلة</h2>
+        <button class="cart-close" onclick="closeCartModal()">✕</button>
+      </div>
+      
+      <div class="cart-modal-body">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>الصنف</th>
+              <th>السعر</th>
+              <th>الكمية</th>
+              <th>الإجمالي</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cart.map((item, index) => `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.price.toFixed(3)}</td>
+                <td>
+                  <button onclick="updateCartQty(${index}, ${item.qty - 1})">−</button>
+                  ${item.qty}
+                  <button onclick="updateCartQty(${index}, ${item.qty + 1})">+</button>
+                </td>
+                <td>${(item.price * item.qty).toFixed(3)}</td>
+                <td>
+                  <button onclick="removeFromCart(${index})" class="btn-remove">🗑️</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="cart-modal-footer">
+        <div class="cart-total">
+          <span>الإجمالي:</span>
+          <span class="total-amount">${total.toFixed(3)} د.ب</span>
+        </div>
+        <button class="btn btn-primary" onclick="proceedToOrder()" style="width: 100%; margin-top: 12px;">
+          متابعة الطلب ➜
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector(".cart-modal-backdrop").onclick = closeCartModal;
+}
+
+function closeCartModal() {
+  const modal = document.getElementById("cartModal");
+  if (modal) modal.remove();
+}
+
+function updateCartQty(index, newQty) {
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  
+  if (newQty <= 0) {
+    cart.splice(index, 1);
+  } else {
+    cart[index].qty = newQty;
+  }
+  
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+  showCartModal();
+}
+
+function removeFromCart(index) {
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  cart.splice(index, 1);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+  showCartModal();
+}
+
+function proceedToOrder() {
+  closeCartModal();
+  showOrderForm();
+}
 
   // الاستماع للتحديثات الحية
   function subscribeToProductChanges() {
