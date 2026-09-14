@@ -894,6 +894,25 @@
   background: #059669;
   transform: translateY(-2px);
 }
+.addon-free {
+  background: #F0FDF4 !important;
+  border: 2px solid #86EFAC !important;
+}
+
+.addon-free:hover {
+  border-color: #22C55E !important;
+  background: #DCFCE7 !important;
+}
+
+.addon-paid {
+  background: #EFF6FF !important;
+  border: 2px solid #93C5FD !important;
+}
+
+.addon-paid:hover {
+  border-color: #3B82F6 !important;
+  background: #DBEAFE !important;
+}
 
 
   </style>
@@ -1080,7 +1099,101 @@ window.addToCart = async (productId, productName, price) => {
 };
 
 // عرض modal الإضافات
-function showAddonsModal(productId, productName, price, addons) {
+// عرض modal الإضافات (مجانية + مدفوعة)
+async function showAddonsModal(productId, productName, price, paidAddons) {
+  try {
+    // احصل على الإضافات المجانية
+    const { data: freeAddons } = await supabase
+      .from("product_free_addons")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("active", true);
+
+    const allFreeAddons = freeAddons || [];
+    
+    const modal = document.createElement("div");
+    modal.className = "addons-modal";
+    modal.id = "addonsModal";
+    
+    modal.innerHTML = `
+      <div class="addons-backdrop"></div>
+      <div class="addons-content">
+        <h3>${productName}</h3>
+        <p style="color: #64748B; font-size: 13px; margin-bottom: 16px;">
+          السعر الأساسي: <strong>${price.toFixed(3)} د.ب</strong>
+        </p>
+        
+        <div class="addons-list">
+          <!-- الإضافات المجانية -->
+          ${allFreeAddons.length > 0 ? `
+            <div style="margin-bottom: 12px;">
+              <p style="font-weight: 700; color: #0F172A; margin-bottom: 8px;">🎁 إضافات مجانية:</p>
+              ${allFreeAddons.map(addon => `
+                <label class="addon-item addon-free">
+                  <input type="checkbox" value="${addon.id}" data-price="0" data-name="${addon.name}" data-type="free" class="addon-checkbox">
+                  <span class="addon-name">${addon.name}</span>
+                  <span class="addon-price" style="color: #10B981;">مجاني</span>
+                </label>
+              `).join("")}
+            </div>
+            <hr style="border: none; border-top: 2px solid #E2E8F0; margin: 12px 0;">
+          ` : ''}
+          
+          <!-- الإضافات المدفوعة -->
+          ${paidAddons.length > 0 ? `
+            <div>
+              <p style="font-weight: 700; color: #0F172A; margin-bottom: 8px;">💰 إضافات مدفوعة:</p>
+              ${paidAddons.map(addon => `
+                <label class="addon-item addon-paid">
+                  <input type="checkbox" value="${addon.id}" data-price="${addon.price}" data-name="${addon.name}" data-type="paid" class="addon-checkbox">
+                  <span class="addon-name">${addon.name}</span>
+                  <span class="addon-price" style="color: #10B981;">+${addon.price.toFixed(3)}</span>
+                </label>
+              `).join("")}
+            </div>
+          ` : ''}
+        </div>
+        
+        <div class="addons-summary">
+          <div class="price-row">
+            <span>السعر الأساسي:</span>
+            <span id="basePriceDisplay">${price.toFixed(3)} د.ب</span>
+          </div>
+          <div class="price-row" id="addonsPriceRow" style="display: none;">
+            <span>الإضافات المدفوعة:</span>
+            <span id="addonsPriceDisplay">0.000 د.ب</span>
+          </div>
+          <div class="price-row" style="border-top: 2px solid #E2E8F0; padding-top: 8px; margin-top: 8px;">
+            <span>الإجمالي:</span>
+            <span id="totalPriceDisplay" style="color: #10B981; font-weight: 700;">${price.toFixed(3)} د.ب</span>
+          </div>
+        </div>
+        
+        <div class="addons-footer">
+          <button class="addons-cancel" onclick="document.getElementById('addonsModal').remove()">إلغاء</button>
+          <button class="addons-submit" onclick="window.submitAddons('${productId}', '${productName}', ${price})">أضف للسلة ✓</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    // تحديث السعر عند اختيار إضافات
+    const checkboxes = modal.querySelectorAll(".addon-checkbox");
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener("change", () => updateAddonsPrice(price));
+    });
+    
+    modal.querySelector(".addons-backdrop").onclick = () => modal.remove();
+  } catch (error) {
+    console.error("Error loading free addons:", error);
+    // fallback: اعرض الإضافات المدفوعة فقط
+    showAddonsModalFallback(productName, price, paidAddons);
+  }
+}
+
+// Fallback إذا حصلت مشكلة
+function showAddonsModalFallback(productName, price, paidAddons) {
   const modal = document.createElement("div");
   modal.className = "addons-modal";
   modal.id = "addonsModal";
@@ -1094,7 +1207,7 @@ function showAddonsModal(productId, productName, price, addons) {
       </p>
       
       <div class="addons-list">
-        ${addons.map(addon => `
+        ${paidAddons.map(addon => `
           <label class="addon-item">
             <input type="checkbox" value="${addon.id}" data-price="${addon.price}" data-name="${addon.name}" class="addon-checkbox">
             <span class="addon-name">${addon.name}</span>
@@ -1127,7 +1240,6 @@ function showAddonsModal(productId, productName, price, addons) {
 
   document.body.appendChild(modal);
   
-  // تحديث السعر عند اختيار إضافات
   const checkboxes = modal.querySelectorAll(".addon-checkbox");
   checkboxes.forEach(checkbox => {
     checkbox.addEventListener("change", () => updateAddonsPrice(price));
@@ -1135,6 +1247,7 @@ function showAddonsModal(productId, productName, price, addons) {
   
   modal.querySelector(".addons-backdrop").onclick = () => modal.remove();
 }
+
 
 // تحديث سعر الإضافات
 function updateAddonsPrice(basePrice) {
