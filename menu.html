@@ -408,36 +408,36 @@
     renderProducts();
   };
 
-  // عرض الأصناف
-  function renderProducts() {
-    const grid = document.getElementById("productsGrid");
-    const emptyState = document.getElementById("emptyState");
+// عرض الأصناف
+function renderProducts() {
+  const grid = document.getElementById("productsGrid");
+  const emptyState = document.getElementById("emptyState");
 
-    if (filteredProducts.length === 0) {
-      grid.style.display = "none";
-      emptyState.style.display = "block";
-      return;
-    }
-
-    grid.style.display = "grid";
-    emptyState.style.display = "none";
-
-    grid.innerHTML = filteredProducts.map(product => `
-      <div class="product-card">
-        <div class="product-image">
-          ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '🍽️'}
-        </div>
-        <div class="product-info">
-          <div class="product-name">${product.name}</div>
-          <div class="product-category">${product.category || '—'}</div>
-          <div class="product-price">${product.price.toFixed(3)} د.ب</div>
-          <button class="product-btn" onclick="addToCart('${product.id}', '${product.name}', ${product.price})">
-            أضف ➕
-          </button>
-        </div>
-      </div>
-    `).join("");
+  if (filteredProducts.length === 0) {
+    grid.style.display = "none";
+    emptyState.style.display = "block";
+    return;
   }
+
+  grid.style.display = "grid";
+  emptyState.style.display = "none";
+
+  grid.innerHTML = filteredProducts.map(product => `
+    <div class="product-card">
+      <div class="product-image">
+        ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '🍽️'}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${product.name}</div>
+        <div class="product-category">${product.category || '—'}</div>
+        <div class="product-price">${(product.price || 0).toFixed(3)} د.ب</div>
+        <button class="product-btn" onclick="addToCart('${product.id}', '${product.name}', ${product.price || 0})">
+          أضف ➕
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
 
   // إضافة للسلة
   window.addToCart = (productId, productName, price) => {
