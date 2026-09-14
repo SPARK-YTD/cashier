@@ -1276,76 +1276,252 @@ window.selectVariant = (productId, productName, variantLabel, price) => {
   };
 
   // عرض السلة Modal
-  function showCartModal() {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+// عرض السلة Modal
+function showCartModal() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  
+  if (cart.length === 0) {
+    alert("السلة فارغة!");
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.id = "cartModal";
+  modal.className = "cart-modal";
+  
+  const total = cart.reduce((sum, item) => {
+    const itemTotal = item.price * item.qty;
+    return sum + itemTotal;
+  }, 0);
+  
+  modal.innerHTML = `
+    <div class="cart-modal-backdrop"></div>
+    <div class="cart-modal-content">
+      <div class="cart-modal-header">
+        <h2>🛒 السلة</h2>
+        <button class="cart-close" onclick="window.closeCartModal()">✕</button>
+      </div>
+      
+      <div class="cart-modal-body">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>الصنف</th>
+              <th>السعر</th>
+              <th>الكمية</th>
+              <th>الإجمالي</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cart.map((item, index) => `
+              <tr>
+                <td>
+                  <div>
+                    <div style="font-weight: 700; margin-bottom: 4px;">${item.name}</div>
+                    ${item.addons && item.addons.length > 0 ? `
+                      <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
+                        <strong>الإضافات:</strong><br>
+                        ${item.addons.map(addon => `
+                          • ${addon.name} (+${addon.price.toFixed(3)} د.ب)<br>
+                        `).join("")}
+                      </div>
+                      <button onclick="window.editAddons(${index})" style="
+                        background: #3B82F6;
+                        color: white;
+                        border: none;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 11px;
+                        font-weight: 600;
+                      ">تعديل الإضافات</button>
+                    ` : ''}
+                  </div>
+                </td>
+                <td>${(item.price || 0).toFixed(3)}</td>
+                <td>
+                  <div class="qty-controls">
+                    <button class="qty-btn" onclick="window.updateCartQty(${index}, -1)">−</button>
+                    <span>${item.qty}</span>
+                    <button class="qty-btn" onclick="window.updateCartQty(${index}, 1)">+</button>
+                  </div>
+                </td>
+                <td>${((item.price || 0) * item.qty).toFixed(3)}</td>
+                <td>
+                  <button class="btn-remove" onclick="window.removeFromCart(${index})">🗑️</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="cart-modal-footer">
+        <div class="cart-total">
+          <span>الإجمالي:</span>
+          <span class="total-amount">${total.toFixed(3)} د.ب</span>
+        </div>
+        <button class="btn-proceed" onclick="window.proceedToOrder()">
+          متابعة الطلب ➜
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector(".cart-modal-backdrop").onclick = () => window.closeCartModal();
+}
+
+// تعديل الإضافات
+window.editAddons = async (index) => {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const item = cart[index];
+  
+  if (!item) return;
+  
+  try {
+    // احصل على الإضافات المتاحة
+    const { data: addons } = await supabase
+      .from("product_addons")
+      .select("*")
+      .eq("product_id", item.id)
+      .eq("active", true);
+
+    const availableAddons = addons || [];
     
-    if (cart.length === 0) {
-      alert("السلة فارغة!");
+    if (availableAddons.length === 0) {
+      alert("لا توجد إضافات متاحة لهذا المنتج");
       return;
     }
 
-    const modal = document.createElement("div");
-    modal.id = "cartModal";
-    modal.className = "cart-modal";
-    
-    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    modal.innerHTML = `
-      <div class="cart-modal-backdrop"></div>
-      <div class="cart-modal-content">
-        <div class="cart-modal-header">
-          <h2>🛒 السلة</h2>
-          <button class="cart-close" onclick="window.closeCartModal()">✕</button>
+    // حساب السعر الأساسي (بدون إضافات)
+    const addonsTotal = (item.addons || []).reduce((sum, a) => sum + a.price, 0);
+    const basePrice = item.price - addonsTotal;
+
+    showEditAddonsModal(index, item.name, basePrice, item.addons || [], availableAddons);
+  } catch (error) {
+    console.error("Error loading addons:", error);
+  }
+};
+
+// عرض modal تعديل الإضافات
+function showEditAddonsModal(cartIndex, productName, basePrice, currentAddons, availableAddons) {
+  const modal = document.createElement("div");
+  modal.className = "addons-modal";
+  modal.id = "editAddonsModal";
+  
+  modal.innerHTML = `
+    <div class="addons-backdrop"></div>
+    <div class="addons-content">
+      <h3>تعديل إضافات: ${productName}</h3>
+      <p style="color: #64748B; font-size: 13px; margin-bottom: 16px;">
+        السعر الأساسي: <strong>${basePrice.toFixed(3)} د.ب</strong>
+      </p>
+      
+      <div class="addons-list">
+        ${availableAddons.map(addon => {
+          const isSelected = currentAddons.some(a => a.id === addon.id);
+          return `
+            <label class="addon-item">
+              <input type="checkbox" value="${addon.id}" data-price="${addon.price}" data-name="${addon.name}" class="addon-checkbox" ${isSelected ? 'checked' : ''}>
+              <span class="addon-name">${addon.name}</span>
+              <span class="addon-price" style="color: #10B981;">+${addon.price.toFixed(3)}</span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+      
+      <div class="addons-summary">
+        <div class="price-row">
+          <span>السعر الأساسي:</span>
+          <span id="editBasePriceDisplay">${basePrice.toFixed(3)} د.ب</span>
         </div>
-        
-        <div class="cart-modal-body">
-          <table class="cart-table">
-            <thead>
-              <tr>
-                <th>الصنف</th>
-                <th>السعر</th>
-                <th>الكمية</th>
-                <th>الإجمالي</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${cart.map((item, index) => `
-                <tr>
-                  <td>${item.name}</td>
-                  <td>${(item.price || 0).toFixed(3)}</td>
-                  <td>
-                    <div class="qty-controls">
-                      <button class="qty-btn" onclick="window.updateCartQty(${index}, -1)">−</button>
-                      <span>${item.qty}</span>
-                      <button class="qty-btn" onclick="window.updateCartQty(${index}, 1)">+</button>
-                    </div>
-                  </td>
-                  <td>${((item.price || 0) * item.qty).toFixed(3)}</td>
-                  <td>
-                    <button class="btn-remove" onclick="window.removeFromCart(${index})">🗑️</button>
-                  </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
+        <div class="price-row" id="editAddonsPriceRow" style="display: none;">
+          <span>الإضافات:</span>
+          <span id="editAddonsPriceDisplay">0.000 د.ب</span>
         </div>
-        
-        <div class="cart-modal-footer">
-          <div class="cart-total">
-            <span>الإجمالي:</span>
-            <span class="total-amount">${total.toFixed(3)} د.ب</span>
-          </div>
-          <button class="btn-proceed" onclick="window.proceedToOrder()">
-            متابعة الطلب ➜
-          </button>
+        <div class="price-row" style="border-top: 2px solid #E2E8F0; padding-top: 8px; margin-top: 8px;">
+          <span>الإجمالي:</span>
+          <span id="editTotalPriceDisplay" style="color: #10B981; font-weight: 700;">${basePrice.toFixed(3)} د.ب</span>
         </div>
       </div>
-    `;
+      
+      <div class="addons-footer">
+        <button class="addons-cancel" onclick="document.getElementById('editAddonsModal').remove()">إلغاء</button>
+        <button class="addons-submit" onclick="window.saveEditedAddons(${cartIndex}, ${basePrice})">حفظ التعديل ✓</button>
+      </div>
+    </div>
+  `;
 
-    document.body.appendChild(modal);
-    modal.querySelector(".cart-modal-backdrop").onclick = () => window.closeCartModal();
+  document.body.appendChild(modal);
+  
+  // تحديث السعر عند اختيار إضافات
+  const checkboxes = modal.querySelectorAll(".addon-checkbox");
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener("change", () => updateEditAddonsPrice(basePrice));
+  });
+  
+  modal.querySelector(".addons-backdrop").onclick = () => modal.remove();
+  
+  // تحديث السعر الأولي
+  updateEditAddonsPrice(basePrice);
+}
+
+// تحديث السعر في modal التعديل
+function updateEditAddonsPrice(basePrice) {
+  const checkboxes = document.querySelectorAll("#editAddonsModal .addon-checkbox:checked");
+  let addonsPrice = 0;
+  
+  checkboxes.forEach(checkbox => {
+    addonsPrice += parseFloat(checkbox.dataset.price);
+  });
+  
+  const totalPrice = basePrice + addonsPrice;
+  
+  const addonsPriceRow = document.getElementById("editAddonsPriceRow");
+  const addonsPriceDisplay = document.getElementById("editAddonsPriceDisplay");
+  const totalPriceDisplay = document.getElementById("editTotalPriceDisplay");
+  
+  if (addonsPrice > 0) {
+    addonsPriceRow.style.display = "flex";
+    addonsPriceDisplay.textContent = addonsPrice.toFixed(3) + " د.ب";
+  } else {
+    addonsPriceRow.style.display = "none";
   }
+  
+  totalPriceDisplay.textContent = totalPrice.toFixed(3) + " د.ب";
+}
+
+// حفظ الإضافات المعدلة
+window.saveEditedAddons = (cartIndex, basePrice) => {
+  const checkboxes = document.querySelectorAll("#editAddonsModal .addon-checkbox:checked");
+  const selectedAddons = [];
+  let addonsPrice = 0;
+  
+  checkboxes.forEach(checkbox => {
+    selectedAddons.push({
+      id: checkbox.value,
+      name: checkbox.dataset.name,
+      price: parseFloat(checkbox.dataset.price)
+    });
+    addonsPrice += parseFloat(checkbox.dataset.price);
+  });
+  
+  const finalPrice = basePrice + addonsPrice;
+  
+  // تحديث السلة
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  cart[cartIndex].price = finalPrice;
+  cart[cartIndex].addons = selectedAddons;
+  
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+  
+  document.getElementById("editAddonsModal").remove();
+  showCartModal();
+};
+
 
   // إغلاق السلة
   window.closeCartModal = () => {
