@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة المنيو</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #F8FAFC;
+      padding: 20px;
+      font-family: inherit;
+    }
+
+    .admin-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #0F172A, #1E293B);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .admin-header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .back-btn {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-50%) translateX(-4px);
+    }
+
+    .qr-section {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .qr-section h2 {
+      margin: 0 0 16px 0;
+      color: #0F172A;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #qrCode {
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .qr-url {
+      margin-top: 16px;
+      padding: 12px;
+      background: #F1F5F9;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #475569;
+      word-break: break-all;
+      border: 1px solid #E2E8F0;
+    }
+
+    .qr-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #3B82F6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563EB;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+
+    .btn-secondary:hover {
+      background: #CBD5E1;
+    }
+
+    .menu-section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .menu-title {
+      padding: 20px 24px;
+      background: #F1F5F9;
+      border-bottom: 2px solid #E2E8F0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+
+    .menu-table {
+      width: 100%;
+    }
+
+    .menu-table thead {
+      background: #F8FAFC;
+      border-bottom: 2px solid #E2E8F0;
+    }
+
+    .menu-table th {
+      padding: 12px 16px;
+      text-align: right;
+      font-weight: 600;
+      color: #475569;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .menu-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #E2E8F0;
+      color: #0F172A;
+    }
+
+    .menu-table tbody tr:hover {
+      background: #F8FAFC;
+    }
+
+    .product-name {
+      font-weight: 600;
+      color: #0F172A;
+    }
+
+    .product-category {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 2px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      display: inline-flex;
+      align-items: center;
+      width: 48px;
+      height: 24px;
+      background: #CBD5E1;
+      border-radius: 12px;
+      padding: 2px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      border: none;
+    }
+
+    .toggle-switch.active {
+      background: #10B981;
+    }
+
+    .toggle-knob {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+    }
+
+    .toggle-switch.active .toggle-knob {
+      transform: translateX(24px);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+
+    .status-inactive {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748B;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94A3B8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-container">
+  <!-- HEADER -->
+  <div class="admin-header">
+    <button class="back-btn" onclick="window.location.href='index.html'">← رجوع</button>
+    <h1>🍽️ إدارة المنيو</h1>
+  </div>
+
+  <!-- QR CODE SECTION -->
+  <div class="qr-section">
+    <h2>📱 رمز QR للعملاء</h2>
+    <div id="qrCode" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+      <div class="loading">⏳ جاري إنشاء QR Code...</div>
+    </div>
+    <div class="qr-url" id="qrUrl">جاري التحميل...</div>
+    <div class="qr-actions">
+      <button class="btn btn-primary" onclick="printQR()">🖨️ طباعة QR</button>
+      <button class="btn btn-secondary" onclick="copyQRUrl()">📋 نسخ الرابط</button>
+    </div>
+  </div>
+
+  <!-- MENU MANAGEMENT SECTION -->
+  <div class="menu-section">
+    <div class="menu-title">📋 إدارة الأصناف</div>
+    <table class="menu-table">
+      <thead>
+        <tr>
+          <th style="width: 40%;">الصنف</th>
+          <th style="width: 20%;">السعر</th>
+          <th style="width: 20%;">الفئة</th>
+          <th style="width: 20%;">الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="menuTable">
+        <tr>
+          <td colspan="4" class="loading">⏳ جاري تحميل الأصناف...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- QR Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="module">
+  import { supabase } from "./supabase.js";
+
+  let qrInstance = null;
+  const menuUrl = window.location.origin + window.location.pathname.replace('menu-admin.html', 'menu.html');
+
+  // تحميل الصفحة
+  document.addEventListener("DOMContentLoaded", async () => {
+    generateQR();
+    await loadMenu();
+  });
+
+  // إنشاء QR Code
+  function generateQR() {
+    const qrContainer = document.getElementById("qrCode");
+    qrContainer.innerHTML = '';
+
+    qrInstance = new QRCode(qrContainer, {
+      text: menuUrl,
+      width: 200,
+      height: 200,
+      colorDark: "#0F172A",
+      colorLight: "#FFFFFF",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    document.getElementById("qrUrl").textContent = menuUrl;
+  }
+
+  // تحميل قائمة الأصناف
+  async function loadMenu() {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("active", true)
+        .order("sort_order");
+
+      if (error) throw error;
+
+      const products = data || [];
+
+      if (products.length === 0) {
+        document.getElementById("menuTable").innerHTML = `
+          <tr>
+            <td colspan="4" class="empty-state">
+              <p>📭 لا توجد أصناف</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const rows = products.map(product => `
+        <tr>
+          <td>
+            <div class="product-name">${product.name}</div>
+            <div class="product-category">${product.category || '—'}</div>
+          </td>
+          <td>${product.price.toFixed(3)} د.ب</td>
+          <td>${product.category || '—'}</td>
+          <td>
+            <button class="toggle-switch ${product.is_visible ? 'active' : ''}" 
+                    onclick="toggleVisibility('${product.id}', ${!product.is_visible})">
+              <div class="toggle-knob"></div>
+            </button>
+            <div class="status-badge ${product.is_visible ? 'status-active' : 'status-inactive'}">
+              ${product.is_visible ? '✅ يبان' : '❌ مخفي'}
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      document.getElementById("menuTable").innerHTML = rows;
+    } catch (error) {
+      console.error("Error loading menu:", error);
+      document.getElementById("menuTable").innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; color: #EF4444;">
+            ❌ خطأ في تحميل الأصناف
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  // تبديل ظهور/إخفاء الصنف
+  window.toggleVisibility = async (productId, newValue) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_visible: newValue })
+        .eq("id", productId);
+
+      if (error) throw error;
+
+      // إعادة تحميل الجدول
+      await loadMenu();
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert("❌ خطأ في تحديث الصنف");
+    }
+  };
+
+  // طباعة QR
+  window.printQR = () => {
+    const printWindow = window.open('', '', 'width=400,height=500');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+      <head>
+        <title>QR Code</title>
+        <style>
+          body { text-align: center; padding: 20px; font-family: Arial; }
+          h2 { margin-bottom: 20px; }
+          img { max-width: 300px; }
+        </style>
+      </head>
+      <body>
+        <h2>📱 رمز QR للمنيو</h2>
+        ${document.getElementById("qrCode").innerHTML}
+        <p style="margin-top: 20px; color: #666;">
+          امسح هذا الرمز للوصول للمنيو
+        </p>
+      </body>
+      </html>
+    `);
+    printWindow.print();
+  };
+
+  // نسخ الرابط
+  window.copyQRUrl = () => {
+    navigator.clipboard.writeText(menuUrl);
+    alert("✅ تم نسخ الرابط بنجاح!");
+  };
+</script>
+
+</body>
+</html>
