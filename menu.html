@@ -538,6 +538,220 @@
 .variant-cancel:hover {
   background: #CBD5E1;
 }
+
+/* =============== ORDER FORM MODAL =============== */
+.order-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.order-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.order-content {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.4s ease;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.order-header h2 {
+  margin: 0;
+  color: #0F172A;
+  font-size: 20px;
+}
+
+.order-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748B;
+  transition: all 0.2s;
+}
+
+.order-close:hover {
+  color: #0F172A;
+  transform: scale(1.2);
+}
+
+.order-body {
+  padding: 20px 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #0F172A;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.radio-label:hover {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.radio-label input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-left: 10px;
+  cursor: pointer;
+  accent-color: #3B82F6;
+}
+
+.radio-label span {
+  flex: 1;
+  margin-right: 8px;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+.order-summary {
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  color: #0F172A;
+}
+
+.alert {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.alert-info {
+  background: #FEF3C7;
+  border: 2px solid #FCD34D;
+  color: #92400E;
+}
+
+.order-footer {
+  padding: 16px 24px;
+  border-top: 2px solid #E2E8F0;
+  background: #F8FAFC;
+  display: flex;
+  gap: 12px;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 12px;
+  background: #E2E8F0;
+  color: #0F172A;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #CBD5E1;
+}
+
+.btn-submit {
+  flex: 1;
+  padding: 12px;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-submit:hover {
+  background: #2563EB;
+  transform: translateY(-2px);
+}
+
+
   </style>
 </head>
 <body>
@@ -889,11 +1103,290 @@ window.selectVariant = (productId, productName, variantLabel, price) => {
     showCartModal();
   };
 
-  // متابعة الطلب
-  window.proceedToOrder = () => {
-    window.closeCartModal();
-    alert("⏳ الخطوة التالية - Order Form (قريباً)");
-  };
+  // متابعة // متابعة الطلب
+window.proceedToOrder = () => {
+  window.closeCartModal();
+  showOrderForm();
+};
+
+// عرض Order Form
+function showOrderForm() {
+  const modal = document.createElement("div");
+  modal.className = "order-modal";
+  modal.id = "orderModal";
+  
+  modal.innerHTML = `
+    <div class="order-backdrop"></div>
+    <div class="order-content">
+      <div class="order-header">
+        <h2>📋 بيانات الطلب</h2>
+        <button class="order-close" onclick="window.closeOrderForm()">✕</button>
+      </div>
+      
+      <div class="order-body">
+        <!-- الاسم -->
+        <div class="form-group">
+          <label>الاسم (اختياري)</label>
+          <input type="text" id="customerName" placeholder="اسمك">
+        </div>
+        
+        <!-- رقم الهاتف -->
+        <div class="form-group">
+          <label>رقم الهاتف *</label>
+          <input type="tel" id="customerPhone" placeholder="33123456 أو +97333123456">
+          <small style="color: #64748B;">رقم بحريني (7-8 أرقام)</small>
+        </div>
+        
+        <!-- نوع الطلب -->
+        <div class="form-group">
+          <label>نوع الطلب *</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="orderType" value="pickup" checked onchange="updateOrderType()">
+              <span>🚶 استلام من المتجر</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="orderType" value="delivery" onchange="updateOrderType()">
+              <span>🚗 توصيل للعنوان</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- العنوان (يظهر إذا توصيل) -->
+        <div class="form-group" id="addressGroup" style="display: none;">
+          <label>المنطقة *</label>
+          <select id="deliveryArea">
+            <option value="">-- اختر المنطقة --</option>
+            <option value="manama">المنامة - 300 فلس</option>
+            <option value="budaiya">البديع - 500 فلس</option>
+            <option value="other">مناطق أخرى - 1 دينار</option>
+          </select>
+          
+          <label style="margin-top: 12px;">وصف العنوان</label>
+          <textarea id="deliveryDetails" placeholder="رقم المنزل، الشارع، معالم..." rows="3"></textarea>
+        </div>
+        
+        <!-- الملاحظات -->
+        <div class="form-group">
+          <label>ملاحظات إضافية (اختياري)</label>
+          <textarea id="notes" placeholder="مثل: بدون بصل، حار جداً..." rows="2"></textarea>
+        </div>
+        
+        <!-- تنبيه الإجمالي -->
+        <div class="order-summary">
+          <div class="summary-row">
+            <span>الإجمالي:</span>
+            <span id="summaryTotal" style="color: #10B981; font-weight: 700;">0.000 د.ب</span>
+          </div>
+          <div class="summary-row" id="deliveryFeeRow" style="display: none;">
+            <span>رسم التوصيل:</span>
+            <span id="summaryDelivery" style="color: #3B82F6; font-weight: 700;">0.000 د.ب</span>
+          </div>
+          <div class="summary-row" style="border-top: 2px solid #E2E8F0; padding-top: 12px;">
+            <span>الإجمالي النهائي:</span>
+            <span id="summaryFinal" style="color: #10B981; font-weight: 800; font-size: 16px;">0.000 د.ب</span>
+          </div>
+        </div>
+        
+        <!-- تنبيه التوصيل -->
+        <div class="alert alert-info" id="deliveryAlert" style="display: none;">
+          ⚠️ يوجد رسم توصيل حسب المنطقة
+        </div>
+      </div>
+      
+      <div class="order-footer">
+        <button class="btn-cancel" onclick="window.closeOrderForm()">إلغاء</button>
+        <button class="btn-submit" onclick="window.submitOrder()">إرسال الطلب ✓</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.querySelector(".order-backdrop").onclick = () => window.closeOrderForm();
+  
+  // تحديث الإجمالي
+  updateOrderSummary();
+}
+
+// تحديث نوع الطلب
+window.updateOrderType = () => {
+  const orderType = document.querySelector('input[name="orderType"]:checked').value;
+  const addressGroup = document.getElementById("addressGroup");
+  const deliveryFeeRow = document.getElementById("deliveryFeeRow");
+  const deliveryAlert = document.getElementById("deliveryAlert");
+  
+  if (orderType === "delivery") {
+    addressGroup.style.display = "block";
+    deliveryFeeRow.style.display = "flex";
+    deliveryAlert.style.display = "block";
+  } else {
+    addressGroup.style.display = "none";
+    deliveryFeeRow.style.display = "none";
+    deliveryAlert.style.display = "none";
+  }
+  
+  updateOrderSummary();
+};
+
+// تحديث الملخص
+function updateOrderSummary() {
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  let cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  
+  document.getElementById("summaryTotal").textContent = cartTotal.toFixed(3) + " د.ب";
+  
+  const orderType = document.querySelector('input[name="orderType"]:checked').value;
+  
+  if (orderType === "delivery") {
+    const area = document.getElementById("deliveryArea").value;
+    let deliveryFee = 0;
+    
+    if (area === "manama") {
+      deliveryFee = 0.3;
+    } else if (area === "budaiya") {
+      deliveryFee = 0.5;
+    } else if (area === "other") {
+      deliveryFee = 1;
+    }
+    
+    document.getElementById("summaryDelivery").textContent = deliveryFee.toFixed(3) + " د.ب";
+    
+    const finalTotal = cartTotal + deliveryFee;
+    document.getElementById("summaryFinal").textContent = finalTotal.toFixed(3) + " د.ب";
+  } else {
+    document.getElementById("summaryFinal").textContent = cartTotal.toFixed(3) + " د.ب";
+  }
+}
+
+// التحقق من رقم بحريني
+function isValidBahrainPhone(phone) {
+  // إزالة الفراغات والشرطات
+  const cleaned = phone.replace(/[\s-]/g, '');
+  
+  // يجب أن يكون 7-8 أرقام أو يبدأ بـ +973
+  if (cleaned.length >= 7 && cleaned.length <= 8 && /^\d+$/.test(cleaned)) {
+    return true;
+  }
+  if (cleaned.startsWith("+973") && cleaned.length === 12) {
+    return true;
+  }
+  return false;
+}
+
+// إغلاق Form
+window.closeOrderForm = () => {
+  const modal = document.getElementById("orderModal");
+  if (modal) modal.remove();
+};
+
+// إرسال الطلب
+window.submitOrder = async () => {
+  const name = document.getElementById("customerName").value.trim();
+  const phone = document.getElementById("customerPhone").value.trim();
+  const orderType = document.querySelector('input[name="orderType"]:checked').value;
+  const notes = document.getElementById("notes").value.trim();
+  
+  // التحقق من الرقم
+  if (!phone) {
+    alert("❌ الرجاء إدخال رقم الهاتف");
+    return;
+  }
+  
+  if (!isValidBahrainPhone(phone)) {
+    alert("❌ رقم الهاتف غير صحيح\nيجب أن يكون رقم بحريني (33123456 أو +97333123456)");
+    return;
+  }
+  
+  // التحقق من بيانات التوصيل
+  if (orderType === "delivery") {
+    const area = document.getElementById("deliveryArea").value;
+    const details = document.getElementById("deliveryDetails").value.trim();
+    
+    if (!area) {
+      alert("❌ الرجاء اختيار المنطقة");
+      return;
+    }
+    
+    if (!details) {
+      alert("❌ الرجاء إدخال تفاصيل العنوان");
+      return;
+    }
+  }
+  
+  // تنبيه التأكيد
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  
+  if (orderType === "delivery") {
+    const area = document.getElementById("deliveryArea").value;
+    if (area === "manama") total += 0.3;
+    else if (area === "budaiya") total += 0.5;
+    else if (area === "other") total += 1;
+  }
+  
+  const confirmed = confirm(`✓ هل أنت متأكد من الطلب؟\n\nالإجمالي: ${total.toFixed(3)} د.ب`);
+  
+  if (!confirmed) return;
+  
+  // إنشاء رسالة WhatsApp
+  createAndSendWhatsApp(name, phone, orderType, cart, total, notes);
+};
+
+// إنشاء وإرسال رسالة WhatsApp
+function createAndSendWhatsApp(name, phone, orderType, cart, total, notes) {
+  // تنظيف الرقم
+  let whatsappPhone = phone.replace(/[\s-]/g, '');
+  if (!whatsappPhone.startsWith("+973")) {
+    whatsappPhone = "+973" + whatsappPhone.slice(-7);
+  }
+  
+  // إنشاء الرسالة
+  let message = `🍽️ *طلب جديد*\n\n`;
+  
+  if (name) {
+    message += `👤 *الاسم:* ${name}\n`;
+  }
+  message += `📱 *الهاتف:* ${phone}\n`;
+  message += `🏪 *نوع الطلب:* ${orderType === "pickup" ? "استلام من المتجر" : "توصيل للعنوان"}\n\n`;
+  
+  message += `*📦 الطلب:*\n`;
+  cart.forEach(item => {
+    message += `• ${item.name} × ${item.qty} = ${(item.price * item.qty).toFixed(3)} د.ب\n`;
+  });
+  
+  message += `\n💰 *الإجمالي:* ${total.toFixed(3)} د.ب\n`;
+  
+  if (orderType === "delivery") {
+    const area = document.getElementById("deliveryArea").value;
+    const details = document.getElementById("deliveryDetails").value;
+    const areaNames = {
+      manama: "المنامة",
+      budaiya: "البديع",
+      other: "مناطق أخرى"
+    };
+    message += `\n🚗 *التوصيل:*\n`;
+    message += `المنطقة: ${areaNames[area]}\n`;
+    message += `العنوان: ${details}\n`;
+  }
+  
+  if (notes) {
+    message += `\n📝 *ملاحظات:* ${notes}\n`;
+  }
+  
+  // فتح WhatsApp
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodedMessage}`;
+  
+  window.open(whatsappUrl, "_blank");
+  
+  // حذف السلة وإغلاق الـ form
+  localStorage.removeItem("cart");
+  updateCartCount();
+  window.closeOrderForm();
+  
+  alert("✅ تم إرسال الطلب!\nسيتم فتح WhatsApp لتأكيد الطلب");
+}
+
 
   // الاستماع للتحديثات
   function subscribeToProductChanges() {
