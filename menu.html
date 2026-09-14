@@ -206,89 +206,17 @@
     }
 
     .cart-count {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: #EF4444;
       color: white;
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-weight: 800;
       font-size: 12px;
       margin-left: 8px;
-    }
-
-    /* =============== EMPTY STATE =============== */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #94A3B8;
-    }
-
-    .empty-state p {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-
-    /* =============== LOADING =============== */
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #64748B;
-    }
-
-    /* =============== RESPONSIVE =============== */
-    @media (max-width: 768px) {
-      .menu-header h1 {
-        font-size: 20px;
-      }
-
-      .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 12px;
-      }
-
-      .product-card {
-        border-radius: 10px;
-      }
-
-      .product-image {
-        height: 100px;
-      }
-
-      .product-info {
-        padding: 10px;
-      }
-
-      .cart-button {
-        bottom: 16px;
-        right: 16px;
-        left: 16px;
-        max-width: calc(100% - 32px);
-        padding: 14px;
-        font-size: 14px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .menu-container {
-        padding: 12px;
-      }
-
-      .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 10px;
-      }
-
-      .product-name {
-        font-size: 12px;
-      }
-
-      .product-price {
-        font-size: 14px;
-      }
     }
 
     /* =============== CART MODAL =============== */
@@ -347,6 +275,12 @@
       font-size: 24px;
       cursor: pointer;
       color: #64748B;
+      transition: all 0.2s;
+    }
+
+    .cart-close:hover {
+      color: #0F172A;
+      transform: scale(1.2);
     }
 
     .cart-modal-body {
@@ -374,7 +308,14 @@
       color: #0F172A;
     }
 
-    .cart-table button {
+    .qty-controls {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-btn {
       background: #E2E8F0;
       border: none;
       width: 24px;
@@ -385,13 +326,25 @@
       transition: all 0.2s;
     }
 
-    .cart-table button:hover {
+    .qty-btn:hover {
       background: #CBD5E1;
+    }
+
+    .qty-btn:active {
+      transform: scale(0.9);
     }
 
     .btn-remove {
       background: #FEE2E2 !important;
-      color: #EF4444 !important;
+      border: none !important;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 4px 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: #FECACA !important;
     }
 
     .cart-modal-footer {
@@ -414,6 +367,53 @@
       font-size: 18px;
     }
 
+    .btn-proceed {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #3B82F6;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-proceed:hover {
+      background: #2563EB;
+      transform: translateY(-2px);
+    }
+
+    /* =============== EMPTY STATE =============== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94A3B8;
+    }
+
+    .empty-state p {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    /* =============== LOADING =============== */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748B;
+    }
+
+    /* =============== ANIMATIONS =============== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
     @keyframes slideUp {
       from {
         opacity: 0;
@@ -422,6 +422,36 @@
       to {
         opacity: 1;
         transform: translateY(0);
+      }
+    }
+
+    /* =============== RESPONSIVE =============== */
+    @media (max-width: 768px) {
+      .menu-header h1 {
+        font-size: 20px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+
+      .cart-button {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        max-width: calc(100% - 32px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .menu-container {
+        padding: 12px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
       }
     }
   </style>
@@ -438,7 +468,7 @@
 <div class="menu-container">
   <!-- CATEGORY FILTER -->
   <div class="category-filter" id="categoryFilter">
-    <button class="category-btn active" onclick="filterByCategory('all')">
+    <button class="category-btn active" onclick="window.filterByCategory('all')">
       الكل
     </button>
   </div>
@@ -455,7 +485,7 @@
 </div>
 
 <!-- CART BUTTON -->
-<button class="cart-button" onclick="goToCart()">
+<button class="cart-button" onclick="window.goToCart()">
   🛒 اذهب للسلة
   <span class="cart-count" id="cartCount" style="display: none;">0</span>
 </button>
@@ -481,7 +511,7 @@
         .from("products")
         .select("*")
         .eq("active", true)
-        .eq("is_visible", true)  // ✅ فقط المفعّلة
+        .eq("is_visible", true)
         .order("sort_order");
 
       if (error) throw error;
@@ -489,10 +519,7 @@
       allProducts = data || [];
       filteredProducts = [...allProducts];
 
-      // تحديث الفئات
       updateCategories();
-
-      // عرض الأصناف
       renderProducts();
     } catch (error) {
       console.error("Error loading products:", error);
@@ -510,13 +537,13 @@
     const filterContainer = document.getElementById("categoryFilter");
 
     filterContainer.innerHTML = `
-      <button class="category-btn active" onclick="filterByCategory('all')">
+      <button class="category-btn active" onclick="window.filterByCategory('all')">
         الكل
       </button>
       ${Array.from(categories)
         .filter(cat => cat)
         .map(cat => `
-          <button class="category-btn" onclick="filterByCategory('${cat}')">
+          <button class="category-btn" onclick="window.filterByCategory('${cat}')">
             ${cat}
           </button>
         `)
@@ -526,13 +553,11 @@
 
   // تصفية حسب الفئة
   window.filterByCategory = (category) => {
-    // تحديث الأزرار النشطة
     document.querySelectorAll(".category-btn").forEach(btn => {
       btn.classList.remove("active");
     });
     event.target.classList.add("active");
 
-    // تصفية الأصناف
     if (category === "all") {
       filteredProducts = [...allProducts];
     } else {
@@ -542,40 +567,39 @@
     renderProducts();
   };
 
-// عرض الأصناف
-function renderProducts() {
-  const grid = document.getElementById("productsGrid");
-  const emptyState = document.getElementById("emptyState");
+  // عرض الأصناف
+  function renderProducts() {
+    const grid = document.getElementById("productsGrid");
+    const emptyState = document.getElementById("emptyState");
 
-  if (filteredProducts.length === 0) {
-    grid.style.display = "none";
-    emptyState.style.display = "block";
-    return;
+    if (filteredProducts.length === 0) {
+      grid.style.display = "none";
+      emptyState.style.display = "block";
+      return;
+    }
+
+    grid.style.display = "grid";
+    emptyState.style.display = "none";
+
+    grid.innerHTML = filteredProducts.map(product => `
+      <div class="product-card">
+        <div class="product-image">
+          ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '🍽️'}
+        </div>
+        <div class="product-info">
+          <div class="product-name">${product.name}</div>
+          <div class="product-category">${product.category || '—'}</div>
+          <div class="product-price">${(product.price || 0).toFixed(3)} د.ب</div>
+          <button class="product-btn" onclick="window.addToCart('${product.id}', '${product.name}', ${product.price || 0})">
+            أضف ➕
+          </button>
+        </div>
+      </div>
+    `).join("");
   }
-
-  grid.style.display = "grid";
-  emptyState.style.display = "none";
-
-  grid.innerHTML = filteredProducts.map(product => `
-    <div class="product-card">
-      <div class="product-image">
-        ${product.image_url ? `<img src="${product.image_url}" alt="${product.name}">` : '🍽️'}
-      </div>
-      <div class="product-info">
-        <div class="product-name">${product.name}</div>
-        <div class="product-category">${product.category || '—'}</div>
-        <div class="product-price">${(product.price || 0).toFixed(3)} د.ب</div>
-        <button class="product-btn" onclick="addToCart('${product.id}', '${product.name}', ${product.price || 0})">
-          أضف ➕
-        </button>
-      </div>
-    </div>
-  `).join("");
-}
 
   // إضافة للسلة
   window.addToCart = (productId, productName, price) => {
-    // احفظ في localStorage
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
     
     const existingItem = cart.find(item => item.id === productId);
@@ -593,7 +617,6 @@ function renderProducts() {
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
 
-    // Animation
     const btn = event.target;
     btn.textContent = "✅ تمت الإضافة";
     btn.style.background = "#10B981";
@@ -603,7 +626,7 @@ function renderProducts() {
     }, 1500);
   };
 
-  // تحديث عدد العناصر في السلة
+  // تحديث عدد العناصر
   function updateCartCount() {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     cartCount = cart.length;
@@ -617,140 +640,118 @@ function renderProducts() {
     }
   }
 
-  // الذهاب للسلة
- // فتح السلة Modal
-window.goToCart = () => {
-  showCartModal();
-};
+  // فتح السلة
+  window.goToCart = () => {
+    showCartModal();
+  };
 
-function showCartModal() {
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  
-  if (cart.length === 0) {
-    alert("السلة فارغة!");
-    return;
-  }
+  // عرض السلة Modal
+  function showCartModal() {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    
+    if (cart.length === 0) {
+      alert("السلة فارغة!");
+      return;
+    }
 
-  const modal = document.createElement("div");
-  modal.id = "cartModal";
-  modal.className = "cart-modal";
-  
-  const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  
-  modal.innerHTML = `
-    <div class="cart-modal-backdrop"></div>
-    <div class="cart-modal-content">
-      <div class="cart-modal-header">
-        <h2>🛒 السلة</h2>
-        <button class="cart-close" onclick="document.getElementById('cartModal').remove()">✕</button>
-      </div>
-      
-      <div class="cart-modal-body">
-        <table class="cart-table">
-          <thead>
-            <tr>
-              <th>الصنف</th>
-              <th>السعر</th>
-              <th>الكمية</th>
-              <th>الإجمالي</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${cart.map((item, index) => `
-              <tr>
-                <td>${item.name}</td>
-                <td>${item.price.toFixed(3)}</td>
-                <td>
-                  <div style="display: flex; gap: 4px; align-items: center;">
-                    <button style="width: 24px; height: 24px; border: none; background: #E2E8F0; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="(function() {
-                      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                      if (cart[${index}].qty > 1) {
-                        cart[${index}].qty--;
-                        localStorage.setItem('cart', JSON.stringify(cart));
-                        updateCartCount();
-                        showCartModal();
-                      }
-                    })()">−</button>
-                    <span>${item.qty}</span>
-                    <button style="width: 24px; height: 24px; border: none; background: #E2E8F0; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="(function() {
-                      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                      cart[${index}].qty++;
-                      localStorage.setItem('cart', JSON.stringify(cart));
-                      updateCartCount();
-                      showCartModal();
-                    })()">+</button>
-                  </div>
-                </td>
-                <td>${(item.price * item.qty).toFixed(3)}</td>
-                <td>
-                  <button style="background: #FEE2E2; border: none; cursor: pointer; border-radius: 4px; padding: 4px 8px;" onclick="(function() {
-                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                    cart.splice(${index}, 1);
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    updateCartCount();
-                    if (cart.length === 0) {
-                      document.getElementById('cartModal').remove();
-                    } else {
-                      showCartModal();
-                    }
-                  })()">🗑️</button>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-      
-      <div class="cart-modal-footer">
-        <div class="cart-total">
-          <span>الإجمالي:</span>
-          <span class="total-amount">${total.toFixed(3)} د.ب</span>
+    const modal = document.createElement("div");
+    modal.id = "cartModal";
+    modal.className = "cart-modal";
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    modal.innerHTML = `
+      <div class="cart-modal-backdrop"></div>
+      <div class="cart-modal-content">
+        <div class="cart-modal-header">
+          <h2>🛒 السلة</h2>
+          <button class="cart-close" onclick="window.closeCartModal()">✕</button>
         </div>
-        <button class="btn btn-primary" onclick="document.getElementById('cartModal').remove(); showOrderForm();" style="width: 100%; margin-top: 12px;">
-          متابعة الطلب ➜
-        </button>
+        
+        <div class="cart-modal-body">
+          <table class="cart-table">
+            <thead>
+              <tr>
+                <th>الصنف</th>
+                <th>السعر</th>
+                <th>الكمية</th>
+                <th>الإجمالي</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cart.map((item, index) => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${(item.price || 0).toFixed(3)}</td>
+                  <td>
+                    <div class="qty-controls">
+                      <button class="qty-btn" onclick="window.updateCartQty(${index}, -1)">−</button>
+                      <span>${item.qty}</span>
+                      <button class="qty-btn" onclick="window.updateCartQty(${index}, 1)">+</button>
+                    </div>
+                  </td>
+                  <td>${((item.price || 0) * item.qty).toFixed(3)}</td>
+                  <td>
+                    <button class="btn-remove" onclick="window.removeFromCart(${index})">🗑️</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="cart-modal-footer">
+          <div class="cart-total">
+            <span>الإجمالي:</span>
+            <span class="total-amount">${total.toFixed(3)} د.ب</span>
+          </div>
+          <button class="btn-proceed" onclick="window.proceedToOrder()">
+            متابعة الطلب ➜
+          </button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  document.body.appendChild(modal);
-  modal.querySelector(".cart-modal-backdrop").onclick = () => modal.remove();
-}
-
-function closeCartModal() {
-  const modal = document.getElementById("cartModal");
-  if (modal) modal.remove();
-}
-
-function updateCartQty(index, newQty) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  
-  if (newQty <= 0) {
-    cart.splice(index, 1);
-  } else {
-    cart[index].qty = newQty;
+    document.body.appendChild(modal);
+    modal.querySelector(".cart-modal-backdrop").onclick = () => window.closeCartModal();
   }
-  
-  localStorage.setItem("cart", JSON.stringify(cart));
-  updateCartCount();
-  showCartModal();
-}
 
-function removeFromCart(index) {
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  cart.splice(index, 1);
-  localStorage.setItem("cart", JSON.stringify(cart));
-  updateCartCount();
-  showCartModal();
-}
+  // إغلاق السلة
+  window.closeCartModal = () => {
+    const modal = document.getElementById("cartModal");
+    if (modal) modal.remove();
+  };
 
-function proceedToOrder() {
-  closeCartModal();
-  showOrderForm();
-}
+  // حذف من السلة
+  window.removeFromCart = (index) => {
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cart.splice(index, 1);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartCount();
+    if (cart.length === 0) {
+      window.closeCartModal();
+    } else {
+      showCartModal();
+    }
+  };
 
-  // الاستماع للتحديثات الحية
+  // تحديث الكمية
+  window.updateCartQty = (index, change) => {
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cart[index].qty = Math.max(1, cart[index].qty + change);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartCount();
+    showCartModal();
+  };
+
+  // متابعة الطلب
+  window.proceedToOrder = () => {
+    window.closeCartModal();
+    alert("⏳ الخطوة التالية - Order Form (قريباً)");
+  };
+
+  // الاستماع للتحديثات
   function subscribeToProductChanges() {
     const subscription = supabase
       .channel("products-changes")
@@ -762,7 +763,6 @@ function proceedToOrder() {
           table: "products"
         },
         (payload) => {
-          // عند أي تغيير → أعد تحميل
           loadProducts();
         }
       )
