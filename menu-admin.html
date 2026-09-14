@@ -340,13 +340,13 @@
         return;
       }
 
-      const rows = products.map(product => `
-        <tr>
-          <td>
-            <div class="product-name">${product.name}</div>
-            <div class="product-category">${product.category || '—'}</div>
-          </td>
-          <td>${product.price.toFixed(3)} د.ب</td>
+const rows = products.map(product => `
+  <tr>
+    <td>
+      <div class="product-name">${product.name}</div>
+      <div class="product-category">${product.category || '—'}</div>
+    </td>
+    <td>${(product.price || 0).toFixed(3)} د.ب</td> 
           <td>${product.category || '—'}</td>
           <td>
             <button class="toggle-switch ${product.is_visible ? 'active' : ''}" 
