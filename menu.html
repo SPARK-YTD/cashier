@@ -751,6 +751,150 @@
   transform: translateY(-2px);
 }
 
+/* =============== ADDONS MODAL =============== */
+.addons-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.addons-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.addons-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 350px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+.addons-content h3 {
+  margin: 0 0 8px 0;
+  color: #0F172A;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.addons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.addon-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addon-item:hover {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.addon-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3B82F6;
+  margin-left: 8px;
+  order: 3;
+}
+
+.addon-name {
+  flex: 1;
+  color: #0F172A;
+  font-weight: 600;
+  order: 1;
+}
+
+.addon-price {
+  margin-left: 8px;
+  font-weight: 700;
+  order: 2;
+}
+
+.addons-summary {
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: #0F172A;
+  font-size: 13px;
+}
+
+.addons-footer {
+  display: flex;
+  gap: 12px;
+}
+
+.addons-cancel {
+  flex: 1;
+  padding: 10px;
+  background: #E2E8F0;
+  color: #0F172A;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.addons-cancel:hover {
+  background: #CBD5E1;
+}
+
+.addons-submit {
+  flex: 1;
+  padding: 10px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.addons-submit:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
 
   </style>
 </head>
@@ -897,33 +1041,159 @@
   }
 
  // إضافة للسلة مع التحقق من Variants
+// إضافة للسلة مع التحقق من Variants والإضافات
 window.addToCart = async (productId, productName, price) => {
   try {
-    const { data: variants, error } = await supabase
+    // احصل على الـ variants
+    const { data: variants, error: variantsError } = await supabase
       .from("product_variants")
       .select("*")
       .eq("product_id", productId)
       .eq("active", true);
 
-    if (error) throw error;
+    // احصل على الـ addons
+    const { data: addons, error: addonsError } = await supabase
+      .from("product_addons")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("active", true);
 
     const activeVariants = variants || [];
+    const activeAddons = addons || [];
 
+    // إذا في variants → اعرض modal لاختيار الحجم
     if (activeVariants.length > 0) {
-      showVariantModal(productId, productName, activeVariants);
+      showVariantModal(productId, productName, activeVariants, activeAddons);
     } else {
-      addItemToCart(productId, productName, price || 0);
+      // بدون variants → اعرض الإضافات (إذا وجدت)
+      if (activeAddons.length > 0) {
+        showAddonsModal(productId, productName, price || 0, activeAddons);
+      } else {
+        // بدون variants ولا addons → أضف مباشرة
+        addItemToCart(productId, productName, price || 0, []);
+      }
     }
   } catch (error) {
-    console.error("Error checking variants:", error);
-    addItemToCart(productId, productName, price || 0);
+    console.error("Error checking variants/addons:", error);
+    addItemToCart(productId, productName, price || 0, []);
   }
 };
 
-function addItemToCart(productId, productName, price) {
+// عرض modal الإضافات
+function showAddonsModal(productId, productName, price, addons) {
+  const modal = document.createElement("div");
+  modal.className = "addons-modal";
+  modal.id = "addonsModal";
+  
+  modal.innerHTML = `
+    <div class="addons-backdrop"></div>
+    <div class="addons-content">
+      <h3>${productName}</h3>
+      <p style="color: #64748B; font-size: 13px; margin-bottom: 16px;">
+        السعر الأساسي: <strong>${price.toFixed(3)} د.ب</strong>
+      </p>
+      
+      <div class="addons-list">
+        ${addons.map(addon => `
+          <label class="addon-item">
+            <input type="checkbox" value="${addon.id}" data-price="${addon.price}" data-name="${addon.name}" class="addon-checkbox">
+            <span class="addon-name">${addon.name}</span>
+            <span class="addon-price" style="color: #10B981;">+${addon.price.toFixed(3)}</span>
+          </label>
+        `).join("")}
+      </div>
+      
+      <div class="addons-summary">
+        <div class="price-row">
+          <span>السعر الأساسي:</span>
+          <span id="basePriceDisplay">${price.toFixed(3)} د.ب</span>
+        </div>
+        <div class="price-row" id="addonsPriceRow" style="display: none;">
+          <span>الإضافات:</span>
+          <span id="addonsPriceDisplay">0.000 د.ب</span>
+        </div>
+        <div class="price-row" style="border-top: 2px solid #E2E8F0; padding-top: 8px; margin-top: 8px;">
+          <span>الإجمالي:</span>
+          <span id="totalPriceDisplay" style="color: #10B981; font-weight: 700;">${price.toFixed(3)} د.ب</span>
+        </div>
+      </div>
+      
+      <div class="addons-footer">
+        <button class="addons-cancel" onclick="document.getElementById('addonsModal').remove()">إلغاء</button>
+        <button class="addons-submit" onclick="window.submitAddons('${productId}', '${productName}', ${price})">أضف للسلة ✓</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  
+  // تحديث السعر عند اختيار إضافات
+  const checkboxes = modal.querySelectorAll(".addon-checkbox");
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener("change", () => updateAddonsPrice(price));
+  });
+  
+  modal.querySelector(".addons-backdrop").onclick = () => modal.remove();
+}
+
+// تحديث سعر الإضافات
+function updateAddonsPrice(basePrice) {
+  const checkboxes = document.querySelectorAll(".addon-checkbox:checked");
+  let addonsPrice = 0;
+  
+  checkboxes.forEach(checkbox => {
+    addonsPrice += parseFloat(checkbox.dataset.price);
+  });
+  
+  const totalPrice = basePrice + addonsPrice;
+  
+  const addonsPriceRow = document.getElementById("addonsPriceRow");
+  const addonsPriceDisplay = document.getElementById("addonsPriceDisplay");
+  const totalPriceDisplay = document.getElementById("totalPriceDisplay");
+  
+  if (addonsPrice > 0) {
+    addonsPriceRow.style.display = "flex";
+    addonsPriceDisplay.textContent = addonsPrice.toFixed(3) + " د.ب";
+  } else {
+    addonsPriceRow.style.display = "none";
+  }
+  
+  totalPriceDisplay.textContent = totalPrice.toFixed(3) + " د.ب";
+}
+
+// إرسال الإضافات
+window.submitAddons = (productId, productName, basePrice) => {
+  const checkboxes = document.querySelectorAll(".addon-checkbox:checked");
+  const selectedAddons = [];
+  let addonsPrice = 0;
+  
+  checkboxes.forEach(checkbox => {
+    selectedAddons.push({
+      id: checkbox.value,
+      name: checkbox.dataset.name,
+      price: parseFloat(checkbox.dataset.price)
+    });
+    addonsPrice += parseFloat(checkbox.dataset.price);
+  });
+  
+  const finalPrice = basePrice + addonsPrice;
+  
+  addItemToCart(productId, productName, finalPrice, selectedAddons);
+  document.getElementById("addonsModal").remove();
+};
+
+function addItemToCart(productId, productName, price, addons = []) {
   let cart = JSON.parse(localStorage.getItem("cart") || "[]");
   
-  const existingItem = cart.find(item => item.id === productId && item.price === price);
+  // إنشاء key فريد للمنتج مع الإضافات
+  const addonsKey = addons.map(a => a.id).sort().join("-");
+  const itemKey = `${productId}-${addonsKey}`;
+  
+  const existingItem = cart.find(item => {
+    const existingAddonsKey = (item.addons || []).map(a => a.id).sort().join("-");
+    return item.id === productId && existingAddonsKey === addonsKey;
+  });
+  
   if (existingItem) {
     existingItem.qty++;
   } else {
@@ -931,7 +1201,8 @@ function addItemToCart(productId, productName, price) {
       id: productId,
       name: productName,
       price: price,
-      qty: 1
+      qty: 1,
+      addons: addons
     });
   }
 
@@ -948,6 +1219,7 @@ function addItemToCart(productId, productName, price) {
     }, 1500);
   }
 }
+
 
 function showVariantModal(productId, productName, variants) {
   const modal = document.createElement("div");
