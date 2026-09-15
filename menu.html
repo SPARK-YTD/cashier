@@ -1103,13 +1103,37 @@ window.addToCart = async (productId, productName, price) => {
 async function showAddonsModal(productId, productName, price, paidAddons) {
   try {
     // احصل على الإضافات المجانية
-    const { data: freeAddons } = await supabase
-      .from("product_extras")
-      .select("*")
-      .eq("product_id", productId)
-      .eq("active", true);
+   // احصل على الإضافات المجانية من extras_list
+const { data: product, error: productError } = await supabase
+  .from("products")
+  .select("extras_list")
+  .eq("id", productId)
+  .single();
+
+let freeAddons = [];
+if (product && product.extras_list) {
+  try {
+    // تحويل JSON string لـ array
+    const extrasData = typeof product.extras_list === 'string' 
+      ? JSON.parse(product.extras_list) 
+      : product.extras_list;
+    
+    // تحويل لـ format الإضافات
+    freeAddons = (Array.isArray(extrasData) ? extrasData : [])
+      .map((extra, idx) => ({
+        id: `free-${idx}`,
+        name: typeof extra === 'string' ? extra : extra.name,
+        price: 0,
+        active: true
+      }));
+  } catch (e) {
+    console.error("Error parsing extras_list:", e);
+    freeAddons = [];
+  }
+}
+
+console.log("🎁 Free Addons:", freeAddons);
       
-      console.log("🎁 Free Addons Loaded:", freeAddons);
 
     const allFreeAddons = freeAddons || [];
     
