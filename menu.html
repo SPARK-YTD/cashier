@@ -1102,8 +1102,8 @@ window.addToCart = async (productId, productName, price) => {
 // عرض modal الإضافات (مجانية + مدفوعة)
 async function showAddonsModal(productId, productName, price, paidAddons) {
   try {
-    // احصل على الإضافات المجانية
-   // احصل على الإضافات المجانية من extras_list
+    
+// احصل على الإضافات المجانية من extras_list
 const { data: product, error: productError } = await supabase
   .from("products")
   .select("extras_list")
@@ -1113,21 +1113,43 @@ const { data: product, error: productError } = await supabase
 let freeAddons = [];
 if (product && product.extras_list) {
   try {
-    // تحويل JSON string لـ array
-    const extrasData = typeof product.extras_list === 'string' 
-      ? JSON.parse(product.extras_list) 
-      : product.extras_list;
+    let extrasData = product.extras_list;
+    
+    // إذا كانت string
+    if (typeof extrasData === 'string') {
+      // حاول JSON.parse أولاً
+      try {
+        extrasData = JSON.parse(extrasData);
+      } catch (e) {
+        // إذا فشل، افترض أنها مفصولة بـ comma
+        if (extrasData.includes(',')) {
+          extrasData = extrasData.split(',').map(item => item.trim());
+        } else {
+          // إذا لا يوجد comma، حولها لـ array
+          extrasData = [extrasData];
+        }
+      }
+    }
+    
+    // تحويل لـ array إذا لم تكن
+    if (!Array.isArray(extrasData)) {
+      extrasData = [extrasData];
+    }
     
     // تحويل لـ format الإضافات
-    freeAddons = (Array.isArray(extrasData) ? extrasData : [])
+    freeAddons = extrasData
+      .filter(extra => extra && extra.trim && extra.trim().length > 0)
       .map((extra, idx) => ({
         id: `free-${idx}`,
-        name: typeof extra === 'string' ? extra : extra.name,
+        name: typeof extra === 'string' ? extra.trim() : (extra.name || 'إضافة'),
         price: 0,
         active: true
       }));
+    
+    console.log("🎁 Free Addons Parsed:", freeAddons);
   } catch (e) {
-    console.error("Error parsing extras_list:", e);
+    console.error("❌ Error parsing extras_list:", e);
+    console.log("Raw extras_list value:", product.extras_list);
     freeAddons = [];
   }
 }
