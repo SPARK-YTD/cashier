@@ -1104,7 +1104,7 @@ async function showAddonsModal(productId, productName, price, paidAddons) {
   try {
     // احصل على الإضافات المجانية
     const { data: freeAddons } = await supabase
-      .from("product_free_addons")
+      .from("product_extras")
       .select("*")
       .eq("product_id", productId)
       .eq("active", true);
