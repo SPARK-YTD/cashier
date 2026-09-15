@@ -1108,6 +1108,8 @@ async function showAddonsModal(productId, productName, price, paidAddons) {
       .select("*")
       .eq("product_id", productId)
       .eq("active", true);
+      
+      console.log("🎁 Free Addons Loaded:", freeAddons);
 
     const allFreeAddons = freeAddons || [];
     
