@@ -734,22 +734,17 @@
       let freeAddons = [];
       if (product?.extras_list) {
         try {
-          let extras = product.extras_list;
-          if (typeof extras === "string") {
-            try {
-              extras = JSON.parse(extras);
-            } catch {
-              extras = extras.includes(",") ? extras.split(",").map(e => e.trim()) : [extras];
-            }
-          }
-          if (!Array.isArray(extras)) extras = [extras];
-          freeAddons = extras
-            .filter(e => e && String(e).trim())
-            .map((e, i) => ({
-              id: `free-${i}`,
-              name: String(e).trim(),
-              price: 0
-            }));
+          // نفس الطريقة من app.js: split بـ newline
+          let extras = product.extras_list
+            .split("\n")
+            .map(e => e.trim())
+            .filter(Boolean);
+          
+          freeAddons = extras.map((e, i) => ({
+            id: `free-${i}`,
+            name: e,
+            price: 0
+          }));
         } catch (e) {
           console.error("Error parsing extras:", e);
         }
