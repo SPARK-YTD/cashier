@@ -1024,29 +1024,71 @@
 
     if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
 
-    let msg = `🍽️ *طلب جديد*\n\n`;
-    if (name) msg += `👤 *الاسم:* ${name}\n`;
-    msg += `📱 *الهاتف:* ${phone}\n🏪 *النوع:* ${type === "pickup" ? "استلام من المتجر" : "توصيل للعنوان"}\n\n`;
-    msg += `*📦 الطلب:*\n`;
+    // ========== بناء الرسالة ==========
+    let msg = `🍽️ *طلب جديد من المنيو*\n\n`;
+    msg += `👤 *اسم الكستمر:* ${name || "بدون اسم"}\n`;
+    msg += `📱 *رقم الكستمر:* ${phone}\n`;
+    msg += `🏪 *نوع الطلب:* ${type === "pickup" ? "🚶 استلام من المتجر" : "🚗 توصيل للعنوان"}\n`;
+    msg += `\n`;
+    msg += `*📦 تفاصيل الطلب:*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    
     cart.forEach(item => {
-      msg += `• ${item.productName} ×${item.qty} = ${(item.price * item.qty).toFixed(3)} د.ب\n`;
+      msg += `\n🔹 *${item.productName}*\n`;
+      msg += `   الكمية: ${item.qty}\n`;
+      msg += `   السعر: ${item.price.toFixed(3)} د.ب\n`;
+      msg += `   الإجمالي: ${(item.price * item.qty).toFixed(3)} د.ب\n`;
+      
+      if (item.addons && item.addons.length > 0) {
+        msg += `   الإضافات:\n`;
+        item.addons.forEach(addon => {
+          if (addon.price > 0) {
+            msg += `     • ${addon.name} (+${addon.price.toFixed(3)} د.ب)\n`;
+          } else {
+            msg += `     • ${addon.name}\n`;
+          }
+        });
+      }
     });
-    msg += `\n💰 *الإجمالي:* ${itemsTotal.toFixed(3)} د.ب\n`;
+    
+    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `💰 *الإجمالي:* ${itemsTotal.toFixed(3)} د.ب\n`;
+    
     if (type === "delivery") {
-      msg += `\n🚗 *المنطقة:* ${document.getElementById("deliveryArea").options[document.getElementById("deliveryArea").selectedIndex].text}\n`;
-      msg += `*العنوان:* ${document.getElementById("deliveryAddress").value}\n`;
+      const areaText = document.getElementById("deliveryArea").options[document.getElementById("deliveryArea").selectedIndex].text;
+      msg += `🚗 *رسم التوصيل:* ${fee.toFixed(3)} د.ب\n`;
+      msg += `📍 *المنطقة:* ${areaText}\n`;
+      msg += `🏠 *العنوان:* ${document.getElementById("deliveryAddress").value}\n`;
     }
-    if (notes) msg += `\n📝 *ملاحظات:* ${notes}\n`;
+    
+    msg += `\n💵 *المجموع النهائي:* ${grandTotal.toFixed(3)} د.ب\n`;
+    
+    if (notes) {
+      msg += `\n📝 *ملاحظات:* ${notes}\n`;
+    }
+    
+    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `✅ تم الطلب بواسطة منيو QR\n`;
+    msg += `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n`;
 
-    let wa = phone.replace(/[\s-]/g, "");
-    if (!wa.startsWith("+973")) wa = "+973" + wa.slice(-7);
+    // ========== الإرسال لرقم المطعم ==========
+    const restaurantPhone = localStorage.getItem("restaurantPhone");
+    
+    if (!restaurantPhone) {
+      alert("❌ خطأ: لم يتم تعيين رقم المطعم!\nالرجاء التواصل مع الإدارة.");
+      return;
+    }
+
+    let wa = restaurantPhone.replace(/[\s-]/g, "");
+    if (!wa.startsWith("+973")) wa = "+973" + wa.slice(-8);
 
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
+    
     cart = [];
     saveCart();
     updateBadge();
     closeModal("orderModal");
-    alert("✅ تم إرسال الطلب!");
+    alert("✅ تم إرسال الطلب للمطعم!");
   };
 
   // MODAL
