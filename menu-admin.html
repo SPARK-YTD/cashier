@@ -53,6 +53,102 @@
       transform: translateY(-50%) translateX(-4px);
     }
 
+    /* ========== RESTAURANT SETTINGS ========== */
+    .settings-section {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .settings-section h2 {
+      margin: 0 0 20px 0;
+      color: #0F172A;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-group {
+      margin-bottom: 20px;
+    }
+
+    .setting-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .setting-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .setting-input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .setting-hint {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 6px;
+    }
+
+    .btn-save {
+      background: #10B981;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    .save-status {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .save-status.success {
+      background: #D1FAE5;
+      color: #065F46;
+      display: block;
+    }
+
+    .save-status.error {
+      background: #FEE2E2;
+      color: #991B1B;
+      display: block;
+    }
+
+    /* ========== QR SECTION ========== */
     .qr-section {
       background: white;
       padding: 24px;
@@ -123,6 +219,7 @@
       background: #CBD5E1;
     }
 
+    /* ========== MENU SECTION ========== */
     .menu-section {
       background: white;
       border-radius: 12px;
@@ -250,6 +347,25 @@
     <h1>🍽️ إدارة المنيو</h1>
   </div>
 
+  <!-- RESTAURANT SETTINGS -->
+  <div class="settings-section">
+    <h2>⚙️ إعدادات المطعم</h2>
+    
+    <div class="setting-group">
+      <label class="setting-label">📞 رقم المطعم (WhatsApp)</label>
+      <input 
+        type="tel" 
+        id="restaurantPhone" 
+        class="setting-input" 
+        placeholder="33123456 أو +97333123456"
+        value="">
+      <div class="setting-hint">الرقم الذي ستصل إليه طلبات العملاء</div>
+    </div>
+
+    <button class="btn-save" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
+
   <!-- QR CODE SECTION -->
   <div class="qr-section">
     <h2>📱 رمز QR للعملاء</h2>
@@ -295,11 +411,48 @@
 
   // تحميل الصفحة
   document.addEventListener("DOMContentLoaded", async () => {
+    loadSettings();
     generateQR();
     await loadMenu();
   });
 
-  // إنشاء QR Code
+  // ========== SETTINGS ==========
+  window.saveSettings = () => {
+    const phone = document.getElementById("restaurantPhone").value.trim();
+    const status = document.getElementById("saveStatus");
+
+    if (!phone) {
+      showStatus("❌ الرجاء إدخال رقم المطعم", false);
+      return;
+    }
+
+    // التحقق من صيغة الرقم
+    if (!/^(\d{7,8}|\+973\d{8})$/.test(phone.replace(/[\s-]/g, ""))) {
+      showStatus("❌ صيغة الرقم غير صحيحة", false);
+      return;
+    }
+
+    localStorage.setItem("restaurantPhone", phone);
+    showStatus("✅ تم حفظ إعدادات المطعم بنجاح!", true);
+  };
+
+  function loadSettings() {
+    const phone = localStorage.getItem("restaurantPhone");
+    if (phone) {
+      document.getElementById("restaurantPhone").value = phone;
+    }
+  }
+
+  function showStatus(message, isSuccess) {
+    const status = document.getElementById("saveStatus");
+    status.textContent = message;
+    status.className = `save-status ${isSuccess ? 'success' : 'error'}`;
+    setTimeout(() => {
+      status.className = 'save-status';
+    }, 3000);
+  }
+
+  // ========== QR CODE ==========
   function generateQR() {
     const qrContainer = document.getElementById("qrCode");
     qrContainer.innerHTML = '';
@@ -340,13 +493,13 @@
         return;
       }
 
-const rows = products.map(product => `
-  <tr>
-    <td>
-      <div class="product-name">${product.name}</div>
-      <div class="product-category">${product.category || '—'}</div>
-    </td>
-    <td>${(product.price || 0).toFixed(3)} د.ب</td> 
+      const rows = products.map(product => `
+        <tr>
+          <td>
+            <div class="product-name">${product.name}</div>
+            <div class="product-category">${product.category || '—'}</div>
+          </td>
+          <td>${(product.price || 0).toFixed(3)} د.ب</td>
           <td>${product.category || '—'}</td>
           <td>
             <button class="toggle-switch ${product.is_visible ? 'active' : ''}" 
