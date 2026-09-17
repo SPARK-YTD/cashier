@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>المنيو - Get-Break Café</title>
+  <title>المنيو - Get-Break</title>
   <link rel="stylesheet" href="style.css">
   <style>
     * {
@@ -13,58 +13,59 @@
     }
 
     body {
-      background: #F8FAFC;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      font-family: 'Arial', sans-serif;
       padding-bottom: 100px;
+      direction: rtl;
     }
 
-    /* ============ HEADER ============ */
+    /* ========== HEADER ========== */
     .header {
-      background: linear-gradient(135deg, #1F2937, #111827);
+      background: #000;
       color: white;
-      padding: 20px;
-      text-align: center;
+      padding: 16px 20px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .header h1 {
-      font-size: 28px;
+    .header-title {
+      font-size: 18px;
       font-weight: 700;
-      margin: 0 0 5px 0;
     }
 
-    .header p {
-      font-size: 13px;
-      opacity: 0.8;
-      margin: 0;
+    .menu-icon {
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
     }
 
-    /* ============ CONTAINER ============ */
+    /* ========== CONTAINER ========== */
     .container {
-      max-width: 1200px;
+      max-width: 800px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 0;
     }
 
-    /* ============ FILTERS ============ */
+    /* ========== FILTERS ========== */
     .filters {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       overflow-x: auto;
-      margin-bottom: 30px;
-      padding-bottom: 10px;
+      padding: 12px 16px;
+      background: #0a0a0a;
       -webkit-overflow-scrolling: touch;
     }
 
     .filter-btn {
-      background: white;
-      border: 2px solid #E5E7EB;
-      color: #374151;
-      padding: 8px 16px;
-      border-radius: 6px;
+      background: #333;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 20px;
       cursor: pointer;
       font-weight: 600;
       font-size: 13px;
@@ -73,45 +74,35 @@
       flex-shrink: 0;
     }
 
-    .filter-btn:hover {
-      border-color: #3B82F6;
-      color: #3B82F6;
-    }
-
     .filter-btn.active {
-      background: #3B82F6;
-      color: white;
-      border-color: #3B82F6;
+      background: #D4A574;
+      color: #000;
     }
 
-    /* ============ GRID ============ */
+    /* ========== GRID ========== */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 16px;
-      margin-bottom: 30px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 16px;
     }
 
-    .product {
-      background: white;
-      border-radius: 12px;
+    .product-card {
+      background: #222;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       cursor: pointer;
       transition: all 0.3s;
-      display: flex;
-      flex-direction: column;
     }
 
-    .product:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    .product-card:hover {
+      transform: translateY(-4px);
     }
 
     .product-img {
       width: 100%;
       height: 120px;
-      background: linear-gradient(135deg, #F3E8FF, #E9D5FF);
+      background: #333;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -127,51 +118,22 @@
 
     .product-info {
       padding: 12px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
     }
 
     .product-name {
-      font-weight: 700;
-      color: #111827;
-      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      font-size: 14px;
       margin-bottom: 4px;
-      line-height: 1.3;
-    }
-
-    .product-category {
-      font-size: 11px;
-      color: #9CA3AF;
-      margin-bottom: 8px;
     }
 
     .product-price {
       color: #10B981;
-      font-weight: 800;
-      font-size: 15px;
-      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 14px;
     }
 
-    .btn-add {
-      background: #3B82F6;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 11px;
-      transition: all 0.2s;
-      margin-top: auto;
-    }
-
-    .btn-add:hover {
-      background: #2563EB;
-      transform: scale(1.05);
-    }
-
-    /* ============ CART BUTTON ============ */
+    /* ========== CART BUTTON ========== */
     .cart-btn {
       position: fixed;
       bottom: 20px;
@@ -180,36 +142,34 @@
       background: #10B981;
       color: white;
       border: none;
-      padding: 14px 20px;
+      padding: 14px;
       border-radius: 8px;
       font-weight: 700;
       font-size: 15px;
       cursor: pointer;
       z-index: 50;
       box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-      transition: all 0.3s;
     }
 
     .cart-btn:hover {
       background: #059669;
-      transform: translateY(-3px);
     }
 
     .badge {
       display: inline-block;
       background: #EF4444;
       color: white;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       text-align: center;
-      line-height: 24px;
+      line-height: 20px;
       font-weight: 700;
       font-size: 11px;
       margin-right: 8px;
     }
 
-    /* ============ MODAL ============ */
+    /* ========== MODAL ========== */
     .modal {
       display: none;
       position: fixed;
@@ -217,10 +177,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.7);
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
 
     .modal.show {
@@ -229,123 +190,119 @@
 
     .modal-content {
       background: white;
-      border-radius: 12px;
-      max-width: 450px;
-      width: 90%;
-      max-height: 80vh;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
       overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       animation: slideUp 0.3s ease;
     }
 
     .modal-header {
       padding: 20px;
-      border-bottom: 2px solid #F3F4F6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      text-align: center;
+      border-bottom: 1px solid #e5e5e5;
     }
 
     .modal-header h2 {
-      margin: 0;
-      font-size: 18px;
+      font-size: 20px;
       color: #111827;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #6B7280;
+      margin: 0;
     }
 
     .modal-body {
       padding: 20px;
     }
 
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 2px solid #F3F4F6;
-      display: flex;
-      gap: 10px;
-    }
-
-    /* ============ BUTTONS ============ */
-    .btn {
-      padding: 10px 16px;
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #e5e5e5;
       border: none;
-      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: #3B82F6;
-      color: white;
-      flex: 1;
-    }
-
-    .btn-primary:hover {
-      background: #2563EB;
-    }
-
-    .btn-secondary {
-      background: #E5E7EB;
+      font-size: 18px;
       color: #111827;
-      flex: 1;
     }
 
-    .btn-secondary:hover {
-      background: #D1D5DB;
+    /* ========== VARIANTS ========== */
+    .variants-section {
+      margin-bottom: 20px;
     }
 
-    .btn-danger {
-      background: #FEE2E2;
-      color: #DC2626;
-      padding: 4px 8px;
-      font-size: 11px;
+    .variant-btn {
+      width: 100%;
+      padding: 12px;
+      background: #F4C34A;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.3s;
     }
 
-    /* ============ ADDONS ============ */
+    .variant-btn:hover {
+      background: #E0B23A;
+    }
+
+    /* ========== ADDONS SECTIONS ========== */
     .addons-section {
-      margin-bottom: 16px;
+      margin-bottom: 24px;
       padding-bottom: 16px;
-      border-bottom: 2px solid #F3F4F6;
+      border-bottom: 1px dashed #d1d5db;
     }
 
-    .addons-label {
+    .addons-section:last-of-type {
+      border-bottom: none;
+    }
+
+    .section-title {
       font-weight: 700;
       color: #111827;
-      font-size: 13px;
-      margin-bottom: 10px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
+    .addons-label-text {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* ========== ADDON ITEM ========== */
     .addon-item {
       display: flex;
       align-items: center;
-      padding: 10px;
-      background: #F9FAFB;
-      border: 2px solid #E5E7EB;
-      border-radius: 6px;
-      margin-bottom: 8px;
+      padding: 12px;
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 10px;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .addon-item:hover {
-      border-color: #3B82F6;
-      background: #F0F4F8;
+      border-color: #3b82f6;
+      background: #eff6ff;
     }
 
     .addon-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin-left: 10px;
+      width: 20px;
+      height: 20px;
       cursor: pointer;
-      accent-color: #3B82F6;
+      accent-color: #3b82f6;
+      margin-left: 12px;
+      flex-shrink: 0;
     }
 
     .addon-name {
@@ -359,38 +316,49 @@
       color: #10B981;
       font-weight: 600;
       font-size: 12px;
+      margin-left: 8px;
     }
 
     .addon-free {
-      background: #F0FDF4 !important;
-      border-color: #86EFAC !important;
+      background: #f0fdf4 !important;
+      border-color: #86efac !important;
+    }
+
+    .addon-free:hover {
+      background: #dcfce7 !important;
+      border-color: #22c55e !important;
     }
 
     .addon-paid {
-      background: #EFF6FF !important;
-      border-color: #93C5FD !important;
+      background: #eff6ff !important;
+      border-color: #93c5fd !important;
     }
 
-    /* ============ PRICE SUMMARY ============ */
-    .summary {
-      background: #F9FAFB;
-      border: 2px solid #E5E7EB;
+    .addon-paid:hover {
+      background: #dbeafe !important;
+      border-color: #3b82f6 !important;
+    }
+
+    /* ========== PRICE SUMMARY ========== */
+    .price-summary {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
       border-radius: 8px;
       padding: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .summary-row {
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
+      padding: 8px 0;
       font-size: 13px;
       color: #111827;
     }
 
     .summary-row.total {
-      border-top: 2px solid #E5E7EB;
-      padding-top: 8px;
+      border-top: 2px solid #e5e7eb;
+      padding-top: 10px;
       font-weight: 700;
       font-size: 15px;
     }
@@ -399,131 +367,44 @@
       color: #10B981;
     }
 
-    /* ============ CART TABLE ============ */
-    .cart-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 16px;
-      font-size: 12px;
-    }
-
-    .cart-table thead {
-      background: #F3F4F6;
-    }
-
-    .cart-table th,
-    .cart-table td {
-      padding: 10px;
-      text-align: right;
-      border-bottom: 1px solid #E5E7EB;
-    }
-
-    .cart-table th {
-      font-weight: 600;
-      color: #374151;
-    }
-
-    .qty-controls {
+    /* ========== BUTTONS ========== */
+    .modal-footer {
+      padding: 16px 20px;
       display: flex;
-      gap: 4px;
-      align-items: center;
-      justify-content: center;
+      gap: 10px;
+      border-top: 1px solid #e5e5e5;
     }
 
-    .qty-btn {
-      width: 24px;
-      height: 24px;
-      background: #E5E7EB;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-
-    .qty-btn:hover {
-      background: #D1D5DB;
-    }
-
-    /* ============ FORM ============ */
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      color: #111827;
-      font-size: 13px;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #E5E7EB;
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #3B82F6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .radio-label {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      background: #F9FAFB;
-      border: 2px solid #E5E7EB;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .radio-label:hover {
-      border-color: #3B82F6;
-      background: #F0F4F8;
-    }
-
-    .radio-label input[type="radio"] {
-      margin-left: 10px;
-      cursor: pointer;
-      accent-color: #3B82F6;
-    }
-
-    .radio-label span {
+    .btn {
       flex: 1;
-      color: #111827;
-      font-weight: 500;
-      font-size: 13px;
-    }
-
-    .alert {
-      background: #FEF3C7;
-      border: 2px solid #FCD34D;
-      color: #92400E;
       padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s;
     }
 
-    /* ============ EMPTY STATE ============ */
+    .btn-cancel {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .btn-confirm {
+      background: #F4C34A;
+      color: #000;
+    }
+
+    .btn-confirm:hover {
+      background: #E0B23A;
+    }
+
+    /* ========== EMPTY ========== */
     .empty {
       text-align: center;
       padding: 60px 20px;
@@ -536,11 +417,11 @@
       color: #6B7280;
     }
 
-    /* ============ ANIMATIONS ============ */
+    /* ========== ANIMATIONS ========== */
     @keyframes slideUp {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
       }
       to {
         opacity: 1;
@@ -548,14 +429,25 @@
       }
     }
 
-    /* ============ RESPONSIVE ============ */
-    @media (max-width: 768px) {
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 480px) {
       .grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .product-img {
+        height: 100px;
+      }
+
+      .modal {
+        padding: 0;
       }
 
       .modal-content {
-        width: 95%;
+        border-radius: 12px 12px 0 0;
+        max-height: 90vh;
       }
     }
   </style>
@@ -564,8 +456,8 @@
 
 <!-- HEADER -->
 <div class="header">
-  <h1>🍽️ منيو Get-Break</h1>
-  <p>اختر منتجاتك المفضلة</p>
+  <span class="header-title">🍽️ كاشير خذ لك بريك</span>
+  <span class="menu-icon">☰</span>
 </div>
 
 <!-- CONTAINER -->
@@ -579,7 +471,7 @@
   </div>
 
   <!-- EMPTY -->
-  <div class="empty" id="empty" style="display: none;">📭 لا توجد منتجات متاحة</div>
+  <div class="empty" id="empty" style="display: none;">📭 لا توجد منتجات</div>
 </div>
 
 <!-- CART BUTTON -->
@@ -591,33 +483,49 @@
 <!-- VARIANTS MODAL -->
 <div class="modal" id="variantModal">
   <div class="modal-content">
+    <button class="close-modal" onclick="closeModal('variantModal')">✕</button>
     <div class="modal-header">
-      <h2>اختر الحجم</h2>
-      <button class="close-btn" onclick="closeModal('variantModal')">✕</button>
+      <h2 id="variantTitle"></h2>
     </div>
-    <div class="modal-body" id="variantBody"></div>
+    <div class="modal-body">
+      <div class="variants-section" id="variantsBody"></div>
+    </div>
   </div>
 </div>
 
 <!-- ADDONS MODAL -->
 <div class="modal" id="addonsModal">
   <div class="modal-content">
+    <button class="close-modal" onclick="closeModal('addonsModal')">✕</button>
     <div class="modal-header">
       <h2 id="addonsTitle"></h2>
-      <button class="close-btn" onclick="closeModal('addonsModal')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color: #6B7280; font-size: 12px; margin-bottom: 16px;">
-        السعر: <strong id="basePrice"></strong>
+      <p style="color: #6B7280; font-size: 13px; margin-bottom: 20px;">
+        السعر الأساسي: <strong id="basePrice"></strong>
       </p>
-      <div id="addonsBody"></div>
-      <div class="summary">
+
+      <!-- FREE ADDONS SECTION -->
+      <div class="addons-section" id="freeAddonsContainer" style="display: none;">
+        <div class="section-title">🎁 اختر الإضافات (مجاني)</div>
+        <div class="addons-label-text">اختر الإضافات التي لا يريدها الزبون</div>
+        <div id="freeAddonsBody"></div>
+      </div>
+
+      <!-- PAID ADDONS SECTION -->
+      <div class="addons-section" id="paidAddonsContainer" style="display: none;">
+        <div class="section-title">💰 إضافات إضافية</div>
+        <div id="paidAddonsBody"></div>
+      </div>
+
+      <!-- PRICE SUMMARY -->
+      <div class="price-summary">
         <div class="summary-row">
-          <span>الأساسي:</span>
+          <span>السعر الأساسي:</span>
           <span id="summaryBase"></span>
         </div>
         <div class="summary-row" id="addonsPriceRow" style="display: none;">
-          <span>الإضافات:</span>
+          <span>الإضافات الإضافية:</span>
           <span id="summaryAddons"></span>
         </div>
         <div class="summary-row total">
@@ -626,9 +534,10 @@
         </div>
       </div>
     </div>
+
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('addonsModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="confirmAddons()">أضف للسلة</button>
+      <button class="btn btn-cancel" onclick="closeModal('addonsModal')">إلغاء</button>
+      <button class="btn btn-confirm" onclick="confirmAddons()">أضف للسلة</button>
     </div>
   </div>
 </div>
@@ -636,22 +545,14 @@
 <!-- CART MODAL -->
 <div class="modal" id="cartModal">
   <div class="modal-content">
+    <button class="close-modal" onclick="closeModal('cartModal')">✕</button>
     <div class="modal-header">
       <h2>🛒 السلة</h2>
-      <button class="close-btn" onclick="closeModal('cartModal')">✕</button>
     </div>
-    <div class="modal-body">
-      <table class="cart-table" id="cartTable"></table>
-      <div class="summary">
-        <div class="summary-row total">
-          <span>الإجمالي:</span>
-          <span class="price" id="cartTotal"></span>
-        </div>
-      </div>
-    </div>
+    <div class="modal-body" id="cartBody"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="clearCart()">مسح</button>
-      <button class="btn btn-primary" onclick="goToOrder()">المتابعة</button>
+      <button class="btn btn-cancel" onclick="clearCart()">مسح</button>
+      <button class="btn btn-confirm" onclick="goToOrder()">المتابعة</button>
     </div>
   </div>
 </div>
@@ -659,58 +560,52 @@
 <!-- ORDER MODAL -->
 <div class="modal" id="orderModal">
   <div class="modal-content">
+    <button class="close-modal" onclick="closeModal('orderModal')">✕</button>
     <div class="modal-header">
       <h2>📋 بيانات الطلب</h2>
-      <button class="close-btn" onclick="closeModal('orderModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>الاسم (اختياري)</label>
-        <input type="text" id="customerName" placeholder="اسمك">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">الاسم (اختياري)</label>
+        <input type="text" id="customerName" placeholder="اسمك" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
       </div>
 
-      <div class="form-group">
-        <label>رقم الهاتف *</label>
-        <input type="tel" id="customerPhone" placeholder="33123456 أو +97333123456">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">رقم الهاتف *</label>
+        <input type="tel" id="customerPhone" placeholder="33123456 أو +97333123456" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
       </div>
 
-      <div class="form-group">
-        <label>نوع الطلب *</label>
-        <div class="radio-group">
-          <label class="radio-label">
-            <input type="radio" name="orderType" value="pickup" checked onchange="updateDelivery()">
-            <span>🚶 استلام من المتجر</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="orderType" value="delivery" onchange="updateDelivery()">
-            <span>🚗 توصيل للعنوان</span>
-          </label>
-        </div>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">نوع الطلب *</label>
+        <label style="display: flex; align-items: center; padding: 10px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
+          <input type="radio" name="orderType" value="pickup" checked onchange="updateDelivery()" style="width: 18px; height: 18px; margin-left: 10px;">
+          <span style="flex: 1; color: #111827; font-weight: 500; font-size: 13px;">🚶 استلام من المتجر</span>
+        </label>
+        <label style="display: flex; align-items: center; padding: 10px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+          <input type="radio" name="orderType" value="delivery" onchange="updateDelivery()" style="width: 18px; height: 18px; margin-left: 10px;">
+          <span style="flex: 1; color: #111827; font-weight: 500; font-size: 13px;">🚗 توصيل للعنوان</span>
+        </label>
       </div>
 
-      <div id="deliveryGroup" style="display: none;">
-        <div class="form-group">
-          <label>المنطقة *</label>
-          <select id="deliveryArea" onchange="updateOrderTotal()">
-            <option value="">-- اختر المنطقة --</option>
-            <option value="manama">المنامة - 300 فلس</option>
-            <option value="budaiya">البديع - 500 فلس</option>
-            <option value="other">مناطق أخرى - 1 دينار</option>
-          </select>
-        </div>
+      <div id="deliveryGroup" style="display: none; margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">المنطقة *</label>
+        <select id="deliveryArea" onchange="updateOrderTotal()" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
+          <option value="">-- اختر المنطقة --</option>
+          <option value="manama">المنامة - 300 فلس</option>
+          <option value="budaiya">البديع - 500 فلس</option>
+          <option value="other">مناطق أخرى - 1 دينار</option>
+        </select>
 
-        <div class="form-group">
-          <label>وصف العنوان *</label>
-          <textarea id="deliveryAddress" placeholder="رقم المنزل، الشارع، معالم..." rows="3"></textarea>
-        </div>
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827; margin-top: 12px;">وصف العنوان *</label>
+        <textarea id="deliveryAddress" placeholder="رقم المنزل، الشارع، معالم..." rows="3" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
       </div>
 
-      <div class="form-group">
-        <label>ملاحظات (اختياري)</label>
-        <textarea id="notes" placeholder="مثال: بدون بصل، حار..." rows="2"></textarea>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">ملاحظات (اختياري)</label>
+        <textarea id="notes" placeholder="مثال: بدون بصل، حار..." rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
       </div>
 
-      <div class="summary">
+      <div class="price-summary">
         <div class="summary-row">
           <span>الطلب:</span>
           <span id="orderItemsTotal"></span>
@@ -724,14 +619,11 @@
           <span class="price" id="orderGrandTotal"></span>
         </div>
       </div>
-
-      <div id="deliveryAlert" class="alert" style="display: none;">
-        ⚠️ يوجد رسم توصيل حسب المنطقة
-      </div>
     </div>
+
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('orderModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="submitOrder()">إرسال الطلب</button>
+      <button class="btn btn-cancel" onclick="closeModal('orderModal')">إلغاء</button>
+      <button class="btn btn-confirm" onclick="submitOrder()">إرسال الطلب</button>
     </div>
   </div>
 </div>
@@ -739,18 +631,17 @@
 <script type="module">
   import { supabase } from "./supabase.js";
 
-  // ========== GLOBAL STATE ==========
   let allProducts = [];
   let cart = [];
   let currentAddonsData = {};
 
-  // ========== INIT ==========
+  // INIT
   document.addEventListener("DOMContentLoaded", async () => {
     await loadProducts();
     loadCart();
   });
 
-  // ========== LOAD PRODUCTS ==========
+  // LOAD PRODUCTS
   async function loadProducts() {
     try {
       const { data, error } = await supabase
@@ -761,7 +652,6 @@
         .order("sort_order");
 
       if (error) throw error;
-
       allProducts = data || [];
       renderFilters();
       renderProducts("all");
@@ -771,11 +661,11 @@
     }
   }
 
-  // ========== RENDER FILTERS ==========
+  // RENDER FILTERS
   function renderFilters() {
     const categories = [...new Set(allProducts.map(p => p.category || "أخرى"))];
     const html = `
-      <button class="filter-btn active" onclick="filterProducts('all')">الكل</button>
+      <button class="filter-btn active" onclick="filterProducts('all')">ك ل ط ع ا م</button>
       ${categories.map(cat => `
         <button class="filter-btn" onclick="filterProducts('${cat}')">${cat}</button>
       `).join("")}
@@ -783,14 +673,13 @@
     document.getElementById("filters").innerHTML = html;
   }
 
-  // ========== FILTER PRODUCTS ==========
   window.filterProducts = (category) => {
     document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
     event.target.classList.add("active");
     renderProducts(category);
   };
 
-  // ========== RENDER PRODUCTS ==========
+  // RENDER PRODUCTS
   function renderProducts(category) {
     let products = allProducts;
     if (category !== "all") {
@@ -807,15 +696,13 @@
     document.getElementById("empty").style.display = "none";
 
     const html = products.map(p => `
-      <div class="product">
+      <div class="product-card" onclick="addToCart('${p.id}', '${p.name}', ${p.price || 0})">
         <div class="product-img">
           ${p.image_url ? `<img src="${p.image_url}">` : "🍽️"}
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
-          <div class="product-category">${p.category || "—"}</div>
           <div class="product-price">${(p.price || 0).toFixed(3)} د.ب</div>
-          <button class="btn-add" onclick="addToCart('${p.id}', '${p.name}', ${p.price || 0})">أضف</button>
         </div>
       </div>
     `).join("");
@@ -823,24 +710,21 @@
     document.getElementById("grid").innerHTML = html;
   }
 
-  // ========== ADD TO CART ==========
+  // ADD TO CART
   window.addToCart = async (productId, productName, price) => {
     try {
-      // Get variants
       const { data: variants } = await supabase
         .from("product_variants")
         .select("*")
         .eq("product_id", productId)
         .eq("active", true);
 
-      // Get paid addons
       const { data: paidAddons } = await supabase
         .from("product_addons")
         .select("*")
         .eq("product_id", productId)
         .eq("active", true);
 
-      // Get free addons
       const { data: product } = await supabase
         .from("products")
         .select("extras_list")
@@ -871,7 +755,6 @@
         }
       }
 
-      // Show variant modal if exists
       if (variants?.length > 0) {
         showVariantModal(productId, productName, variants, freeAddons, paidAddons || []);
       } else {
@@ -883,27 +766,27 @@
     }
   };
 
-  // ========== VARIANT MODAL ==========
+  // VARIANT MODAL
   function showVariantModal(productId, productName, variants, freeAddons, paidAddons) {
+    document.getElementById("variantTitle").textContent = productName;
     const html = variants
       .map(v => `
-        <button class="btn btn-primary" style="width: 100%; margin-bottom: 8px;" onclick="selectVariant('${productId}', '${productName}', '${v.id}', '${v.name}', ${v.price}, ${JSON.stringify(freeAddons)}, ${JSON.stringify(paidAddons)})">
-          ${v.name} - ${v.price.toFixed(3)} د.ب
+        <button class="variant-btn" onclick="selectVariant('${productId}', '${productName}', '${v.id}', '${v.name}', ${v.price}, ${JSON.stringify(freeAddons).replace(/"/g, '&quot;')}, ${JSON.stringify(paidAddons).replace(/"/g, '&quot;')})">
+          ${v.name} — ${v.price.toFixed(3)} د.ب
         </button>
       `)
       .join("");
-
-    document.getElementById("variantBody").innerHTML = html;
+    document.getElementById("variantsBody").innerHTML = html;
     openModal("variantModal");
   }
 
   window.selectVariant = (productId, productName, variantId, variantName, variantPrice, freeAddons, paidAddons) => {
     closeModal("variantModal");
-    const fullName = `${productName} - ${variantName}`;
+    const fullName = `${productName} (${variantName})`;
     showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons);
   };
 
-  // ========== ADDONS MODAL ==========
+  // ADDONS MODAL
   function showAddonsModal(productId, productName, price, freeAddons, paidAddons) {
     currentAddonsData = {
       productId,
@@ -917,45 +800,48 @@
     document.getElementById("basePrice").textContent = price.toFixed(3) + " د.ب";
     document.getElementById("summaryBase").textContent = price.toFixed(3) + " د.ب";
 
-    const allAddons = [...freeAddons, ...paidAddons];
-    const html = [
-      freeAddons.length > 0 ? `
-        <div class="addons-section">
-          <div class="addons-label">🎁 إضافات مجانية</div>
-          ${freeAddons.map(a => `
-            <label class="addon-item addon-free">
-              <input type="checkbox" data-price="0" data-name="${a.name}" onchange="updateAddonsPrice(${price})" checked>
-              <span class="addon-name">${a.name}</span>
-              <span class="addon-price">مجاني</span>
-            </label>
-          `).join("")}
-        </div>
-      ` : "",
-      paidAddons.length > 0 ? `
-        <div class="addons-section">
-          <div class="addons-label">💰 إضافات إضافية</div>
-          ${paidAddons.map(a => `
-            <label class="addon-item addon-paid">
-              <input type="checkbox" data-price="${a.price}" data-name="${a.name}" onchange="updateAddonsPrice(${price})">
-              <span class="addon-name">${a.name}</span>
-              <span class="addon-price">+${a.price.toFixed(3)} د.ب</span>
-            </label>
-          `).join("")}
-        </div>
-      ` : ""
-    ].filter(Boolean).join("");
+    // FREE ADDONS
+    if (freeAddons.length > 0) {
+      const freeHtml = freeAddons.map(a => `
+        <label class="addon-item addon-free">
+          <input type="checkbox" data-price="0" data-name="${a.name}" onchange="updateAddonsPrice(${price})" checked>
+          <span class="addon-name">${a.name}</span>
+          <span class="addon-price">مجاني</span>
+        </label>
+      `).join("");
+      document.getElementById("freeAddonsBody").innerHTML = freeHtml;
+      document.getElementById("freeAddonsContainer").style.display = "block";
+    } else {
+      document.getElementById("freeAddonsContainer").style.display = "none";
+    }
 
-    document.getElementById("addonsBody").innerHTML = html || '<p style="color: #9CA3AF; text-align: center;">لا توجد إضافات</p>';
+    // PAID ADDONS
+    if (paidAddons.length > 0) {
+      const paidHtml = paidAddons.map(a => `
+        <label class="addon-item addon-paid">
+          <input type="checkbox" data-price="${a.price}" data-name="${a.name}" onchange="updateAddonsPrice(${price})">
+          <span class="addon-name">${a.name}</span>
+          <span class="addon-price">+${a.price.toFixed(3)} د.ب</span>
+        </label>
+      `).join("");
+      document.getElementById("paidAddonsBody").innerHTML = paidHtml;
+      document.getElementById("paidAddonsContainer").style.display = "block";
+    } else {
+      document.getElementById("paidAddonsContainer").style.display = "none";
+    }
+
     updateAddonsPrice(price);
     openModal("addonsModal");
   }
 
   window.updateAddonsPrice = (basePrice) => {
-    const checked = document.querySelectorAll("#addonsBody input:checked");
+    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
     let addonsTotal = 0;
 
-    checked.forEach(cb => {
-      addonsTotal += parseFloat(cb.dataset.price) || 0;
+    allAddons.forEach(cb => {
+      if (cb.checked) {
+        addonsTotal += parseFloat(cb.dataset.price) || 0;
+      }
     });
 
     const total = basePrice + addonsTotal;
@@ -965,11 +851,17 @@
   };
 
   window.confirmAddons = () => {
-    const checked = document.querySelectorAll("#addonsBody input:checked");
-    const addons = Array.from(checked).map(cb => ({
-      name: cb.dataset.name,
-      price: parseFloat(cb.dataset.price) || 0
-    }));
+    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
+    const addons = [];
+
+    allAddons.forEach(cb => {
+      if (cb.checked) {
+        addons.push({
+          name: cb.dataset.name,
+          price: parseFloat(cb.dataset.price) || 0
+        });
+      }
+    });
 
     let total = currentAddonsData.price;
     addons.forEach(a => { total += a.price; });
@@ -978,7 +870,7 @@
     addItemToCart(currentAddonsData.productId, currentAddonsData.productName, total, addons);
   };
 
-  // ========== CART ==========
+  // CART
   function addItemToCart(productId, productName, price, addons) {
     cart.push({ productId, productName, price, qty: 1, addons });
     saveCart();
@@ -1012,29 +904,37 @@
     }
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    let html = '<div style="margin-bottom: 20px;">';
+    
+    cart.forEach((item, idx) => {
+      html += `
+        <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+          <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
+            السعر: ${item.price.toFixed(3)} د.ب
+            ${item.addons.length > 0 ? `<br>الإضافات: ${item.addons.map(a => a.name).join(", ")}` : ""}
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button onclick="changeQty(${idx}, -1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">−</button>
+            <span style="width: 28px; text-align: center; font-weight: 600;">${item.qty}</span>
+            <button onclick="changeQty(${idx}, 1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">+</button>
+            <button onclick="removeItem(${idx})" style="margin-left: auto; background: #fee2e2; color: #dc2626; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">❌ حذف</button>
+          </div>
+        </div>
+      `;
+    });
 
-    const rows = cart
-      .map((item, idx) => `
-        <tr>
-          <td>${item.productName}</td>
-          <td>${item.price.toFixed(3)}</td>
-          <td>
-            <div class="qty-controls">
-              <button class="qty-btn" onclick="changeQty(${idx}, -1)">−</button>
-              <span>${item.qty}</span>
-              <button class="qty-btn" onclick="changeQty(${idx}, 1)">+</button>
-            </div>
-          </td>
-          <td><button class="btn-danger" onclick="removeItem(${idx})">❌</button></td>
-        </tr>
-      `)
-      .join("");
-
-    document.getElementById("cartTable").innerHTML = `
-      <thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
+    html += '</div>';
+    html += `
+      <div class="price-summary">
+        <div class="summary-row total">
+          <span>الإجمالي:</span>
+          <span class="price">${total.toFixed(3)} د.ب</span>
+        </div>
+      </div>
     `;
-    document.getElementById("cartTotal").textContent = total.toFixed(3) + " د.ب";
+
+    document.getElementById("cartBody").innerHTML = html;
     openModal("cartModal");
   };
 
@@ -1043,7 +943,7 @@
     if (cart[idx].qty <= 0) cart.splice(idx, 1);
     saveCart();
     updateBadge();
-    window.showCart();
+    cart.length > 0 ? window.showCart() : closeModal("cartModal");
   };
 
   window.removeItem = (idx) => {
@@ -1068,11 +968,10 @@
     openModal("orderModal");
   };
 
-  // ========== ORDER ==========
+  // ORDER
   window.updateDelivery = () => {
     const isDelivery = document.querySelector('input[name="orderType"]:checked').value === "delivery";
     document.getElementById("deliveryGroup").style.display = isDelivery ? "block" : "none";
-    document.getElementById("deliveryAlert").style.display = isDelivery ? "block" : "none";
     updateOrderTotal();
   };
 
@@ -1127,18 +1026,19 @@
 
     if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
 
-    // Send to WhatsApp
     let msg = `🍽️ *طلب جديد*\n\n`;
-    if (name) msg += `👤 ${name}\n`;
-    msg += `📱 ${phone}\n🏪 ${type === "pickup" ? "استلام" : "توصيل"}\n\n*📦 الطلب:*\n`;
+    if (name) msg += `👤 *الاسم:* ${name}\n`;
+    msg += `📱 *الهاتف:* ${phone}\n🏪 *النوع:* ${type === "pickup" ? "استلام من المتجر" : "توصيل للعنوان"}\n\n`;
+    msg += `*📦 الطلب:*\n`;
     cart.forEach(item => {
       msg += `• ${item.productName} ×${item.qty} = ${(item.price * item.qty).toFixed(3)} د.ب\n`;
     });
-    msg += `\n💰 *${itemsTotal.toFixed(3)} د.ب*\n`;
+    msg += `\n💰 *الإجمالي:* ${itemsTotal.toFixed(3)} د.ب\n`;
     if (type === "delivery") {
-      msg += `\n🚗 المنطقة: ${document.getElementById("deliveryArea").options[document.getElementById("deliveryArea").selectedIndex].text}\nالعنوان: ${document.getElementById("deliveryAddress").value}\n`;
+      msg += `\n🚗 *المنطقة:* ${document.getElementById("deliveryArea").options[document.getElementById("deliveryArea").selectedIndex].text}\n`;
+      msg += `*العنوان:* ${document.getElementById("deliveryAddress").value}\n`;
     }
-    if (notes) msg += `\n📝 ${notes}\n`;
+    if (notes) msg += `\n📝 *ملاحظات:* ${notes}\n`;
 
     let wa = phone.replace(/[\s-]/g, "");
     if (!wa.startsWith("+973")) wa = "+973" + wa.slice(-7);
@@ -1151,7 +1051,7 @@
     alert("✅ تم إرسال الطلب!");
   };
 
-  // ========== MODAL ==========
+  // MODAL
   function openModal(id) {
     document.getElementById(id).classList.add("show");
   }
@@ -1160,7 +1060,7 @@
     document.getElementById(id).classList.remove("show");
   };
 
-  // Subscribe to changes
+  // Subscribe
   supabase
     .channel("products")
     .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => loadProducts())
