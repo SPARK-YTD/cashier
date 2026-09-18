@@ -731,7 +731,7 @@
   function renderFilters() {
     const categories = [...new Set(allProducts.map(p => p.category || "أخرى"))];
     const html = `
-      <button class="filter-btn active" onclick="filterProducts('all')">ك ل ط ع ا م</button>
+      <button class="filter-btn active" onclick="filterProducts('all')">الكل</button>
       ${categories.map(cat => `
         <button class="filter-btn" onclick="filterProducts('${cat}')">${cat}</button>
       `).join("")}
