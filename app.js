@@ -870,7 +870,14 @@ function showPendingOrderModal(order) {
   document.body.appendChild(modal);
   playNotificationSound();
   
-  async function loadPendingOrders() {
+ function showPendingOrderModal(order) {
+  ...
+  document.body.appendChild(modal);
+  playNotificationSound();
+}  // ✅ تسد الـ function هنا
+
+// ✅ اضفها برا
+async function loadPendingOrders() {
   try {
     const { data, error } = await supabase
       .from("pending_orders")
