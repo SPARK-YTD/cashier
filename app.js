@@ -13,7 +13,6 @@
   let editingOrderId = null;
   let currentInvoiceNo = null;
   let ordersChannel; 
-  let pendingOrdersChannel;
   let employeeMode = null;
   let deliveryMode = null;
   /* ===============================
