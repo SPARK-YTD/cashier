@@ -870,58 +870,7 @@ function showPendingOrderModal(order) {
   document.body.appendChild(modal);
   playNotificationSound();
 
- function showPendingOrderModal(order) {
-  const modal = document.createElement('div');
-  modal.id = `pending-modal-${order.id}`;
-  modal.style.cssText = `
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
-    align-items: center; justify-content: center;
-  `;
-  
-  const itemsHtml = order.order_items.map(i => `
-    <div style="background: #f5f5f5; padding: 8px; margin-bottom: 8px; border-radius: 4px;">
-      🔹 ${i.productName} ×${i.qty} = ${i.price.toFixed(3)} د.ب
-      ${i.addons && i.addons.length ? `<br><small>${i.addons.map(a => a.name).join(', ')}</small>` : ''}
-    </div>
-  `).join('');
 
-  modal.innerHTML = `
-    <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-      <h2 style="margin-top: 0; color: #111827; text-align: center;">📋 طلب جديد معلق!</h2>
-      <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 600; color: #856404;">
-        ⚠️ ينتظر الموافقة
-      </div>
-      <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-        <p><strong>👤 الاسم:</strong> ${order.customer_name || 'بدون'}</p>
-        <p><strong>📱 الرقم:</strong> ${order.customer_phone}</p>
-        <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استلام' : '🚗 توصيل'}</p>
-        ${order.delivery_type === 'delivery' ? `<p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p>` : ''}
-      </div>
-      <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px; max-height: 200px; overflow-y: auto;">
-        <strong>📦 الأصناف:</strong>
-        ${itemsHtml}
-      </div>
-      <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 700; font-size: 16px; color: #2e7d32;">
-        💰 الإجمالي: ${order.total_price.toFixed(3)} د.ب
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <button onclick="approvePendingOrder('${order.id}')" style="flex: 1; background: #10B981; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px;">
-          ✅ قبول
-        </button>
-        <button onclick="rejectPendingOrder('${order.id}')" style="flex: 1; background: #EF4444; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px;">
-          ❌ رفض
-        </button>
-      </div>
-      <p style="text-align: center; font-size: 12px; color: #6B7280; margin-top: 12px;">
-        ⏰ ${new Date(order.created_at).toLocaleTimeString('ar-EG')}
-      </p>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-}
-  
 async function loadPendingOrders() {
   try {
     const { data, error } = await supabase
