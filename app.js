@@ -120,6 +120,7 @@ setInterval(() => {
     loadActiveOrders();    
     subscribeToOrders();
     subscribeToPendingOrders();
+    loadPendingOrders();
 
   });
 
