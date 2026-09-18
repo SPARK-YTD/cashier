@@ -120,7 +120,6 @@ setInterval(() => {
     subscribeToOrders();
     subscribeToPendingOrders();
     
-loadPendingOrders().catch(err => console.error("Error loading pending orders:", err));
   });
 
   /* ===============================
