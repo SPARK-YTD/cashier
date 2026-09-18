@@ -1,5 +1,4 @@
-  
-  import { supabase } from "./supabase.js";
+import { supabase } from "./supabase.js";
   import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 
   /*********************************
@@ -869,8 +868,8 @@ function showPendingOrderModal(order) {
 
   document.body.appendChild(modal);
   playNotificationSound();
-
-
+}
+  
 async function loadPendingOrders() {
   try {
     const { data, error } = await supabase
