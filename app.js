@@ -120,8 +120,7 @@ setInterval(() => {
     subscribeToOrders();
     subscribeToPendingOrders();
     
-    setTimeout(() => loadPendingOrders(), 1000);  // ✅ اضف هنا
-
+loadPendingOrders().catch(err => console.error("Error loading pending orders:", err));
   });
 
   /* ===============================
