@@ -890,8 +890,6 @@ async function loadPendingOrders() {
   }
 }
 
-}
-
 async function approvePendingOrder(orderId) {
   try {
     // 1️⃣ جيب الطلب المعلق
