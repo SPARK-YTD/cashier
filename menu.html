@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المنيو - Get-Break</title>
-  <link rel="stylesheet" href="style.css">
   <style>
     * {
       margin: 0;
@@ -19,7 +18,6 @@
       direction: rtl;
     }
 
-    /* ========== HEADER ========== */
     .header {
       background: #ffffff;
       color: #111827;
@@ -38,20 +36,51 @@
       font-weight: 700;
     }
 
+    .header-right {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .timer-badge {
+      background: #10B981;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      min-width: 60px;
+      text-align: center;
+      transition: background 0.3s;
+    }
+
+    .timer-badge.warning {
+      background: #F59E0B;
+    }
+
+    .timer-badge.danger {
+      background: #EF4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
     .menu-icon {
       width: 30px;
       height: 30px;
       cursor: pointer;
     }
 
-    /* ========== CONTAINER ========== */
     .container {
       max-width: 800px;
       margin: 0 auto;
       padding: 0;
     }
 
-    /* ========== FILTERS ========== */
     .filters {
       display: flex;
       gap: 8px;
@@ -80,7 +109,6 @@
       color: #000;
     }
 
-    /* ========== GRID ========== */
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -110,13 +138,6 @@
       align-items: center;
       justify-content: center;
       font-size: 40px;
-      overflow: hidden;
-    }
-
-    .product-img img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
     }
 
     .product-info {
@@ -136,7 +157,6 @@
       font-size: 14px;
     }
 
-    /* ========== CART BUTTON ========== */
     .cart-btn {
       position: fixed;
       bottom: 20px;
@@ -154,25 +174,6 @@
       box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
     }
 
-    .cart-btn:hover {
-      background: #059669;
-    }
-
-    .badge {
-      display: inline-block;
-      background: #EF4444;
-      color: white;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 20px;
-      font-weight: 700;
-      font-size: 11px;
-      margin-right: 8px;
-    }
-
-    /* ========== MODAL ========== */
     .modal {
       display: none;
       position: fixed;
@@ -184,7 +185,6 @@
       z-index: 1000;
       align-items: center;
       justify-content: center;
-      padding: 20px;
     }
 
     .modal.show {
@@ -193,28 +193,24 @@
 
     .modal-content {
       background: white;
-      border-radius: 16px;
-      width: 100%;
+      border-radius: 12px;
+      width: 90%;
       max-width: 500px;
       max-height: 85vh;
       overflow-y: auto;
-      animation: slideUp 0.3s ease;
     }
 
     .modal-header {
       padding: 20px;
       text-align: center;
       border-bottom: 1px solid #e5e5e5;
+      position: relative;
     }
 
     .modal-header h2 {
       font-size: 20px;
       color: #111827;
       margin: 0;
-    }
-
-    .modal-body {
-      padding: 20px;
     }
 
     .close-modal {
@@ -228,12 +224,10 @@
       border-radius: 50%;
       cursor: pointer;
       font-size: 18px;
-      color: #111827;
     }
 
-    /* ========== VARIANTS ========== */
-    .variants-section {
-      margin-bottom: 20px;
+    .modal-body {
+      padding: 20px;
     }
 
     .variant-btn {
@@ -247,41 +241,8 @@
       font-size: 14px;
       cursor: pointer;
       margin-bottom: 10px;
-      transition: all 0.3s;
     }
 
-    .variant-btn:hover {
-      background: #E0B23A;
-    }
-
-    /* ========== ADDONS SECTIONS ========== */
-    .addons-section {
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px dashed #d1d5db;
-    }
-
-    .addons-section:last-of-type {
-      border-bottom: none;
-    }
-
-    .section-title {
-      font-weight: 700;
-      color: #111827;
-      font-size: 14px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .addons-label-text {
-      color: #6b7280;
-      font-size: 12px;
-      margin-bottom: 12px;
-    }
-
-    /* ========== ADDON ITEM ========== */
     .addon-item {
       display: flex;
       align-items: center;
@@ -291,21 +252,12 @@
       border-radius: 8px;
       margin-bottom: 10px;
       cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .addon-item:hover {
-      border-color: #3b82f6;
-      background: #eff6ff;
     }
 
     .addon-item input[type="checkbox"] {
       width: 20px;
       height: 20px;
-      cursor: pointer;
-      accent-color: #3b82f6;
       margin-left: 12px;
-      flex-shrink: 0;
     }
 
     .addon-name {
@@ -319,30 +271,8 @@
       color: #10B981;
       font-weight: 600;
       font-size: 12px;
-      margin-left: 8px;
     }
 
-    .addon-free {
-      background: #f0fdf4 !important;
-      border-color: #86efac !important;
-    }
-
-    .addon-free:hover {
-      background: #dcfce7 !important;
-      border-color: #22c55e !important;
-    }
-
-    .addon-paid {
-      background: #eff6ff !important;
-      border-color: #93c5fd !important;
-    }
-
-    .addon-paid:hover {
-      background: #dbeafe !important;
-      border-color: #3b82f6 !important;
-    }
-
-    /* ========== PRICE SUMMARY ========== */
     .price-summary {
       background: #f9fafb;
       border: 2px solid #e5e7eb;
@@ -356,7 +286,6 @@
       justify-content: space-between;
       padding: 8px 0;
       font-size: 13px;
-      color: #111827;
     }
 
     .summary-row.total {
@@ -366,11 +295,6 @@
       font-size: 15px;
     }
 
-    .summary-row.total .price {
-      color: #10B981;
-    }
-
-    /* ========== BUTTONS ========== */
     .modal-footer {
       padding: 16px 20px;
       display: flex;
@@ -386,7 +310,6 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 13px;
-      transition: all 0.2s;
     }
 
     .btn-cancel {
@@ -394,239 +317,146 @@
       color: #111827;
     }
 
-    .btn-cancel:hover {
-      background: #d1d5db;
-    }
-
     .btn-confirm {
       background: #F4C34A;
       color: #000;
     }
 
-    .btn-confirm:hover {
-      background: #E0B23A;
+    .notification {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      left: 20px;
+      background: #10B981;
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 999;
+      display: none;
     }
 
-    /* ========== EMPTY ========== */
-    .empty {
-      text-align: center;
-      padding: 60px 20px;
-      color: #9CA3AF;
+    .notification.show {
+      display: block;
     }
 
-    .loading {
+    .empty, .loading {
       text-align: center;
       padding: 40px 20px;
       color: #6B7280;
-    }
-
-    /* ========== ANIMATIONS ========== */
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* ========== RESPONSIVE ========== */
-    @media (max-width: 480px) {
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        padding: 12px;
-      }
-
-      .product-img {
-        height: 100px;
-      }
-
-      .modal {
-        padding: 0;
-      }
-
-      .modal-content {
-        border-radius: 12px 12px 0 0;
-        max-height: 90vh;
-      }
     }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<div class="notification" id="notification"></div>
+
 <div class="header">
-  <span class="header-title">🍽️ كاشير خذ لك بريك</span>
-  <span class="menu-icon">☰</span>
+  <span class="header-title">🍽️ المنيو</span>
+  <div class="header-right">
+    <span class="timer-badge" id="timerBadge">10:00</span>
+  </div>
 </div>
 
-<!-- CONTAINER -->
 <div class="container">
-  <!-- FILTERS -->
   <div class="filters" id="filters"></div>
-
-  <!-- GRID -->
   <div class="grid" id="grid">
     <div class="loading">⏳ جاري التحميل...</div>
   </div>
-
-  <!-- EMPTY -->
-  <div class="empty" id="empty" style="display: none;">📭 لا توجد منتجات</div>
 </div>
 
-<!-- CART BUTTON -->
-<button class="cart-btn" onclick="showCart()">
-  🛒 السلة
-  <span class="badge" id="badge" style="display: none;"></span>
-</button>
+<button class="cart-btn" onclick="showCart()">🛒 السلة <span id="badge" style="display:none;"></span></button>
 
-<!-- VARIANTS MODAL -->
+<!-- MODALS -->
 <div class="modal" id="variantModal">
   <div class="modal-content">
-    <button class="close-modal" onclick="closeModal('variantModal')">✕</button>
     <div class="modal-header">
       <h2 id="variantTitle"></h2>
+      <button class="close-modal" onclick="closeModal('variantModal')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="variants-section" id="variantsBody"></div>
-    </div>
+    <div class="modal-body" id="variantsBody"></div>
   </div>
 </div>
 
-<!-- ADDONS MODAL -->
 <div class="modal" id="addonsModal">
   <div class="modal-content">
-    <button class="close-modal" onclick="closeModal('addonsModal')">✕</button>
     <div class="modal-header">
       <h2 id="addonsTitle"></h2>
+      <button class="close-modal" onclick="closeModal('addonsModal')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color: #6B7280; font-size: 13px; margin-bottom: 20px;">
+      <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
         السعر الأساسي: <strong id="basePrice"></strong>
-      </p>
-
-      <!-- FREE ADDONS SECTION -->
-      <div class="addons-section" id="freeAddonsContainer" style="display: none;">
-        <div class="section-title">🎁 اختر الإضافات (مجاني)</div>
-        <div class="addons-label-text">اختر الإضافات التي لا يريدها الزبون</div>
-        <div id="freeAddonsBody"></div>
       </div>
-
-      <!-- PAID ADDONS SECTION -->
-      <div class="addons-section" id="paidAddonsContainer" style="display: none;">
-        <div class="section-title">💰 إضافات إضافية</div>
-        <div id="paidAddonsBody"></div>
-      </div>
-
-      <!-- PRICE SUMMARY -->
+      <div id="addonsBody"></div>
       <div class="price-summary">
-        <div class="summary-row">
-          <span>السعر الأساسي:</span>
-          <span id="summaryBase"></span>
-        </div>
-        <div class="summary-row" id="addonsPriceRow" style="display: none;">
-          <span>الإضافات الإضافية:</span>
-          <span id="summaryAddons"></span>
-        </div>
         <div class="summary-row total">
           <span>الإجمالي:</span>
-          <span class="price" id="summaryTotal"></span>
+          <span id="summaryTotal"></span>
         </div>
       </div>
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="closeModal('addonsModal')">إلغاء</button>
-      <button class="btn btn-confirm" onclick="confirmAddons()">أضف للسلة</button>
+      <button class="btn btn-confirm" onclick="confirmAddons()">أضف</button>
     </div>
   </div>
 </div>
 
-<!-- CART MODAL -->
 <div class="modal" id="cartModal">
   <div class="modal-content">
-    <button class="close-modal" onclick="closeModal('cartModal')">✕</button>
     <div class="modal-header">
       <h2>🛒 السلة</h2>
+      <button class="close-modal" onclick="closeModal('cartModal')">✕</button>
     </div>
     <div class="modal-body" id="cartBody"></div>
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="clearCart()">مسح</button>
-      <button class="btn btn-confirm" onclick="goToOrder()">المتابعة</button>
+      <button class="btn btn-confirm" onclick="goToOrder()">متابعة</button>
     </div>
   </div>
 </div>
 
-<!-- ORDER MODAL -->
 <div class="modal" id="orderModal">
   <div class="modal-content">
-    <button class="close-modal" onclick="closeModal('orderModal')">✕</button>
     <div class="modal-header">
-      <h2>📋 بيانات الطلب</h2>
+      <h2>📋 الطلب</h2>
+      <button class="close-modal" onclick="closeModal('orderModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">الاسم (اختياري)</label>
-        <input type="text" id="customerName" placeholder="اسمك" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-      </div>
+      <input type="text" id="customerName" placeholder="الاسم (اختياري)" style="width:100%; padding:10px; margin-bottom:12px; border:2px solid #e5e7eb; border-radius:6px;">
+      <input type="tel" id="customerPhone" placeholder="الرقم" style="width:100%; padding:10px; margin-bottom:12px; border:2px solid #e5e7eb; border-radius:6px;">
+      
+      <label style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="radio" name="orderType" value="pickup" checked onchange="updateDelivery()">
+        <span>🚶 استلام</span>
+      </label>
+      <label style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="radio" name="orderType" value="delivery" onchange="updateDelivery()">
+        <span>🚗 توصيل</span>
+      </label>
 
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">رقم الهاتف *</label>
-        <input type="tel" id="customerPhone" placeholder="33123456 أو +97333123456" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-      </div>
-
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">نوع الطلب *</label>
-        <label style="display: flex; align-items: center; padding: 10px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
-          <input type="radio" name="orderType" value="pickup" checked onchange="updateDelivery()" style="width: 18px; height: 18px; margin-left: 10px;">
-          <span style="flex: 1; color: #111827; font-weight: 500; font-size: 13px;">🚶 استلام من المتجر</span>
-        </label>
-        <label style="display: flex; align-items: center; padding: 10px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
-          <input type="radio" name="orderType" value="delivery" onchange="updateDelivery()" style="width: 18px; height: 18px; margin-left: 10px;">
-          <span style="flex: 1; color: #111827; font-weight: 500; font-size: 13px;">🚗 توصيل للعنوان</span>
-        </label>
-      </div>
-
-      <div id="deliveryGroup" style="display: none; margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">المنطقة *</label>
-        <select id="deliveryArea" onchange="updateOrderTotal()" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-          <option value="">-- اختر المنطقة --</option>
-          <option value="manama">المنامة - 300 فلس</option>
-          <option value="budaiya">البديع - 500 فلس</option>
-          <option value="other">مناطق أخرى - 1 دينار</option>
+      <div id="deliveryGroup" style="display:none; margin-bottom:12px;">
+        <select id="deliveryArea" style="width:100%; padding:10px; margin-bottom:8px; border:2px solid #e5e7eb; border-radius:6px;">
+          <option value="">المنطقة</option>
+          <option value="manama">المنامة - 300f</option>
+          <option value="budaiya">البديع - 500f</option>
+          <option value="other">أخرى - 1د</option>
         </select>
-
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827; margin-top: 12px;">وصف العنوان *</label>
-        <textarea id="deliveryAddress" placeholder="رقم المنزل، الشارع، معالم..." rows="3" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+        <textarea id="deliveryAddress" placeholder="العنوان" rows="2" style="width:100%; padding:10px; border:2px solid #e5e7eb; border-radius:6px; font-family:inherit;"></textarea>
       </div>
 
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #111827;">ملاحظات (اختياري)</label>
-        <textarea id="notes" placeholder="مثال: بدون بصل، حار..." rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
-      </div>
-
+      <textarea id="notes" placeholder="ملاحظات" rows="2" style="width:100%; padding:10px; margin-bottom:12px; border:2px solid #e5e7eb; border-radius:6px; font-family:inherit;"></textarea>
+      
       <div class="price-summary">
-        <div class="summary-row">
-          <span>الطلب:</span>
-          <span id="orderItemsTotal"></span>
-        </div>
-        <div class="summary-row" id="deliveryFeeRow" style="display: none;">
-          <span>التوصيل:</span>
-          <span id="orderDeliveryFee"></span>
-        </div>
         <div class="summary-row total">
           <span>الإجمالي:</span>
-          <span class="price" id="orderGrandTotal"></span>
+          <span id="orderTotal"></span>
         </div>
       </div>
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="closeModal('orderModal')">إلغاء</button>
-      <button class="btn btn-confirm" onclick="submitOrder()">إرسال الطلب</button>
+      <button class="btn btn-confirm" onclick="submitOrder()">إرسال</button>
     </div>
   </div>
 </div>
@@ -634,325 +464,245 @@
 <script type="module">
   import { supabase } from "./supabase.js";
 
-  let allProducts = [];
-  let cart = [];
-  let currentAddonsData = {};
+  let sessionId = null, sessionExpireTime = null, timerInterval = null;
+  const SESSION_TIMEOUT = 10 * 60 * 1000;
+  let allProducts = [], cart = [], currentAddonsData = {};
 
-  // INIT
+  function initSession() {
+    const savedId = localStorage.getItem("sessionId");
+    const savedExp = localStorage.getItem("sessionExpireTime");
+    const now = Date.now();
+
+    if (savedId && savedExp && parseInt(savedExp) > now) {
+      sessionId = savedId;
+      sessionExpireTime = parseInt(savedExp);
+    } else {
+      sessionId = 'session_' + now + '_' + Math.random().toString(36).substr(2, 9);
+      sessionExpireTime = now + SESSION_TIMEOUT;
+      localStorage.setItem("sessionId", sessionId);
+      localStorage.setItem("sessionExpireTime", sessionExpireTime);
+    }
+
+    startTimer();
+  }
+
+  function getCartKey() {
+    return `cart_${sessionId}`;
+  }
+
+  function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      const remaining = sessionExpireTime - Date.now();
+      if (remaining <= 0) {
+        expireSession();
+      } else {
+        const m = Math.floor(remaining / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        const display = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const badge = document.getElementById("timerBadge");
+        badge.textContent = display;
+        badge.classList.remove('warning', 'danger');
+        if (m === 0 && s <= 20) badge.classList.add('danger');
+        else if (m === 0) badge.classList.add('warning');
+      }
+    }, 1000);
+  }
+
+  function expireSession() {
+    clearInterval(timerInterval);
+    if (cart.length > 0) {
+      const cartKey = getCartKey();
+      localStorage.removeItem(cartKey);
+      autoSubmit();
+    }
+    localStorage.removeItem("sessionId");
+    localStorage.removeItem("sessionExpireTime");
+    showNotif("⏰ انتهت الجلسة!");
+    setTimeout(() => location.reload(), 2000);
+  }
+
+  function autoSubmit() {
+    const name = prompt("الاسم:") || "";
+    const phone = prompt("الرقم:") || "";
+    if (phone) {
+      document.getElementById("customerName").value = name;
+      document.getElementById("customerPhone").value = phone;
+      setTimeout(() => submitOrder(), 500);
+    }
+  }
+
+  function showNotif(msg) {
+    const el = document.getElementById("notification");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3000);
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
-    await loadProducts();
+    initSession();
+    const { data } = await supabase.from("products").select("*").eq("active", true).eq("is_visible", true).order("sort_order");
+    allProducts = data || [];
+    renderFilters();
+    renderProducts("all");
     loadCart();
   });
 
-  // LOAD PRODUCTS
-  async function loadProducts() {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("active", true)
-        .eq("is_visible", true)
-        .order("sort_order");
-
-      if (error) throw error;
-      allProducts = data || [];
-      renderFilters();
-      renderProducts("all");
-    } catch (error) {
-      console.error("Error:", error);
-      document.getElementById("grid").innerHTML = '<div class="empty">❌ خطأ في التحميل</div>';
-    }
-  }
-
-  // RENDER FILTERS
   function renderFilters() {
-    const categories = [...new Set(allProducts.map(p => p.category || "أخرى"))];
-    const html = `
+    const cats = [...new Set(allProducts.map(p => p.category || "أخرى"))];
+    document.getElementById("filters").innerHTML = `
       <button class="filter-btn active" onclick="filterProducts('all')">الكل</button>
-      ${categories.map(cat => `
-        <button class="filter-btn" onclick="filterProducts('${cat}')">${cat}</button>
-      `).join("")}
+      ${cats.map(c => `<button class="filter-btn" onclick="filterProducts('${c}')">${c}</button>`).join("")}
     `;
-    document.getElementById("filters").innerHTML = html;
   }
 
-  window.filterProducts = (category) => {
-    document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+  window.filterProducts = (cat) => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
     event.target.classList.add("active");
-    renderProducts(category);
+    renderProducts(cat);
   };
 
-  // RENDER PRODUCTS
-  function renderProducts(category) {
-    let products = allProducts;
-    if (category !== "all") {
-      products = products.filter(p => p.category === category);
-    }
-
-    if (products.length === 0) {
-      document.getElementById("grid").style.display = "none";
-      document.getElementById("empty").style.display = "block";
+  function renderProducts(cat) {
+    const prods = cat === "all" ? allProducts : allProducts.filter(p => p.category === cat);
+    if (!prods.length) {
+      document.getElementById("grid").innerHTML = '<div class="empty">📭</div>';
       return;
     }
-
-    document.getElementById("grid").style.display = "grid";
-    document.getElementById("empty").style.display = "none";
-
-    const html = products.map(p => `
-      <div class="product-card" onclick="addToCart('${p.id}', '${p.name}', ${p.price || 0})">
-        <div class="product-img">
-          ${p.image_url ? `<img src="${p.image_url}">` : "🍽️"}
-        </div>
+    document.getElementById("grid").innerHTML = prods.map(p => `
+      <div class="product-card" onclick="addToCart('${p.id}','${p.name}',${p.price||0})">
+        <div class="product-img">🍽️</div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
-          <div class="product-price">${(p.price || 0).toFixed(3)} د.ب</div>
+          <div class="product-price">${(p.price||0).toFixed(3)} د.ب</div>
         </div>
       </div>
     `).join("");
-
-    document.getElementById("grid").innerHTML = html;
   }
 
-  // ADD TO CART
   window.addToCart = async (productId, productName, price) => {
-    try {
-      const { data: variants } = await supabase
-        .from("product_variants")
-        .select("*")
-        .eq("product_id", productId)
-        .eq("active", true);
+    const { data: variants } = await supabase.from("product_variants").select("*").eq("product_id", productId).eq("active", true);
+    const { data: addons } = await supabase.from("product_addons").select("*").eq("product_id", productId).eq("active", true);
+    const { data: prod } = await supabase.from("products").select("extras_list").eq("id", productId).single();
 
-      const { data: paidAddons } = await supabase
-        .from("product_addons")
-        .select("*")
-        .eq("product_id", productId)
-        .eq("active", true);
-
-      const { data: product } = await supabase
-        .from("products")
-        .select("extras_list")
-        .eq("id", productId)
-        .single();
-
-      let freeAddons = [];
-      if (product?.extras_list) {
-        try {
-          // نفس الطريقة من app.js: split بـ newline
-          let extras = product.extras_list
-            .split("\n")
-            .map(e => e.trim())
-            .filter(Boolean);
-          
-          freeAddons = extras.map((e, i) => ({
-            id: `free-${i}`,
-            name: e,
-            price: 0
-          }));
-        } catch (e) {
-          console.error("Error parsing extras:", e);
-        }
-      }
-
-      if (variants?.length > 0) {
-        showVariantModal(productId, productName, variants, freeAddons, paidAddons || []);
-      } else {
-        showAddonsModal(productId, productName, price, freeAddons, paidAddons || []);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      addItemToCart(productId, productName, price, []);
+    let freeAddons = [];
+    if (prod?.extras_list) {
+      freeAddons = prod.extras_list.split("\n").map(e => e.trim()).filter(Boolean).map((e,i) => ({id:`free-${i}`, name:e, price:0}));
     }
+
+    if (variants?.length) showVariantModal(productId, productName, variants, freeAddons, addons||[]);
+    else showAddonsModal(productId, productName, price, freeAddons, addons||[]);
   };
 
-  // VARIANT MODAL
   function showVariantModal(productId, productName, variants, freeAddons, paidAddons) {
     document.getElementById("variantTitle").textContent = productName;
-    const html = variants
-      .map(v => `
-        <button class="variant-btn" onclick="selectVariant('${productId}', '${productName}', '${v.id}', '${v.name}', ${v.price}, ${JSON.stringify(freeAddons).replace(/"/g, '&quot;')}, ${JSON.stringify(paidAddons).replace(/"/g, '&quot;')})">
-          ${v.name} — ${v.price.toFixed(3)} د.ب
-        </button>
-      `)
-      .join("");
-    document.getElementById("variantsBody").innerHTML = html;
+    document.getElementById("variantsBody").innerHTML = variants.map(v => `
+      <button class="variant-btn" onclick="selectVariant('${productId}','${productName}','${v.id}','${v.name}',${v.price},${JSON.stringify(freeAddons).replace(/"/g,'&quot;')},${JSON.stringify(paidAddons).replace(/"/g,'&quot;')})">
+        ${v.name} — ${v.price.toFixed(3)} د.ب
+      </button>
+    `).join("");
     openModal("variantModal");
   }
 
   window.selectVariant = (productId, productName, variantId, variantName, variantPrice, freeAddons, paidAddons) => {
     closeModal("variantModal");
-    const fullName = `${productName} (${variantName})`;
-    showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons);
+    showAddonsModal(productId, `${productName} (${variantName})`, variantPrice, freeAddons, paidAddons);
   };
 
-  // ADDONS MODAL
   function showAddonsModal(productId, productName, price, freeAddons, paidAddons) {
-    currentAddonsData = {
-      productId,
-      productName,
-      price,
-      freeAddons: freeAddons || [],
-      paidAddons: paidAddons || []
-    };
-
+    currentAddonsData = {productId, productName, price, freeAddons, paidAddons};
     document.getElementById("addonsTitle").textContent = productName;
     document.getElementById("basePrice").textContent = price.toFixed(3) + " د.ب";
-    document.getElementById("summaryBase").textContent = price.toFixed(3) + " د.ب";
 
-    // FREE ADDONS
-    if (freeAddons.length > 0) {
-      const freeHtml = freeAddons.map(a => `
-        <label class="addon-item addon-free">
-          <input type="checkbox" data-price="0" data-name="${a.name}" onchange="updateAddonsPrice(${price})" checked>
-          <span class="addon-name">${a.name}</span>
-          <span class="addon-price">مجاني</span>
-        </label>
-      `).join("");
-      document.getElementById("freeAddonsBody").innerHTML = freeHtml;
-      document.getElementById("freeAddonsContainer").style.display = "block";
-    } else {
-      document.getElementById("freeAddonsContainer").style.display = "none";
-    }
-
-    // PAID ADDONS
-    if (paidAddons.length > 0) {
-      const paidHtml = paidAddons.map(a => `
-        <label class="addon-item addon-paid">
-          <input type="checkbox" data-price="${a.price}" data-name="${a.name}" onchange="updateAddonsPrice(${price})">
-          <span class="addon-name">${a.name}</span>
-          <span class="addon-price">+${a.price.toFixed(3)} د.ب</span>
-        </label>
-      `).join("");
-      document.getElementById("paidAddonsBody").innerHTML = paidHtml;
-      document.getElementById("paidAddonsContainer").style.display = "block";
-    } else {
-      document.getElementById("paidAddonsContainer").style.display = "none";
-    }
-
-    updateAddonsPrice(price);
+    let html = "";
+    [...freeAddons, ...paidAddons].forEach(a => {
+      html += `<label class="addon-item">
+        <input type="checkbox" data-price="${a.price}" data-name="${a.name}" ${a.price===0?'checked':''} onchange="updatePrice(${price})">
+        <span class="addon-name">${a.name}</span>
+        <span class="addon-price">${a.price?'+'+a.price.toFixed(3)+' د.ب':'مجاني'}</span>
+      </label>`;
+    });
+    document.getElementById("addonsBody").innerHTML = html;
+    updatePrice(price);
     openModal("addonsModal");
   }
 
-  window.updateAddonsPrice = (basePrice) => {
-    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
-    let addonsTotal = 0;
-
-    allAddons.forEach(cb => {
-      if (cb.checked) {
-        addonsTotal += parseFloat(cb.dataset.price) || 0;
-      }
-    });
-
-    const total = basePrice + addonsTotal;
-    document.getElementById("summaryAddons").textContent = addonsTotal.toFixed(3) + " د.ب";
-    document.getElementById("addonsPriceRow").style.display = addonsTotal > 0 ? "flex" : "none";
+  window.updatePrice = (basePrice) => {
+    let total = basePrice;
+    document.querySelectorAll("#addonsBody input:checked").forEach(cb => total += parseFloat(cb.dataset.price)||0);
     document.getElementById("summaryTotal").textContent = total.toFixed(3) + " د.ب";
   };
 
   window.confirmAddons = () => {
-    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
     const addons = [];
-
-    allAddons.forEach(cb => {
-      if (cb.checked) {
-        addons.push({
-          name: cb.dataset.name,
-          price: parseFloat(cb.dataset.price) || 0
-        });
-      }
+    document.querySelectorAll("#addonsBody input:checked").forEach(cb => {
+      addons.push({name: cb.dataset.name, price: parseFloat(cb.dataset.price)||0});
     });
-
     let total = currentAddonsData.price;
-    addons.forEach(a => { total += a.price; });
-
+    addons.forEach(a => total += a.price);
     closeModal("addonsModal");
-    addItemToCart(currentAddonsData.productId, currentAddonsData.productName, total, addons);
-  };
-
-  // CART
-  function addItemToCart(productId, productName, price, addons) {
-    cart.push({ productId, productName, price, qty: 1, addons });
+    cart.push({...currentAddonsData, price: total, qty: 1, addons});
     saveCart();
     updateBadge();
-    alert("✅ تمت الإضافة للسلة!");
-  }
+    showNotif("✅ تمت الإضافة!");
+  };
 
   function saveCart() {
-    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem(getCartKey(), JSON.stringify(cart));
   }
 
   function loadCart() {
-    cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cart = JSON.parse(localStorage.getItem(getCartKey()) || "[]");
     updateBadge();
   }
 
   function updateBadge() {
     const badge = document.getElementById("badge");
-    if (cart.length > 0) {
+    if (cart.length) {
       badge.textContent = cart.length;
       badge.style.display = "inline-block";
-    } else {
-      badge.style.display = "none";
-    }
+    } else badge.style.display = "none";
   }
 
   window.showCart = () => {
-    if (cart.length === 0) {
-      alert("🛒 السلة فارغة!");
-      return;
-    }
-
-    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    let html = '<div style="margin-bottom: 20px;">';
-    
-    cart.forEach((item, idx) => {
-      html += `
-        <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-          <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
-            السعر: ${item.price.toFixed(3)} د.ب
-            ${item.addons.length > 0 ? `<br>الإضافات: ${item.addons.map(a => a.name).join(", ")}` : ""}
-          </div>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <button onclick="changeQty(${idx}, -1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">−</button>
-            <span style="width: 28px; text-align: center; font-weight: 600;">${item.qty}</span>
-            <button onclick="changeQty(${idx}, 1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">+</button>
-            <button onclick="removeItem(${idx})" style="margin-left: auto; background: #fee2e2; color: #dc2626; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">❌ حذف</button>
-          </div>
+    if (!cart.length) return showNotif("🛒 فارغة!");
+    const total = cart.reduce((s,i) => s + (i.price * i.qty), 0);
+    let html = cart.map((i,idx) => `
+      <div style="background:#f9fafb; padding:12px; border-radius:8px; margin-bottom:10px;">
+        <div style="font-weight:600; margin-bottom:4px;">${i.productName}</div>
+        <div style="font-size:12px; color:#666; margin-bottom:8px;">
+          ${i.price.toFixed(3)} د.ب
+          ${i.addons.length ? `<br>${i.addons.map(a=>a.name).join(', ')}` : ''}
         </div>
-      `;
-    });
-
-    html += '</div>';
-    html += `
-      <div class="price-summary">
-        <div class="summary-row total">
-          <span>الإجمالي:</span>
-          <span class="price">${total.toFixed(3)} د.ب</span>
+        <div style="display:flex; gap:4px;">
+          <button onclick="changeQty(${idx},-1)" style="width:28px; height:28px; background:#e5e7eb; border:none; border-radius:4px; cursor:pointer;">−</button>
+          <span style="width:28px; text-align:center;">${i.qty}</span>
+          <button onclick="changeQty(${idx},1)" style="width:28px; height:28px; background:#e5e7eb; border:none; border-radius:4px; cursor:pointer;">+</button>
+          <button onclick="removeItem(${idx})" style="margin-left:auto; background:#fee2e2; color:#dc2626; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">❌</button>
         </div>
       </div>
-    `;
-
+    `).join("");
+    html += `<div class="price-summary"><div class="summary-row total"><span>الإجمالي:</span><span>${total.toFixed(3)} د.ب</span></div></div>`;
     document.getElementById("cartBody").innerHTML = html;
     openModal("cartModal");
   };
 
-  window.changeQty = (idx, change) => {
-    cart[idx].qty += change;
+  window.changeQty = (idx, ch) => {
+    cart[idx].qty += ch;
     if (cart[idx].qty <= 0) cart.splice(idx, 1);
     saveCart();
     updateBadge();
-    cart.length > 0 ? window.showCart() : closeModal("cartModal");
+    cart.length ? window.showCart() : closeModal("cartModal");
   };
 
   window.removeItem = (idx) => {
     cart.splice(idx, 1);
     saveCart();
     updateBadge();
-    cart.length > 0 ? window.showCart() : closeModal("cartModal");
+    cart.length ? window.showCart() : closeModal("cartModal");
   };
 
   window.clearCart = () => {
-    if (confirm("هل أنت متأكد؟")) {
+    if (confirm("حذف؟")) {
       cart = [];
       saveCart();
       updateBadge();
@@ -962,149 +712,50 @@
 
   window.goToOrder = () => {
     closeModal("cartModal");
-    updateOrderTotal();
+    const total = cart.reduce((s,i) => s + (i.price * i.qty), 0);
+    document.getElementById("orderTotal").textContent = total.toFixed(3) + " د.ب";
     openModal("orderModal");
   };
 
-  // ORDER
   window.updateDelivery = () => {
     const isDelivery = document.querySelector('input[name="orderType"]:checked').value === "delivery";
     document.getElementById("deliveryGroup").style.display = isDelivery ? "block" : "none";
-    updateOrderTotal();
   };
 
-  function getDeliveryFee() {
-    const area = document.getElementById("deliveryArea").value;
-    if (area === "manama") return 0.3;
-    if (area === "budaiya") return 0.5;
-    if (area === "other") return 1;
-    return 0;
-  }
-
-  window.updateOrderTotal = () => {
-    const itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const isDelivery = document.querySelector('input[name="orderType"]:checked').value === "delivery";
-    const fee = isDelivery ? getDeliveryFee() : 0;
-    const grandTotal = itemsTotal + fee;
-
-    document.getElementById("orderItemsTotal").textContent = itemsTotal.toFixed(3) + " د.ب";
-    document.getElementById("orderDeliveryFee").textContent = fee.toFixed(3) + " د.ب";
-    document.getElementById("orderGrandTotal").textContent = grandTotal.toFixed(3) + " د.ب";
-
-    if (isDelivery) {
-      document.getElementById("deliveryFeeRow").style.display = "flex";
-    } else {
-      document.getElementById("deliveryFeeRow").style.display = "none";
-    }
-  };
-
-  window.submitOrder = async () => {
+  window.submitOrder = () => {
     const name = document.getElementById("customerName").value.trim();
     const phone = document.getElementById("customerPhone").value.trim();
     const type = document.querySelector('input[name="orderType"]:checked').value;
-    const notes = document.getElementById("notes").value.trim();
 
-    if (!phone || !/^(\d{7,8}|\+973\d{8})$/.test(phone.replace(/[\s-]/g, ""))) {
-      alert("❌ رقم الهاتف غير صحيح");
-      return;
-    }
+    if (!phone) return showNotif("❌ الرقم مطلوب");
+    if (type === "delivery" && !document.getElementById("deliveryArea").value) return showNotif("❌ المنطقة مطلوبة");
 
-    if (type === "delivery") {
-      const area = document.getElementById("deliveryArea").value;
-      const address = document.getElementById("deliveryAddress").value.trim();
-      if (!area || !address) {
-        alert("❌ الرجاء ملء بيانات التوصيل");
-        return;
-      }
-    }
-
-    const itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const fee = type === "delivery" ? getDeliveryFee() : 0;
-    const grandTotal = itemsTotal + fee;
-
-    if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
-
-    // ========== بناء الرسالة ==========
-    let msg = `🍽️ *طلب جديد من المنيو*\n\n`;
-    msg += `👤 *اسم الكستمر:* ${name || "بدون اسم"}\n`;
-    msg += `📱 *رقم الكستمر:* ${phone}\n`;
-    msg += `🏪 *نوع الطلب:* ${type === "pickup" ? "🚶 استلام من المتجر" : "🚗 توصيل للعنوان"}\n`;
-    msg += `\n`;
-    msg += `*📦 تفاصيل الطلب:*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    
-    cart.forEach(item => {
-      msg += `\n🔹 *${item.productName}*\n`;
-      msg += `   الكمية: ${item.qty}\n`;
-      msg += `   السعر: ${item.price.toFixed(3)} د.ب\n`;
-      msg += `   الإجمالي: ${(item.price * item.qty).toFixed(3)} د.ب\n`;
-      
-      if (item.addons && item.addons.length > 0) {
-        msg += `   الإضافات:\n`;
-        item.addons.forEach(addon => {
-          if (addon.price > 0) {
-            msg += `     • ${addon.name} (+${addon.price.toFixed(3)} د.ب)\n`;
-          } else {
-            msg += `     • ${addon.name}\n`;
-          }
-        });
-      }
+    let msg = `🍽️ *طلب جديد*\n\n👤 ${name||'بدون'}\n📱 ${phone}\n🏪 ${type==="pickup"?"استلام":"توصيل"}\n\n`;
+    cart.forEach(i => {
+      msg += `\n🔹 *${i.productName}* ×${i.qty}\n${i.price.toFixed(3)} د.ب`;
+      if (i.addons.length) msg += `\nالإضافات: ${i.addons.map(a=>a.name).join(', ')}`;
     });
-    
-    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `💰 *الإجمالي:* ${itemsTotal.toFixed(3)} د.ب\n`;
-    
-    if (type === "delivery") {
-      const areaText = document.getElementById("deliveryArea").options[document.getElementById("deliveryArea").selectedIndex].text;
-      msg += `🚗 *رسم التوصيل:* ${fee.toFixed(3)} د.ب\n`;
-      msg += `📍 *المنطقة:* ${areaText}\n`;
-      msg += `🏠 *العنوان:* ${document.getElementById("deliveryAddress").value}\n`;
-    }
-    
-    msg += `\n💵 *المجموع النهائي:* ${grandTotal.toFixed(3)} د.ب\n`;
-    
-    if (notes) {
-      msg += `\n📝 *ملاحظات:* ${notes}\n`;
-    }
-    
-    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `✅ تم الطلب بواسطة منيو QR\n`;
-    msg += `⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n`;
+    const total = cart.reduce((s,i) => s + (i.price * i.qty), 0);
+    msg += `\n\n💰 *الإجمالي:* ${total.toFixed(3)} د.ب\n⏰ ${new Date().toLocaleString('ar-EG')}`;
 
-    // ========== الإرسال لرقم المطعم ==========
     const restaurantPhone = localStorage.getItem("restaurantPhone");
-    
-    if (!restaurantPhone) {
-      alert("❌ خطأ: لم يتم تعيين رقم المطعم!\nالرجاء التواصل مع الإدارة.");
-      return;
-    }
+    if (!restaurantPhone) return showNotif("❌ خطأ في الإعدادات");
 
     let wa = restaurantPhone.replace(/[\s-]/g, "");
     if (!wa.startsWith("+973")) wa = "+973" + wa.slice(-8);
 
-    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
-    
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
     cart = [];
     saveCart();
     updateBadge();
     closeModal("orderModal");
-    alert("✅ تم إرسال الطلب للمطعم!");
+    showNotif("✅ تم الإرسال!");
   };
 
-  // MODAL
-  function openModal(id) {
-    document.getElementById(id).classList.add("show");
-  }
+  function openModal(id) { document.getElementById(id).classList.add("show"); }
+  window.closeModal = (id) => { document.getElementById(id).classList.remove("show"); };
 
-  window.closeModal = (id) => {
-    document.getElementById(id).classList.remove("show");
-  };
-
-  // Subscribe
-  supabase
-    .channel("products")
-    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => loadProducts())
-    .subscribe();
+  supabase.channel("products").on("postgres_changes", {event:"*", schema:"public", table:"products"}, () => window.location.reload()).subscribe();
 </script>
 
 </body>
