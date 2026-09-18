@@ -868,6 +868,29 @@ function showPendingOrderModal(order) {
 
   document.body.appendChild(modal);
   playNotificationSound();
+  
+  async function loadPendingOrders() {
+  try {
+    const { data, error } = await supabase
+      .from("pending_orders")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      console.log("📋 Found pending orders:", data.length);
+      data.forEach(order => {
+        console.log("🟠 EXISTING PENDING ORDER:", order);
+        showPendingOrderModal(order);
+      });
+    }
+  } catch (error) {
+    console.error("Error loading pending orders:", error);
+  }
+}
+
 }
 
 async function approvePendingOrder(orderId) {
