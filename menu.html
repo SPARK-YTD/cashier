@@ -1141,13 +1141,42 @@
     let wa = restaurantPhone.replace(/[\s-]/g, "");
     if (!wa.startsWith("+973")) wa = "+973" + wa.slice(-8);
 
-    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
+    // بدل إرسال WhatsApp مباشرة، احفظ في pending_orders
+const orderData = {
+  customer_name: name,
+  customer_phone: phone,
+  order_items: cart,
+  delivery_type: type,
+  delivery_area: type === "delivery" ? document.getElementById("deliveryArea").value : null,
+  delivery_address: type === "delivery" ? document.getElementById("deliveryAddress").value : null,
+  notes: notes,
+  total_price: grandTotal,
+  status: "pending",
+  restaurant_id: restaurantPhone,
+  created_at: new Date().toISOString()
+};
 
-    cart = [];
-    saveCart();
-    updateBadge();
-    closeModal("orderModal");
-    alert("✅ تم إرسال الطلب للمطعم!");
+try {
+  const { data: insertedOrder, error } = await supabase
+    .from("pending_orders")
+    .insert([orderData])
+    .select();
+
+  if (error) throw error;
+
+  // طبعاً احفظ في WhatsApp بس بشكل مختلف (اختياري - إرسال تنبيه)
+  // window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
+
+  cart = [];
+  saveCart();
+  updateBadge();
+  closeModal("orderModal");
+  alert("✅ تم الطلب! جاري المعالجة...");
+} catch (error) {
+  console.error("Error submitting order:", error);
+  alert("❌ خطأ في إرسال الطلب: " + error.message);
+}
+
   };
 
   // MODAL
