@@ -120,7 +120,8 @@ setInterval(() => {
     loadActiveOrders();    
     subscribeToOrders();
     subscribeToPendingOrders();
-    loadPendingOrders();
+    
+    setTimeout(() => loadPendingOrders(), 1000);  // ✅ اضف هنا
 
   });
 
