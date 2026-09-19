@@ -904,7 +904,7 @@
     const html = variants
       .map(v => `
         <button class="variant-btn" onclick="selectVariant('${productId}', '${productName.replace(/'/g, "\\'")}', '${v.id}', '${v.name.replace(/'/g, "\\'")}', ${v.price}, ${JSON.stringify(freeAddons).replace(/"/g, '&quot;')}, ${JSON.stringify(paidAddons).replace(/"/g, '&quot;')})">
-          ${v.name} — ${parseFloat(v.price || 0).toFixed(3)} د.ب
+          ${v.label} — ${parseFloat(v.price || 0).toFixed(3)} د.ب
         </button>
       `)
       .join("");
@@ -912,7 +912,7 @@
     openModal("variantModal");
   }
 
-  window.selectVariant = (productId, productName, variantId, variantName, variantPrice, freeAddons, paidAddons) => {
+  window.selectVariant = (productId, productName, variantId, variantLabel, variantPrice, freeAddons, paidAddons) => {
     closeModal("variantModal");
     const fullName = `${productName} (${variantName})`;
     showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons);
