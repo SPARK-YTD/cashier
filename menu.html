@@ -1213,6 +1213,8 @@
     }
   };
 
+  window.DEBUG_MENU = true; // 🟢 DEBUG MODE
+
   window.submitOrder = async () => {
     const submitBtn = document.getElementById("submitBtn");
     const name = document.getElementById("customerName").value.trim();
@@ -1277,15 +1279,30 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "⏳ جاري الإرسال...";
 
+      if (window.DEBUG_MENU) {
+        console.log("%c🟢 SUBMITTING ORDER", "background:#222;color:#0f0;font-size:14px;padding:4px");
+        console.log("🟢 FULL orderData:", JSON.stringify(orderData, null, 2));
+        console.log("🟢 cart.length:", cart.length);
+        console.log("🟢 order_items count:", orderData.order_items.length);
+      }
+
       const { data: insertedOrder, error } = await supabase
         .from("pending_orders")
         .insert([orderData])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        if (window.DEBUG_MENU) console.error("🔴 INSERT ERROR:", error);
+        throw error;
+      }
 
       const orderId = insertedOrder[0].id;
-      console.log("✅ ORDER CREATED IN PENDING:", orderId);
+      if (window.DEBUG_MENU) {
+        console.log("%c✅ ORDER CREATED IN PENDING", "background:#222;color:#0f0;font-size:14px;padding:4px");
+        console.log("✅ orderId:", orderId);
+        console.log("✅ insertedOrder full:", insertedOrder[0]);
+        console.log("🟢 SETTING UP REALTIME LISTENER FOR ORDER:", orderId);
+      }
 
       // ✅ انتظر على قبول الطلب من الكاشير
       const statusListener = supabase
@@ -1294,6 +1311,11 @@
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "pending_orders" },
           (payload) => {
+            if (window.DEBUG_MENU) {
+              console.log("%c🟢 PENDING ORDER UPDATE EVENT RECEIVED", "background:#222;color:#0f0;font-size:14px;padding:4px");
+              console.log("🟢 payload.new:", payload.new);
+              console.log("🟢 status:", payload.new.status);
+            }
             if (payload.new.id === orderId && payload.new.status === "approved") {
               console.log("🎉 ORDER APPROVED BY CASHIER!");
               
@@ -1315,7 +1337,9 @@
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (window.DEBUG_MENU) console.log("🟢 STATUS LISTENER CHANNEL STATUS:", status);
+        });
 
       // timeout بعد 5 دقائق إذا ما تم القبول
       setTimeout(() => {
