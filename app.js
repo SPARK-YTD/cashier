@@ -788,16 +788,27 @@ function subscribeToPendingOrders() {
     .channel("pending-orders-realtime")
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "pending_orders" },
+      { event: "INSERT", schema: "public", table: "pending_orders" },  // ✅ اعرض جديد
       (payload) => {
         console.log("🟠 NEW PENDING ORDER:", payload.new);
         showPendingOrderModal(payload.new);
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "pending_orders" },  // ✅ اعرض التحديثات
+      (payload) => {
+        console.log("🟡 PENDING ORDER UPDATED:", payload.new);
+        // احذف المودال لو تحدثت الحالة
+        const modal = document.getElementById(`pending-modal-${payload.new.id}`);
+        if (modal) modal.remove();
       }
     )
     .subscribe((status) => {
       console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
     });
 }
+
 function subscribeToNewOrders() {
   supabase
     .channel("new-orders-realtime")
