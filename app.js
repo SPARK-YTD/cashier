@@ -891,7 +891,9 @@ async function loadPendingOrders() {
         console.log("🟠 EXISTING PENDING ORDER:", order);
         showPendingOrderModal(order);
       });
+      loadActiveOrders();
     }
+    
   } catch (error) {
     console.error("Error loading pending orders:", error);
   }
@@ -940,7 +942,8 @@ window.approvePendingOrder = async function(orderId) {
     if (modal) modal.remove();
 
     // 5️⃣ تنبيه نجاح
-    alert("✅ تم قبول الطلب!");
+       alert("✅ تم قبول الطلب!");
+    loadActiveOrders();  
     
   } catch (error) {
     console.error("Error approving order:", error);
