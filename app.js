@@ -742,13 +742,9 @@ const { data: order, error } = await supabase
     "postgres_changes",
     { event: "INSERT", schema: "public", table: "orders" },
     (payload) => {
-      const exists = activeOrders.some(o => o.id === payload.new.id);
-      if (exists) return; // ⛔️ يمنع التكرار
-  
-      console.log("🟢 NEW ORDER:", payload.new);
-  
-      activeOrders.unshift(payload.new); // إضافة فورية
-      renderActiveOrders();               // رسم مباشر
+      console.log("🟢 NEW ORDER DETECTED:", payload.new);
+      // إعادة تحميل كاملة لضمان البيانات الصحيحة مع الـ relations
+      loadActiveOrders();
     }
   )
   
@@ -939,24 +935,30 @@ window.approvePendingOrder = async function(orderId) {
     console.log("🔍 ORDER_ITEMS:", order.order_items);
 
     // ✅ Insert في orders مع كل البيانات
-    const pickupNote = order.delivery_type === 'pickup' ? "استقبال من المحل" : `توصيل إلى ${order.delivery_area || 'N/A'}`;
+    const orderData = {
+      customer_name: order.customer_name,
+      customer_phone: order.customer_phone,
+      order_items: order.order_items,   
+      total: order.total_price,
+      is_delivery: order.delivery_type === 'delivery',
+      customer_area: order.delivery_area,
+      status: "pending", 
+      business_day_id: currentBusinessDay.id,
+      kitchen_ready: false,
+      is_completed: false,
+      is_paid: false,
+      source: 'qr_menu',
+      created_at: new Date().toISOString()
+    };
+    
+    // إضافة delivery_address إذا كانت موجودة في جدول orders
+    if (order.delivery_address) {
+      orderData.customer_address = order.delivery_address;
+    }
     
     const { data: newOrder, error: insertError } = await supabase
       .from("orders")
-      .insert([{
-        customer_name: order.customer_name,
-        customer_phone: order.customer_phone,
-        order_items: order.order_items,   
-        total: order.total_price,
-        is_delivery: order.delivery_type === 'delivery',
-        customer_area: order.delivery_area,
-        status: "pending", 
-        business_day_id: currentBusinessDay.id,
-        kitchen_ready: false,
-        is_completed: false,
-        is_paid: false,
-        created_at: new Date().toISOString()
-      }])
+      .insert([orderData])
       .select();
 
     if (insertError) throw insertError;
@@ -1053,7 +1055,6 @@ function playNotificationSound() {
   customer_phone,
   customer_area,
   order_items,
-  order_notes,
   source,
   employees:employees!orders_employee_code_fkey(name)
 `)
@@ -1137,6 +1138,7 @@ div.innerHTML = `
           <div>👤 ${order.customer_name || "—"}</div>
           <div>📞 ${order.customer_phone || "—"}</div>
           <div>📍 ${order.customer_area || "—"}</div>
+          ${order.customer_address ? `<div>🏠 ${order.customer_address}</div>` : ""}
         </div>
       `
       : order.source === 'qr_menu' ? `
@@ -1208,7 +1210,7 @@ div.innerHTML = `
         : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
   }
 
-  ${order.total.toFixed(3)} د.ب<br>
+  ${parseFloat(order.total || 0).toFixed(3)} د.ب<br>
 
   ${
     order.is_employee_order
