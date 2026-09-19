@@ -366,6 +366,20 @@
     <div class="save-status" id="saveStatus"></div>
   </div>
 
+  <!-- ORDERING TOGGLE SECTION -->
+  <div class="settings-section" id="orderingSection">
+    <h2>🛎️ استقبال الطلبات</h2>
+    <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0;">
+      <div>
+        <label class="setting-label" style="margin-bottom:4px;">تفعيل إرسال الطلبات من المنيو</label>
+        <div class="setting-hint" id="orderingHint">جاري التحميل...</div>
+      </div>
+      <button class="toggle-switch" id="orderingToggle" onclick="toggleOrdering()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+  </div>
+
   <!-- QR CODE SECTION -->
   <div class="qr-section">
     <h2>📱 رمز QR للعملاء</h2>
@@ -414,7 +428,58 @@
     loadSettings();
     generateQR();
     await loadMenu();
+    await loadOrderingStatus();
   });
+
+  // ========== ORDERING TOGGLE ==========
+  async function loadOrderingStatus() {
+    const toggle = document.getElementById("orderingToggle");
+    const hint = document.getElementById("orderingHint");
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_settings")
+        .select("ordering_enabled")
+        .eq("id", 1)
+        .single();
+
+      if (error) throw error;
+
+      const enabled = data.ordering_enabled;
+      toggle.classList.toggle("active", enabled);
+      hint.textContent = enabled
+        ? "✅ العملاء يقدرون يرسلون طلبات من المنيو"
+        : "⚠️ المنيو للعرض فقط - العملاء ما يقدرون يطلبون";
+    } catch (error) {
+      console.error("Error loading ordering status:", error);
+      hint.textContent = "❌ تعذر تحميل الحالة (تأكد من إضافة جدول restaurant_settings)";
+    }
+  }
+
+  window.toggleOrdering = async () => {
+    const toggle = document.getElementById("orderingToggle");
+    const hint = document.getElementById("orderingHint");
+    const newValue = !toggle.classList.contains("active");
+
+    toggle.disabled = true;
+    try {
+      const { error } = await supabase
+        .from("restaurant_settings")
+        .update({ ordering_enabled: newValue, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+
+      if (error) throw error;
+
+      toggle.classList.toggle("active", newValue);
+      hint.textContent = newValue
+        ? "✅ العملاء يقدرون يرسلون طلبات من المنيو"
+        : "⚠️ المنيو للعرض فقط - العملاء ما يقدرون يطلبون";
+    } catch (error) {
+      console.error("Error updating ordering status:", error);
+      alert("❌ خطأ في تحديث الحالة");
+    } finally {
+      toggle.disabled = false;
+    }
+  };
 
   // ========== SETTINGS ==========
   window.saveSettings = () => {
