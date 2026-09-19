@@ -12,7 +12,9 @@ window.supabase = supabase;
   let currentBusinessDay = null;
   let editingOrderId = null;
   let currentInvoiceNo = null;
-  let ordersChannel; 
+  let ordersChannel;
+  let pendingOrdersChannel;
+  let newOrdersChannel;
   let employeeMode = null;
   let deliveryMode = null;
   /* ===============================
@@ -777,7 +779,6 @@ const { data: order, error } = await supabase
   /* ===============================
    PENDING ORDERS - Subscription
 ================================ */
-let pendingOrdersChannel;
 
 function subscribeToPendingOrders() {
   if (pendingOrdersChannel) {
@@ -836,8 +837,10 @@ function showPendingOrderModal(order) {
   
   const itemsHtml = order.order_items.map(i => `
     <div style="background: #f5f5f5; padding: 8px; margin-bottom: 8px; border-radius: 4px;">
-      🔹 ${i.productName} ×${i.qty} = ${i.price.toFixed(3)} د.ب
-      ${i.addons && i.addons.length ? `<br><small>${i.addons.map(a => a.name).join(', ')}</small>` : ''}
+      🔹 ${i.productName} ×${i.qty} = ${parseFloat(i.price || 0).toFixed(3)} د.ب
+      ${i.addons && i.addons.length ? `<br><small>➕ ${i.addons.map(a => a.name).join(', ')}</small>` : ''}
+      ${i.extras_removed && i.extras_removed.length ? `<br><small>❌ بدون: ${i.extras_removed.join(', ')}</small>` : ''}
+      ${i.is_spicy ? `<br><small>🌶️ سبايسي</small>` : ''}
     </div>
   `).join('');
 
@@ -862,7 +865,7 @@ function showPendingOrderModal(order) {
       </div>
 
       <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 700; font-size: 16px; color: #2e7d32;">
-        💰 الإجمالي: ${order.total_price.toFixed(3)} د.ب
+        💰 الإجمالي: ${parseFloat(order.total_price || 0).toFixed(3)} د.ب
       </div>
 
       <div style="display: flex; gap: 10px;">
@@ -1124,10 +1127,20 @@ div.innerHTML = `
       <strong>📦 الأصناف:</strong>
       ${order.order_items.map(item => `
         <div style="margin: 4px 0;">
-          🔹 ${item.productName} ×${item.qty} = ${item.price.toFixed(3)} د.ب
+          🔹 ${item.productName} ×${item.qty} = ${parseFloat(item.price || 0).toFixed(3)} د.ب
           ${item.addons && item.addons.length ? `
             <div style="margin-left: 12px; font-size: 11px; color: #666;">
-              ${item.addons.map(a => `+ ${a.name}`).join(", ")}
+              ➕ ${item.addons.map(a => a.name).join(", ")}
+            </div>
+          ` : ""}
+          ${item.extras_removed && item.extras_removed.length ? `
+            <div style="margin-left: 12px; font-size: 11px; color: #d64545;">
+              ❌ بدون: ${item.extras_removed.join(", ")}
+            </div>
+          ` : ""}
+          ${item.is_spicy ? `
+            <div style="margin-left: 12px; font-size: 11px; color: #d97706;">
+              🌶️ سبايسي
             </div>
           ` : ""}
         </div>
