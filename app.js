@@ -806,13 +806,17 @@ function subscribeToPendingOrders() {
 }
 
 function subscribeToNewOrders() {
-  supabase
+  if (newOrdersChannel) {
+    supabase.removeChannel(newOrdersChannel);
+  }
+
+  newOrdersChannel = supabase
     .channel("new-orders-realtime")
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "orders" },
       (payload) => {
-        console.log("🟢 NEW ORDER ADDED:", payload.new);
+        console.log("🟢 NEW ORDER ADDED TO ORDERS:", payload.new);
         loadActiveOrders();  // تحديث فوراً
       }
     )
