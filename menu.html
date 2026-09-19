@@ -858,7 +858,7 @@
         .single();
 
       if (!product) {
-        addItemToCart(productId, productName, price, [], [], false);
+        addItemToCart(productId, productName, price, [], [], false, null);
         return;
       }
 
@@ -889,11 +889,11 @@
       }
       // بدون أحجام أو إضافات
       else {
-        addItemToCart(productId, productName, price, [], [], product.is_spicy);
+        addItemToCart(productId, productName, price, [], [], product.is_spicy, null);
       }
     } catch (error) {
       console.error("Error:", error);
-      addItemToCart(productId, productName, price, [], [], false);
+      addItemToCart(productId, productName, price, [], [], false, null);
     }
   };
 
@@ -913,12 +913,13 @@
 
   window.selectVariant = (productId, productName, variantId, variantLabel, variantPrice, freeAddons, paidAddons, isSpicy) => {
     closeModal("variantModal");
-    const fullName = `${productName} (${variantLabel})`;
-    showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons, isSpicy, variantId);
+    const fullName = `${productName} - ${variantLabel}`;
+    const variantObj = { id: variantId, label: variantLabel };
+    showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons, isSpicy, variantObj);
   };
 
   // ADDONS MODAL - نفس الطريقة في app.js
-  function showAddonsModal(productId, productName, price, freeAddons, paidAddons, isSpicy, variantId) {
+  function showAddonsModal(productId, productName, price, freeAddons, paidAddons, isSpicy, variant) {
     currentAddonsData = {
       productId,
       productName,
@@ -926,7 +927,7 @@
       freeAddons: freeAddons || [],
       paidAddons: paidAddons || [],
       isSpicy: isSpicy || false,
-      variantId: variantId || null
+      variant: variant || null
     };
 
     document.getElementById("addonsTitle").textContent = productName;
@@ -1016,38 +1017,25 @@
     let paidAddonsTotal = selectedPaid.reduce((s, a) => s + a.price, 0);
     let finalPrice = currentAddonsData.price + paidAddonsTotal;
 
-    // بناء الاسم مع الإضافات
-    let nameWithExtras = currentAddonsData.productName;
-    
-    if (isSpicy) {
-      nameWithExtras += " 🌶️ سبايسي";
-    }
-    
-    if (uncheckedFree.length > 0) {
-      nameWithExtras += ` (بدون: ${uncheckedFree.join("، ")})`;
-    }
-    
-    if (selectedPaid.length > 0) {
-      nameWithExtras += ` (+ ${selectedPaid.map(a => a.name).join("، ")})`;
-    }
-
     closeModal("addonsModal");
     addItemToCart(
       currentAddonsData.productId, 
-      nameWithExtras, 
+      currentAddonsData.productName,  // ✅ الاسم الأصلي (يتضمن الحجم إن وجد)
       finalPrice, 
       selectedPaid, 
       uncheckedFree,
-      isSpicy
+      isSpicy,
+      currentAddonsData.variant  // ✅ مرر الـ variant object
     );
   };
 
   // ========== CART FUNCTIONS ==========
-  function addItemToCart(productId, productName, price, addons = [], extrasRemoved = [], isSpicy = false) {
+  function addItemToCart(productId, productName, price, addons = [], extrasRemoved = [], isSpicy = false, variant = null) {
     const priceNum = parseFloat(price || 0);
     
-    // ✅ المفتاح الفريد يشمل الإضافات والإضافات المزالة و spicy
+    // ✅ المفتاح الفريد يشمل الحجم + الإضافات والإضافات المزالة و spicy
     const itemKey = JSON.stringify({
+      variant: variant ? { id: variant.id, label: variant.label } : null,
       addons: (addons || []).map(a => ({ name: a.name, price: parseFloat(a.price || 0).toFixed(3) })),
       extrasRemoved: extrasRemoved || [],
       isSpicy: isSpicy
@@ -1056,6 +1044,7 @@
     const existing = cart.find(c => 
       c.productId === productId && 
       JSON.stringify({
+        variant: c.variant || null,
         addons: (c.addons || []).map(a => ({ name: a.name, price: parseFloat(a.price || 0).toFixed(3) })),
         extrasRemoved: c.extrasRemoved || [],
         isSpicy: c.isSpicy
@@ -1067,7 +1056,9 @@
     } else {
       cart.push({ 
         productId, 
-        productName, 
+        productName: variant ? `${productName} - ${variant.label}` : productName,
+        variantId: variant?.id || null,
+        variant: variant ? { id: variant.id, label: variant.label } : null,
         price: priceNum.toFixed(3),
         qty: 1, 
         addons: (addons || []).map(a => ({
@@ -1261,6 +1252,8 @@
       order_items: cart.map(item => ({
         productId: item.productId,
         productName: item.productName,
+        variantId: item.variantId || null,
+        variant: item.variant || null,
         qty: item.qty,
         price: parseFloat(item.price || 0).toFixed(3),
         addons: (item.addons || []).map(a => ({
