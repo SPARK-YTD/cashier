@@ -119,7 +119,13 @@ setInterval(() => {
     loadActiveOrders();    
     subscribeToOrders();
     subscribeToPendingOrders();
+    subscribeToNewOrders();
     loadPendingOrders();
+
+    setTimeout(() => {
+  loadActiveOrders();
+}, 500);
+    
   });
 
   /* ===============================
@@ -1035,7 +1041,7 @@ function playNotificationSound() {
   customer_area,
   employees:employees!orders_employee_code_fkey(name)
 `)
-  .eq("status", "active")
+  .eq("status", "pending")
   .eq("business_day_id", currentBusinessDay.id)
   .order("created_at", { ascending: false });
   
