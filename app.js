@@ -808,6 +808,21 @@ function subscribeToPendingOrders() {
       console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
     });
 }
+function subscribeToNewOrders() {
+  supabase
+    .channel("new-orders-realtime")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "orders" },
+      (payload) => {
+        console.log("🟢 NEW ORDER ADDED:", payload.new);
+        loadActiveOrders();  // تحديث فوراً
+      }
+    )
+    .subscribe((status) => {
+      console.log("🟢 ORDERS SUBSCRIPTION STATUS:", status);
+    });
+}
 
 function showPendingOrderModal(order) {
   const modal = document.createElement('div');
