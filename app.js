@@ -897,7 +897,7 @@ async function loadPendingOrders() {
   }
 }
 
-async function approvePendingOrder(orderId) {
+window.approvePendingOrder = async function(orderId) {
   try {
     // 1️⃣ جيب الطلب المعلق
     const { data: order, error: fetchError } = await supabase
@@ -948,7 +948,7 @@ async function approvePendingOrder(orderId) {
   }
 }
 
-async function rejectPendingOrder(orderId) {
+window.rejectPendingOrder = async function(orderId) {
   try {
     // حذف من pending_orders
     const { error } = await supabase
