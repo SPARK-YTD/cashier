@@ -1155,7 +1155,8 @@ div.innerHTML = `
     <div style="background: #FEF3C7; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; border-right: 3px solid #D97706;">
       <strong>📝 ملاحظات:</strong> ${order.order_notes}
     </div>
-  ` : ""}`
+  ` : ""
+  }
 
   ${order.order_items && Array.isArray(order.order_items) ? `
     <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
