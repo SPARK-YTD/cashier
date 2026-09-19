@@ -908,7 +908,6 @@ async function loadPendingOrders() {
 
 window.approvePendingOrder = async function(orderId) {
   try {
-    // 1️⃣ جيب الطلب المعلق
     const { data: order, error: fetchError } = await supabase
       .from("pending_orders")
       .select("*")
@@ -917,46 +916,50 @@ window.approvePendingOrder = async function(orderId) {
 
     if (fetchError) throw fetchError;
 
-    // 2️⃣ انسخه لـ orders الرئيسي
-const { error: insertError } = await supabase
-  .from("orders")
-  .insert([{
-    customer_name: order.customer_name,
-    customer_phone: order.customer_phone,
-    order_items: order.order_items, 
-    total: order.total_price,
-    is_delivery: order.delivery_type === 'delivery',
-    customer_area: order.delivery_area,
-    status: "completed",
-    business_day_id: currentBusinessDay.id,
-    kitchen_ready: false,
-    is_paid: false
-  }]);
+    // ✅ Insert في orders مع كل البيانات
+    const { data: newOrder, error: insertError } = await supabase
+      .from("orders")
+      .insert([{
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        order_items: order.order_items,   
+        total: order.total_price,
+        is_delivery: order.delivery_type === 'delivery',
+        customer_area: order.delivery_area,
+        status: "pending", 
+        business_day_id: currentBusinessDay.id,
+        kitchen_ready: false,
+        is_completed: false,
+        is_paid: false,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
 
     if (insertError) throw insertError;
 
-    // 3️⃣ حدّث الحالة للمعلق
+    // ✅ حدّث pending_orders إلى approved
     await supabase
       .from("pending_orders")
       .update({ status: "approved" })
       .eq("id", orderId);
 
-    // 4️⃣ احذف الـ modal
+    // ✅ احذف المودال
     const modal = document.getElementById(`pending-modal-${orderId}`);
     if (modal) modal.remove();
 
-    // 5️⃣ تنبيه نجاح
-          alert("✅ تم قبول الطلب!");
-    
-    // اتوقف 500 ملي ثانية عشان Supabase تحدّث البيانات
+    // ✅ حدّث الطلبات الجارية
     await new Promise(resolve => setTimeout(resolve, 500));
     loadActiveOrders();
+    subscribeToOrders();
+
+    alert("✅ تم قبول الطلب!");
     
   } catch (error) {
     console.error("Error approving order:", error);
     alert("❌ خطأ: " + error.message);
   }
-}
+};
 
 window.rejectPendingOrder = async function(orderId) {
   try {
@@ -1573,7 +1576,7 @@ overlay.querySelector("#tabBenefit").onclick = () => {
     const safeBenefit = round3(benefit);
     const safeTotal = round3(safeCash + safeBenefit);
 
-  await supabase.from("orders").update({
+await supabase.from("orders").update({
   is_paid: true,
   payment_method:
     safeCash > 0 && safeBenefit > 0 ? "mixed" :
@@ -1581,11 +1584,9 @@ overlay.querySelector("#tabBenefit").onclick = () => {
 
   cash_amount: safeCash,
   benefit_amount: safeBenefit,
-
-  // 🔥 أهم سطر يحل المشكلة نهائيًا
   total: safeTotal,
-
-  paid_at: new Date().toISOString()
+  paid_at: new Date().toISOString(),
+  status: "active"  
 }).eq("id", orderId);
 
     overlay.remove();
@@ -1596,12 +1597,30 @@ overlay.querySelector("#tabBenefit").onclick = () => {
   overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
 };
 
-  /* 🗑 حذف */
+   /* 🗑 حذف */
   window.deleteOrder = async id => {
     if (!confirm("حذف الفاتورة نهائيًا؟")) return;
     await supabase.from("order_items").delete().eq("order_id", id);
     await supabase.from("orders").delete().eq("id", id);
     loadActiveOrders();
+  };
+
+  /* ✅ إكمال الطلب */
+  window.markCompleted = async id => {
+    if (!confirm("تأكيد إكمال الطلب؟")) return;
+    
+    try {
+      await supabase.from("orders").update({
+        is_completed: true,
+        completed_at: new Date().toISOString(),
+        status: "completed"
+      }).eq("id", id);
+      
+      loadActiveOrders();
+      alert("✅ تم إكمال الطلب!");
+    } catch (error) {
+      alert("❌ خطأ: " + error.message);
+    }
   };
   /* ===============================
      👁 عرض الفاتورة + طباعة
