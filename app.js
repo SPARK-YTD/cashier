@@ -902,7 +902,7 @@ async function loadPendingOrders() {
     const { data, error } = await supabase
       .from("pending_orders")
       .select("*")
-      .eq("status", "pending")
+      .eq("status", "completed")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -1042,7 +1042,7 @@ function playNotificationSound() {
   customer_area,
   employees:employees!orders_employee_code_fkey(name)
 `)
-  .eq("status", "pending")
+  .eq("status", "completed")
   .eq("business_day_id", currentBusinessDay.id)
   .order("created_at", { ascending: false });
   
