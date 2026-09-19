@@ -835,14 +835,20 @@ function showPendingOrderModal(order) {
     align-items: center; justify-content: center;
   `;
   
-  const itemsHtml = order.order_items.map(i => `
-    <div style="background: #f5f5f5; padding: 8px; margin-bottom: 8px; border-radius: 4px;">
-      🔹 ${i.productName} ×${i.qty} = ${parseFloat(i.price || 0).toFixed(3)} د.ب
-      ${i.addons && i.addons.length ? `<br><small>➕ ${i.addons.map(a => a.name).join(', ')}</small>` : ''}
-      ${i.extras_removed && i.extras_removed.length ? `<br><small>❌ بدون: ${i.extras_removed.join(', ')}</small>` : ''}
-      ${i.is_spicy ? `<br><small>🌶️ سبايسي</small>` : ''}
+  const itemsHtml = order.order_items.map(i => {
+    const variant = i.variant ? (i.variant.label || i.variant.id) : '';
+    const displayName = variant ? `${i.productName.split(' - ')[0]} - ${variant}` : i.productName;
+    return `
+    <div style="background: #f5f5f5; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-right: 3px solid #D4A574;">
+      <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">
+        🔹 ${displayName} ×${i.qty} = ${parseFloat(i.price || 0).toFixed(3)} د.ب
+      </div>
+      ${i.addons && i.addons.length ? `<div style="font-size: 12px; color: #10B981; margin-left: 12px;">➕ ${i.addons.map(a => a.name).join(', ')}</div>` : ''}
+      ${i.extras_removed && i.extras_removed.length ? `<div style="font-size: 12px; color: #DC2626; margin-left: 12px;">❌ بدون: ${i.extras_removed.join(', ')}</div>` : ''}
+      ${i.is_spicy ? `<div style="font-size: 12px; color: #D97706; margin-left: 12px;">🌶️ سبايسي</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   modal.innerHTML = `
     <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
@@ -853,10 +859,11 @@ function showPendingOrderModal(order) {
       </div>
 
       <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-        <p><strong>👤 الاسم:</strong> ${order.customer_name || 'بدون'}</p>
+        <p><strong>👤 الاسم:</strong> ${order.customer_name || 'عميل'}</p>
         <p><strong>📱 الرقم:</strong> ${order.customer_phone}</p>
-        <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استلام' : '🚗 توصيل'}</p>
-        ${order.delivery_type === 'delivery' ? `<p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p>` : ''}
+        <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استقبال من المحل' : '🚗 توصيل'}</p>
+        ${order.delivery_type === 'delivery' ? `<p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p><p><strong>🏠 العنوان:</strong> ${order.delivery_address || 'N/A'}</p>` : ''}
+        ${order.notes ? `<p><strong>📝 ملاحظات:</strong> ${order.notes}</p>` : ''}
       </div>
 
       <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px; max-height: 200px; overflow-y: auto;">
@@ -931,6 +938,9 @@ window.approvePendingOrder = async function(orderId) {
     if (fetchError) throw fetchError;
 
     // ✅ Insert في orders مع كل البيانات
+    const orderNotes = order.notes ? `[QR] ${order.notes}\n` : "[QR] ";
+    const pickupNote = order.delivery_type === 'pickup' ? "استقبال من المحل" : `توصيل إلى ${order.delivery_area || 'N/A'}`;
+    
     const { data: newOrder, error: insertError } = await supabase
       .from("orders")
       .insert([{
@@ -945,6 +955,8 @@ window.approvePendingOrder = async function(orderId) {
         kitchen_ready: false,
         is_completed: false,
         is_paid: false,
+        order_notes: `${orderNotes}📍 ${pickupNote}`,
+        source: 'qr_menu',
         created_at: new Date().toISOString()
       }])
       .select()
@@ -967,7 +979,8 @@ window.approvePendingOrder = async function(orderId) {
     loadActiveOrders();
     subscribeToOrders();
 
-    alert("✅ تم قبول الطلب!");
+    const successMsg = `✅ تم قبول طلب ${order.customer_name || 'العميل'}\n📱 الرقم: ${order.customer_phone}\n💰 المبلغ: ${parseFloat(order.total_price || 0).toFixed(3)} د.ب`;
+    alert(successMsg);
     
   } catch (error) {
     console.error("Error approving order:", error);
@@ -1041,6 +1054,8 @@ function playNotificationSound() {
   customer_phone,
   customer_area,
   order_items,
+  order_notes,
+  source,
   employees:employees!orders_employee_code_fkey(name)
 `)
   .in("status", ["pending", "active"])
@@ -1101,16 +1116,18 @@ function playNotificationSound() {
       if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
   
 div.innerHTML = `
-  <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+  <strong>فاتورة رقم ${order.invoice_no}</strong>
+  ${order.source === 'qr_menu' ? ' 📱 (من QR)' : ''}
+  <br>
   ${
     order.is_delivery
       ? `
         <div style="
           background:#EFF6FF;
           border:2px dashed #2563EB;
-          padding:6px;
+          padding:8px;
           border-radius:8px;
-          margin:6px 0;
+          margin:8px 0;
           font-size:13px;
         ">
           <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
@@ -1119,8 +1136,26 @@ div.innerHTML = `
           <div>📍 ${order.customer_area || "—"}</div>
         </div>
       `
-      : ""
+      : order.source === 'qr_menu' ? `
+        <div style="
+          background:#DCFCE7;
+          border:2px dashed #22C55E;
+          padding:8px;
+          border-radius:8px;
+          margin:8px 0;
+          font-size:13px;
+        ">
+          <div style="font-weight:900;color:#22C55E">🚶 استقبال من المحل</div>
+          <div>👤 ${order.customer_name || "—"}</div>
+          <div>📞 ${order.customer_phone || "—"}</div>
+        </div>
+      ` : ""
   }
+  ${order.order_notes ? `
+    <div style="background: #FEF3C7; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; border-right: 3px solid #D97706;">
+      <strong>📝 ملاحظات:</strong> ${order.order_notes}
+    </div>
+  ` : ""}`
 
   ${order.order_items && Array.isArray(order.order_items) ? `
     <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
