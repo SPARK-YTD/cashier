@@ -928,22 +928,20 @@ window.approvePendingOrder = async function(orderId) {
     if (fetchError) throw fetchError;
 
     // 2️⃣ انسخه لـ orders الرئيسي
-    const { error: insertError } = await supabase
-      .from("orders")
-      .insert([{
-        customer_name: order.customer_name,
-        customer_phone: order.customer_phone,
-        items: order.order_items,
-        total: order.total_price,
-        is_delivery: order.delivery_type === 'delivery',
-        customer_area: order.delivery_area,
-        notes: order.notes,
-        status: "active",
-        business_day_id: currentBusinessDay.id,
-        created_at: new Date().toISOString(),
-        kitchen_ready: false,
-        is_paid: false
-      }]);
+   const { error: insertError } = await supabase
+  .from("orders")
+  .insert([{
+    customer_name: order.customer_name,
+    customer_phone: order.customer_phone,
+    order_items: order.order_items,  // ✅ بدل items
+    total: order.total_price,
+    is_delivery: order.delivery_type === 'delivery',
+    customer_area: order.delivery_area,
+    status: "pending",  // ✅ بدل active
+    business_day_id: currentBusinessDay.id,
+    kitchen_ready: false,
+    is_paid: false
+  }]);
 
     if (insertError) throw insertError;
 
