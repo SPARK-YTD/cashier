@@ -106,7 +106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadActiveOrders();    
   subscribeToOrders();
   subscribeToPendingOrders();
-  subscribeToNewOrders();
   loadPendingOrders();
 
   setTimeout(() => {
@@ -793,8 +792,6 @@ function subscribeToPendingOrders() {
       (payload) => {
         console.log("🟠 NEW PENDING ORDER:", payload.new);
         showPendingOrderModal(payload.new);
-        // ✅ تحديث الطلبات فوراً
-        loadActiveOrders();
       }
     )
     .on(
@@ -809,9 +806,6 @@ function subscribeToPendingOrders() {
     .subscribe((status) => {
       console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
     });
-    
-  // ✅ تحميل الطلبات المعلقة فوراً
-  setTimeout(() => loadPendingOrders(), 200);
 }
 
 function subscribeToNewOrders() {
@@ -941,8 +935,10 @@ window.approvePendingOrder = async function(orderId) {
 
     if (fetchError) throw fetchError;
 
+    console.log("🔍 PENDING ORDER DATA:", JSON.stringify(order, null, 2));
+    console.log("🔍 ORDER_ITEMS:", order.order_items);
+
     // ✅ Insert في orders مع كل البيانات
-    const orderNotes = order.notes ? `[QR] ${order.notes}\n` : "[QR] ";
     const pickupNote = order.delivery_type === 'pickup' ? "استقبال من المحل" : `توصيل إلى ${order.delivery_area || 'N/A'}`;
     
     const { data: newOrder, error: insertError } = await supabase
@@ -959,14 +955,13 @@ window.approvePendingOrder = async function(orderId) {
         kitchen_ready: false,
         is_completed: false,
         is_paid: false,
-        order_notes: `${orderNotes}📍 ${pickupNote}`,
-        source: 'qr_menu',
         created_at: new Date().toISOString()
       }])
-      .select()
-      .single();
+      .select();
 
     if (insertError) throw insertError;
+
+    console.log("✅ NEW ORDER CREATED:", newOrder);
 
     // ✅ حدّث pending_orders إلى approved
     await supabase
@@ -1074,10 +1069,15 @@ function playNotificationSound() {
     
     const box = document.getElementById("activeOrders");
     box.innerHTML = "";
+
+    console.log("📊 RENDERING ORDERS:", activeOrders);
   
     const now = Date.now();
   
-    activeOrders.forEach(order => {
+    activeOrders.forEach((order, idx) => {
+      console.log(`📦 Order ${idx}:`, order);
+      console.log(`📦 Order ${idx} order_items:`, order.order_items);
+      
       const baseTime = order.timer_started_at || order.created_at;
   const createdAt = new Date(baseTime).getTime();
       const diffMin = Math.floor((now - createdAt) / 60000);
@@ -1121,7 +1121,6 @@ function playNotificationSound() {
   
 div.innerHTML = `
   <strong>فاتورة رقم ${order.invoice_no}</strong>
-  ${order.source === 'qr_menu' ? ' 📱 (من QR)' : ''}
   <br>
   ${
     order.is_delivery
@@ -1155,19 +1154,15 @@ div.innerHTML = `
         </div>
       ` : ""
   }
-  ${order.order_notes ? `
-    <div style="background: #FEF3C7; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 12px; border-right: 3px solid #D97706;">
-      <strong>📝 ملاحظات:</strong> ${order.order_notes}
-    </div>
-  ` : ""
-  }
 
   ${order.order_items && Array.isArray(order.order_items) && order.order_items.length > 0 ? `
     <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
       <strong>📦 الأصناف:</strong>
-      ${order.order_items.map(item => `
+      ${order.order_items.map((item, itemIdx) => {
+        console.log(`    Item ${itemIdx}:`, item);
+        return `
         <div style="margin: 4px 0;">
-          🔹 ${item.productName} ×${item.qty} = ${parseFloat(item.price || 0).toFixed(3)} د.ب
+          🔹 ${item.productName || item.name || "صنف"} ×${item.qty} = ${parseFloat(item.price || 0).toFixed(3)} د.ب
           ${item.addons && item.addons.length ? `
             <div style="margin-left: 12px; font-size: 11px; color: #666;">
               ➕ ${item.addons.map(a => a.name).join(", ")}
@@ -1184,9 +1179,14 @@ div.innerHTML = `
             </div>
           ` : ""}
         </div>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
-  ` : ""}
+  ` : `
+    <div style="background: #FEE2E2; padding: 8px; border-radius: 4px; margin-top: 8px; color: #DC2626; font-size: 12px;">
+      ⚠️ لا توجد بيانات للفاتورة
+    </div>
+  `}
 
   ${
     order.is_employee_order
