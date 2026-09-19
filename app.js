@@ -5,7 +5,7 @@ window.supabase = supabase;
   /*********************************
    * Get-Break | Cashier System
    *********************************/
-  
+
   let items = [];
   let cart = [];
   let activeOrders = [];
