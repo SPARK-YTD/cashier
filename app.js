@@ -61,73 +61,56 @@ async function getOrCreateBusinessDay() {
   return newDay;
 }
   
-  /* ===============================
-     INIT (OPTIMIZED)
-  ================================ */
-  document.addEventListener("DOMContentLoaded", async () => {
-    // 🔄 حماية الاتصال في الآيباد
-
-// إذا رجع الإنترنت → إعادة مزامنة + تحميل الطلبات
-window.addEventListener("online", async () => {
-  console.log("🌐 Internet back → syncing...");
-  await syncOfflineOrders(currentBusinessDay?.id);
-  loadActiveOrders();
-  subscribeToOrders();
-});
-
-// إذا رجعت الصفحة من الخلفية (الآيباد صحى)
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    console.log("👀 Page visible → refresh orders");
-    loadActiveOrders();
-    subscribeToOrders();
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1️⃣ جلسة + يوم العمل أولاً
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.href = "login.html";
+    return;
   }
-});
-
-// إعادة تحميل خفيفة كل 90 ثانية (تحمي من انقطاع Realtime)
-setInterval(() => {
-  if (document.visibilityState === "visible") {
-    loadActiveOrders();
-  }
-}, 60000);
   
-    // 🔐 تحقق سريع من الجلسة (أسرع من getSession)
-    const {
-      data: { session }
-    } = await supabase.auth.getSession();
-  
-    if (!session) {
-      location.href = "login.html";
-      return;
-    }
-  
-    // 🚀 واجهة فورية
-  
-    renderCart();
-
-  // 📦 تحميل البيانات بعد التأكد من الدخول
   currentBusinessDay = await getOrCreateBusinessDay();
-
   if (!currentBusinessDay) {
-    alert("❌ خطأ في إنشاء يوم العمل");
+    alert("❌ خطأ");
     return;
   }
   console.log("📅 Current Business Day:", currentBusinessDay);
   
-  
-  
-    loadItems("food");       
-    loadActiveOrders();    
+  // 2️⃣ Event listeners
+  window.addEventListener("online", async () => {
+    console.log("🌐 Internet back → syncing...");
+    await syncOfflineOrders(currentBusinessDay?.id);
+    loadActiveOrders();
     subscribeToOrders();
-    subscribeToPendingOrders();
-    subscribeToNewOrders();
-    loadPendingOrders();
-
-    setTimeout(() => {
-  loadActiveOrders();
-}, 500);
-    
   });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      console.log("👀 Page visible → refresh orders");
+      loadActiveOrders();
+      subscribeToOrders();
+    }
+  });
+
+  setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadActiveOrders();
+    }
+  }, 60000);
+  
+  // 3️⃣ حمّل البيانات
+  renderCart();
+  loadItems("food");       
+  loadActiveOrders();    
+  subscribeToOrders();
+  subscribeToPendingOrders();
+  subscribeToNewOrders();
+  loadPendingOrders();
+
+  setTimeout(() => {
+    loadActiveOrders();
+  }, 500);
+});
 
   /* ===============================
      الأصناف
