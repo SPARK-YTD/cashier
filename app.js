@@ -1039,7 +1039,7 @@ function playNotificationSound() {
   customer_area,
   employees:employees!orders_employee_code_fkey(name)
 `)
-  .eq("status", "completed")
+  .in("status", ["pending", "active"])
   .eq("business_day_id", currentBusinessDay.id)
   .order("created_at", { ascending: false });
   
