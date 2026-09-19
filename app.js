@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadItems("food");       
   loadActiveOrders();    
   subscribeToOrders();
+  subscribeToNewOrders();  // ✅ استقبل طلب جديد من QR Menu
   subscribeToPendingOrders();
   loadPendingOrders();
 
@@ -971,14 +972,17 @@ window.approvePendingOrder = async function(orderId) {
       .update({ status: "approved" })
       .eq("id", orderId);
 
-    // ✅ احذف المودال
+    // ✅ احذف المودال فوراً
     const modal = document.getElementById(`pending-modal-${orderId}`);
     if (modal) modal.remove();
 
-    // ✅ حدّث الطلبات الجارية
-    await new Promise(resolve => setTimeout(resolve, 500));
-    loadActiveOrders();
-    subscribeToOrders();
+    // ✅ حدّث الطلبات الجارية فوراً (ما تنتظر timeout)
+    loadActiveOrders();  // إعادة تحميل فورية
+    
+    // حدّث subscriptions بعد تأخير قليل
+    setTimeout(() => {
+      subscribeToOrders();
+    }, 300);
 
     const successMsg = `✅ تم قبول طلب ${order.customer_name || 'العميل'}\n📱 الرقم: ${order.customer_phone}\n💰 المبلغ: ${parseFloat(order.total_price || 0).toFixed(3)} د.ب`;
     alert(successMsg);
@@ -1121,7 +1125,7 @@ function playNotificationSound() {
       if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
   
 div.innerHTML = `
-  <strong>فاتورة رقم ${order.invoice_no}</strong>
+  <strong>فاتورة رقم ${order.invoice_no || "—"}</strong>
   <br>
   ${
     order.is_delivery
