@@ -15,6 +15,7 @@ window.supabase = supabase;
   let ordersChannel;
   let pendingOrdersChannel;
   let newOrdersChannel;
+  window.DEBUG_CASHIER = true; // 🔴 DEBUG MODE
   let employeeMode = null;
   let deliveryMode = null;
   /* ===============================
@@ -777,6 +778,8 @@ const { data: order, error } = await supabase
 ================================ */
 
 function subscribeToPendingOrders() {
+  if (window.DEBUG_CASHIER) console.log("🔴 SUBSCRIBING TO PENDING ORDERS...");
+
   if (pendingOrdersChannel) {
     supabase.removeChannel(pendingOrdersChannel);
   }
@@ -787,7 +790,12 @@ function subscribeToPendingOrders() {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "pending_orders" },
       (payload) => {
-        console.log("🟠 NEW PENDING ORDER:", payload.new);
+        if (window.DEBUG_CASHIER) {
+          console.log("🟠 INSERT EVENT RECEIVED:", payload);
+          console.log("🟠 ORDER ITEMS:", payload.new.order_items);
+          console.log("🟠 ITEMS TYPE:", typeof payload.new.order_items);
+          console.log("🟠 IS ARRAY?:", Array.isArray(payload.new.order_items));
+        }
         showPendingOrderModal(payload.new);
       }
     )
@@ -795,17 +803,19 @@ function subscribeToPendingOrders() {
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "pending_orders" },
       (payload) => {
-        console.log("🟡 PENDING ORDER UPDATED:", payload.new);
+        if (window.DEBUG_CASHIER) console.log("🟡 PENDING ORDER UPDATED:", payload.new.status);
         const modal = document.getElementById(`pending-modal-${payload.new.id}`);
         if (modal) modal.remove();
       }
     )
     .subscribe((status) => {
-      console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
+      if (window.DEBUG_CASHIER) console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
     });
 }
 
 function subscribeToNewOrders() {
+  if (window.DEBUG_CASHIER) console.log("🟢 SUBSCRIBING TO NEW ORDERS...");
+
   if (newOrdersChannel) {
     supabase.removeChannel(newOrdersChannel);
   }
@@ -816,7 +826,7 @@ function subscribeToNewOrders() {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "orders" },
       (payload) => {
-        console.log("🟢 NEW ORDER ADDED TO ORDERS:", payload.new);
+        if (window.DEBUG_CASHIER) console.log("🟢 NEW ORDER ADDED TO ORDERS:", payload.new);
         loadActiveOrders();  // تحديث فوراً
       }
     )
@@ -826,7 +836,12 @@ function subscribeToNewOrders() {
 }
 
 function showPendingOrderModal(order) {
-  console.log("🔍 MODAL ORDER DATA:", JSON.stringify(order, null, 2));
+  if (window.DEBUG_CASHIER) {
+    console.log("%c🔔 showPendingOrderModal() CALLED", "background:#222;color:#0f0;font-size:14px;padding:4px");
+    console.log("🔍 FULL ORDER OBJECT:", order);
+    console.log("🔍 order.order_items RAW:", order.order_items);
+    console.log("🔍 typeof order.order_items:", typeof order.order_items);
+  }
   
   // ✅ Safe check - إذا order_items null أو undefined
   const items = order.order_items || [];
@@ -834,6 +849,7 @@ function showPendingOrderModal(order) {
     console.error("❌ order_items ليست array:", items);
     return;
   }
+  if (window.DEBUG_CASHIER) console.log("🔍 items.length:", items.length);
   
   const itemsHtml = items.map(i => {
     const variant = i.variant ? (i.variant.label || i.variant.id) : '';
@@ -899,6 +915,11 @@ function showPendingOrderModal(order) {
   `;
 
   document.body.appendChild(modal);
+  
+  if (window.DEBUG_CASHIER) {
+    console.log("%c✅ MODAL APPENDED TO DOM", "background:#222;color:#0f0;font-size:14px;padding:4px");
+    console.log("🔍 modal element in DOM?", !!document.getElementById(`pending-modal-${order.id}`));
+  }
   
   setTimeout(() => {
     try {
