@@ -918,16 +918,16 @@ window.approvePendingOrder = async function(orderId) {
     if (fetchError) throw fetchError;
 
     // 2️⃣ انسخه لـ orders الرئيسي
-   const { error: insertError } = await supabase
+const { error: insertError } = await supabase
   .from("orders")
   .insert([{
     customer_name: order.customer_name,
     customer_phone: order.customer_phone,
-    order_items: order.order_items,  // ✅ بدل items
+    order_items: order.order_items, 
     total: order.total_price,
     is_delivery: order.delivery_type === 'delivery',
     customer_area: order.delivery_area,
-    status: "pending",  // ✅ بدل active
+    status: "completed",
     business_day_id: currentBusinessDay.id,
     kitchen_ready: false,
     is_paid: false
@@ -1082,55 +1082,56 @@ function playNotificationSound() {
       if (bgColor) div.style.background = bgColor;
       if (borderColor) div.style.borderLeft = `6px solid ${borderColor}`;
   
-  div.innerHTML = `
-  
-    <strong>فاتورة رقم ${order.invoice_no}</strong><br>
-    ${
-  order.is_delivery
-    ? `
-      <div style="
-        background:#EFF6FF;
-        border:2px dashed #2563EB;
-        padding:6px;
-        border-radius:8px;
-        margin:6px 0;
-        font-size:13px;
-      ">
-        <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
-        <div>👤 ${order.customer_name || "—"}</div>
-        <div>📞 ${order.customer_phone || "—"}</div>
-        <div>📍 ${order.customer_area || "—"}</div>
-      </div>
-    `
-    : ""
-}
-  
+div.innerHTML = `
+  <strong>فاتورة رقم ${order.invoice_no}</strong><br>
+  ${
+    order.is_delivery
+      ? `
+        <div style="
+          background:#EFF6FF;
+          border:2px dashed #2563EB;
+          padding:6px;
+          border-radius:8px;
+          margin:6px 0;
+          font-size:13px;
+        ">
+          <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
+          <div>👤 ${order.customer_name || "—"}</div>
+          <div>📞 ${order.customer_phone || "—"}</div>
+          <div>📍 ${order.customer_area || "—"}</div>
+        </div>
+      `
+      : ""
+  }
+
+  ${order.order_items && Array.isArray(order.order_items) ? `
+    <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
+      <strong>📦 الأصناف:</strong>
+      ${order.order_items.map(item => `
+        <div style="margin: 4px 0;">
+          🔹 ${item.productName} ×${item.qty} = ${item.price.toFixed(3)} د.ب
+          ${item.addons && item.addons.length ? `
+            <div style="margin-left: 12px; font-size: 11px; color: #666;">
+              ${item.addons.map(a => `+ ${a.name}`).join(", ")}
+            </div>
+          ` : ""}
+        </div>
+      `).join("")}
+    </div>
+  ` : ""}
+
   ${
     order.is_employee_order
       ? `
         <div style="color:#7c3aed;font-weight:900">🧑‍🍳 طلب موظف</div>
-  
         <div style="font-size:13px;margin-top:4px">
           ${order.employees?.name || "—"}
           (ID: ${order.employee_code || "—"})
         </div>
-  
         <div style="color:#16a34a;font-weight:800;margin-top:6px">
           ✔ مدفوع
         </div>
-  
-        <button
-          onclick="markEmployeeDone('${order.id}')"
-          style="
-            margin-top:8px;
-            background:#7c3aed;
-            color:white;
-            border:none;
-            padding:6px 10px;
-            border-radius:6px;
-            font-weight:700;
-            cursor:pointer;
-          ">
+        <button onclick="markEmployeeDone('${order.id}')" style="margin-top:8px;background:#7c3aed;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">
           ✅ مكتمل
         </button>
       `
@@ -1138,35 +1139,33 @@ function playNotificationSound() {
         ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>`
         : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
   }
-  
-    ${order.total.toFixed(3)} د.ب<br>
-  
-    ${
-      order.is_employee_order
-        ? ""
-        : `
-          <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
-          <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
-          ${
-            order.is_paid
-  ? `
-    <div style="color:#166534;font-weight:800;">
-      ✔ مدفوعة
-    </div>
 
-    <div style="font-size:13px;margin-top:4px;color:#444">
-      💵 كاش: ${(order.cash_amount || 0).toFixed(3)} د.ب<br>
-      💳 بطاقة: ${(order.benefit_amount || 0).toFixed(3)} د.ب
-    </div>
-  `
-  : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
-          }
-          <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
-          <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
-        `
-    }
-  `;
-  
+  ${order.total.toFixed(3)} د.ب<br>
+
+  ${
+    order.is_employee_order
+      ? ""
+      : `
+        <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
+        <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+        ${
+          order.is_paid
+            ? `
+              <div style="color:#166534;font-weight:800;">
+                ✔ مدفوعة
+              </div>
+              <div style="font-size:13px;margin-top:4px;color:#444">
+                💵 كاش: ${(order.cash_amount || 0).toFixed(3)} د.ب<br>
+                💳 بطاقة: ${(order.benefit_amount || 0).toFixed(3)} د.ب
+              </div>
+            `
+            : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
+        }
+        <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+        <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
+      `
+  }
+`;
       box.appendChild(div);
     });
   }
