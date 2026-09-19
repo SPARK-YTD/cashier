@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
-  import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
+import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
+window.supabase = supabase;
 
   /*********************************
    * Get-Break | Cashier System
