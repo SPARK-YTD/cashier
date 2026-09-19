@@ -551,8 +551,13 @@
   <div class="empty" id="empty" style="display: none;">📭 لا توجد منتجات</div>
 </div>
 
+<!-- ORDERING DISABLED BANNER -->
+<div id="viewOnlyBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#111827; color:#F59E0B; padding:14px 16px; text-align:center; font-weight:700; font-size:14px; z-index:500; box-shadow:0 -2px 10px rgba(0,0,0,0.2);">
+  ⚠️ المنيو للعرض فقط حالياً - استقبال الطلبات متوقف مؤقتاً
+</div>
+
 <!-- CART BUTTON -->
-<button class="cart-btn" onclick="showCart()">
+<button class="cart-btn" onclick="showCart()" id="cartBtn">
   🛒 السلة
   <span class="badge" id="badge" style="display: none;"></span>
 </button>
@@ -770,13 +775,45 @@
   let allProducts = [];
   let cart = [];
   let currentAddonsData = {};
+  let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
 
   // INIT
   document.addEventListener("DOMContentLoaded", async () => {
     initializeSession();
+    await checkOrderingEnabled();
     await loadProducts();
     loadCart();
   });
+
+  // ========== ORDERING ENABLED CHECK ==========
+  async function checkOrderingEnabled() {
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_settings")
+        .select("ordering_enabled")
+        .eq("id", 1)
+        .single();
+
+      if (error) throw error;
+
+      orderingEnabled = data.ordering_enabled !== false;
+    } catch (error) {
+      console.error("Error checking ordering status:", error);
+      orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
+    }
+
+    const banner = document.getElementById("viewOnlyBanner");
+    const cartBtn = document.getElementById("cartBtn");
+
+    if (!orderingEnabled) {
+      banner.style.display = "block";
+      cartBtn.style.display = "none";
+      document.body.style.paddingBottom = "60px";
+    } else {
+      banner.style.display = "none";
+      cartBtn.style.display = "flex";
+    }
+  }
 
   // LOAD PRODUCTS
   async function loadProducts() {
@@ -833,7 +870,7 @@
     document.getElementById("empty").style.display = "none";
 
     const html = products.map(p => `
-      <div class="product-card" onclick="addToCart('${p.id}', '${(p.name || "صنف").replace(/'/g, "\\'")}', ${p.price || 0})">
+      <div class="product-card" ${orderingEnabled ? `onclick="addToCart('${p.id}', '${(p.name || "صنف").replace(/'/g, "\\'")}', ${p.price || 0})"` : `style="cursor:default;"`}>
         <div class="product-img">
           ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}">` : "🍽️"}
         </div>
@@ -849,6 +886,10 @@
 
   // ADD TO CART - نفس الطريقة في app.js
   window.addToCart = async (productId, productName, price) => {
+    if (!orderingEnabled) {
+      alert("⚠️ استقبال الطلبات متوقف مؤقتاً، المنيو للعرض فقط");
+      return;
+    }
     productName = productName || "صنف بدون اسم";
     try {
       const { data: product } = await supabase
