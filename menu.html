@@ -1284,18 +1284,47 @@
 
       if (error) throw error;
 
-      cart = [];
-      saveCart();
-      updateBadge();
-      closeModal("orderModal");
-      alert("✅ تم إرسال الطلب! جاري معالجته في المطبخ...");
-      
+      const orderId = insertedOrder[0].id;
+      console.log("✅ ORDER CREATED IN PENDING:", orderId);
+
+      // ✅ انتظر على قبول الطلب من الكاشير
+      const statusListener = supabase
+        .channel(`pending-order-${orderId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "pending_orders" },
+          (payload) => {
+            if (payload.new.id === orderId && payload.new.status === "approved") {
+              console.log("🎉 ORDER APPROVED BY CASHIER!");
+              
+              // احذف الـ listener
+              supabase.removeChannel(statusListener);
+              
+              // اظهر رسالة النجاح
+              closeModal("orderModal");
+              alert("🎉 تم قبول طلبك!\nيجاري تحضيره في المطبخ...\n⏱️ الوقت المتوقع: 20-30 دقيقة");
+              
+              // امسح السلة
+              cart = [];
+              saveCart();
+              updateBadge();
+              
+              setTimeout(() => {
+                location.href = "menu.html";
+              }, 2000);
+            }
+          }
+        )
+        .subscribe();
+
+      // timeout بعد 5 دقائق إذا ما تم القبول
       setTimeout(() => {
-        cart = [];
-        saveCart();
-        updateBadge();
-        location.href = "menu.html";
-      }, 2000);
+        supabase.removeChannel(statusListener);
+      }, 5 * 60 * 1000);
+
+      // اظهر رسالة pending أولاً
+      closeModal("orderModal");
+      alert("✅ تم إرسال طلبك! \n⏳ ينتظر الموافقة من المحل...");
 
     } catch (error) {
       console.error("Error submitting order:", error);
