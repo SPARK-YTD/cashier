@@ -928,104 +928,148 @@ function renderProducts(category) {
     addItemToCart(currentAddonsData.productId, currentAddonsData.productName, total, addons);
   };
 
-  // CART
-  function addItemToCart(productId, productName, price, addons) {
-    cart.push({ productId, productName, price, qty: 1, addons });
-    saveCart();
-    updateBadge();
-    alert("✅ تمت الإضافة للسلة!");
-  }
+// CART
+function addItemToCart(productId, productName, price, addons = []) {
+  const priceNum = parseFloat(price || 0).toFixed(3);
+  
+  // ✅ شيك لو الآيتم موجود بنفس الإضافات
+  const addonKey = JSON.stringify((addons || []).map(a => ({ 
+    id: a.id || "", 
+    name: a.name, 
+    price: parseFloat(a.price || 0).toFixed(3) 
+  })));
+  
+  const existing = cart.find(c => 
+    c.productId === productId && 
+    JSON.stringify((c.addons || []).map(a => ({ 
+      id: a.id || "", 
+      name: a.name, 
+      price: parseFloat(a.price || 0).toFixed(3) 
+    }))) === addonKey
+  );
 
-  function saveCart() {
-    localStorage.setItem(getCartKey(), JSON.stringify(cart));
-  }
-
-  function loadCart() {
-    const saved = localStorage.getItem(getCartKey());
-    cart = saved ? JSON.parse(saved) : [];
-    updateBadge();
-  }
-
-  function updateBadge() {
-    const badge = document.getElementById("badge");
-    if (cart.length > 0) {
-      badge.textContent = cart.length;
-      badge.style.display = "inline-block";
-    } else {
-      badge.style.display = "none";
-    }
-  }
-
-  window.showCart = () => {
-    if (cart.length === 0) {
-      alert("🛒 السلة فارغة!");
-      return;
-    }
-
-    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    let html = '<div style="margin-bottom: 20px;">';
-
-    cart.forEach((item, idx) => {
-      html += `
-        <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-          <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
-            السعر: ${item.price.toFixed(3)} د.ب
-            ${item.addons.length > 0 ? `<br>الإضافات: ${item.addons.map(a => a.name).join(", ")}` : ""}
-          </div>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <button onclick="changeQty(${idx}, -1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">−</button>
-            <span style="width: 28px; text-align: center; font-weight: 600;">${item.qty}</span>
-            <button onclick="changeQty(${idx}, 1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">+</button>
-            <button onclick="removeItem(${idx})" style="margin-left: auto; background: #fee2e2; color: #dc2626; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">❌ حذف</button>
-          </div>
-        </div>
-      `;
+  if (existing) {
+    existing.qty++;  // ✅ زيادة qty بدل نسخة جديدة
+  } else {
+    cart.push({ 
+      productId, 
+      productName, 
+      price: priceNum,  // ✅ معالج
+      qty: 1, 
+      addons: (addons || []).map(a => ({  // ✅ موحد
+        id: a.id || "",
+        name: a.name,
+        price: parseFloat(a.price || 0).toFixed(3)
+      }))
     });
+  }
+  
+  saveCart();
+  updateBadge();
+  alert("✅ تمت الإضافة للسلة!");
+}
 
-    html += '</div>';
+function saveCart() {
+  localStorage.setItem(getCartKey(), JSON.stringify(cart));
+}
+
+function loadCart() {
+  const saved = localStorage.getItem(getCartKey());
+  cart = saved ? JSON.parse(saved) : [];
+  updateBadge();
+}
+
+function updateBadge() {
+  const badge = document.getElementById("badge");
+  if (cart.length > 0) {
+    badge.textContent = cart.length;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+window.showCart = () => {
+  if (cart.length === 0) {
+    alert("🛒 السلة فارغة!");
+    return;
+  }
+
+  // ✅ معالجة الأسعار صح
+  const total = cart.reduce((sum, item) => {
+    const itemPrice = parseFloat(item.price || 0);
+    const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
+    return sum + ((itemPrice + addonPrice) * item.qty);
+  }, 0);
+  
+  let html = '<div style="margin-bottom: 20px;">';
+
+  cart.forEach((item, idx) => {
+    const itemPrice = parseFloat(item.price || 0);
+    const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
+    const itemTotal = (itemPrice + addonPrice) * item.qty;
+    
     html += `
-      <div class="price-summary">
-        <div class="summary-row total">
-          <span>الإجمالي:</span>
-          <span class="price">${total.toFixed(3)} د.ب</span>
+      <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+        <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
+          السعر: ${itemPrice.toFixed(3)} د.ب
+          ${(item.addons || []).length > 0 ? `<br>الإضافات: ${item.addons.map(a => `${a.name} (${parseFloat(a.price || 0).toFixed(3)} د.ب)`).join(", ")}` : ""}
+          <br>الإجمالي: ${itemTotal.toFixed(3)} د.ب
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button onclick="changeQty(${idx}, -1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">−</button>
+          <span style="width: 28px; text-align: center; font-weight: 600;">${item.qty}</span>
+          <button onclick="changeQty(${idx}, 1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">+</button>
+          <button onclick="removeItem(${idx})" style="margin-left: auto; background: #fee2e2; color: #dc2626; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">❌ حذف</button>
         </div>
       </div>
     `;
+  });
 
-    document.getElementById("cartBody").innerHTML = html;
-    openModal("cartModal");
-  };
+  html += '</div>';
+  html += `
+    <div class="price-summary">
+      <div class="summary-row total">
+        <span>الإجمالي:</span>
+        <span class="price">${total.toFixed(3)} د.ب</span>
+      </div>
+    </div>
+  `;
 
-  window.changeQty = (idx, change) => {
-    cart[idx].qty += change;
-    if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  document.getElementById("cartBody").innerHTML = html;
+  openModal("cartModal");
+};
+
+window.changeQty = (idx, change) => {
+  cart[idx].qty += change;
+  if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  saveCart();
+  updateBadge();
+  cart.length > 0 ? window.showCart() : closeModal("cartModal");
+};
+
+window.removeItem = (idx) => {
+  cart.splice(idx, 1);
+  saveCart();
+  updateBadge();
+  cart.length > 0 ? window.showCart() : closeModal("cartModal");
+};
+
+window.clearCart = () => {
+  if (confirm("هل أنت متأكد؟")) {
+    cart = [];
     saveCart();
     updateBadge();
-    cart.length > 0 ? window.showCart() : closeModal("cartModal");
-  };
-
-  window.removeItem = (idx) => {
-    cart.splice(idx, 1);
-    saveCart();
-    updateBadge();
-    cart.length > 0 ? window.showCart() : closeModal("cartModal");
-  };
-
-  window.clearCart = () => {
-    if (confirm("هل أنت متأكد؟")) {
-      cart = [];
-      saveCart();
-      updateBadge();
-      closeModal("cartModal");
-    }
-  };
-
-  window.goToOrder = () => {
     closeModal("cartModal");
-    updateOrderTotal();
-    openModal("orderModal");
-  };
+  }
+};
+
+window.goToOrder = () => {
+  closeModal("cartModal");
+  updateOrderTotal();
+  openModal("orderModal");
+};
 
   // ORDER
   window.updateDelivery = () => {
