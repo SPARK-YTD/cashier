@@ -767,7 +767,7 @@
           ${p.image_url ? `<img src="${p.image_url}">` : "🍽️"}
         </div>
         <div class="product-info">
-          <div class="product-name">${p.name}</div>
+          <div class="product-name">${p.name || p.product_name || p.title || "بدون اسم"}</div>
           <div class="product-price">${(p.price || 0).toFixed(3)} د.ب</div>
         </div>
       </div>
@@ -777,7 +777,7 @@
   }
 
   // ADD TO CART
-  window.addToCart = async (productId, productName, price) => {
+  window.addToCart = async (productId, productName, price) => {   productName = productName || "صنف بدون اسم";  // ✅ تأكد من الاسم
     try {
       const { data: variants } = await supabase
         .from("product_variants")
