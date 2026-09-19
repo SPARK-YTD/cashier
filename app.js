@@ -822,17 +822,18 @@ function subscribeToNewOrders() {
 }
 
 function showPendingOrderModal(order) {
-  const modal = document.createElement('div');
-  modal.id = `pending-modal-${order.id}`;
-  modal.style.cssText = `
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
-    align-items: center; justify-content: center;
-  `;
+  console.log("🔍 MODAL ORDER DATA:", JSON.stringify(order, null, 2));
   
-  const itemsHtml = order.order_items.map(i => {
+  // ✅ Safe check - إذا order_items null أو undefined
+  const items = order.order_items || [];
+  if (!Array.isArray(items)) {
+    console.error("❌ order_items ليست array:", items);
+    return;
+  }
+  
+  const itemsHtml = items.map(i => {
     const variant = i.variant ? (i.variant.label || i.variant.id) : '';
-    const displayName = variant ? `${i.productName.split(' - ')[0]} - ${variant}` : i.productName;
+    const displayName = variant ? `${(i.productName || '').split(' - ')[0]} - ${variant}` : (i.productName || 'صنف');
     return `
     <div style="background: #f5f5f5; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-right: 3px solid #D4A574;">
       <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">
@@ -844,6 +845,14 @@ function showPendingOrderModal(order) {
     </div>
   `;
   }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = `pending-modal-${order.id}`;
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
+    align-items: center; justify-content: center;
+  `;
 
   modal.innerHTML = `
     <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
@@ -863,7 +872,7 @@ function showPendingOrderModal(order) {
 
       <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px; max-height: 200px; overflow-y: auto;">
         <strong>📦 الأصناف:</strong>
-        ${itemsHtml}
+        ${itemsHtml || '<div style="color: #999; padding: 8px;">لا توجد أصناف</div>'}
       </div>
 
       <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 700; font-size: 16px; color: #2e7d32;">
