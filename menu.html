@@ -847,15 +847,25 @@
     document.getElementById("grid").innerHTML = html;
   }
 
-  // ADD TO CART
+  // ADD TO CART - نفس الطريقة في app.js
   window.addToCart = async (productId, productName, price) => {
     productName = productName || "صنف بدون اسم";
     try {
-      const { data: variants } = await supabase
-        .from("product_variants")
+      const { data: product } = await supabase
+        .from("products")
         .select("*")
-        .eq("product_id", productId)
-        .eq("active", true);
+        .eq("id", productId)
+        .single();
+
+      if (!product) {
+        addItemToCart(productId, productName, price, [], [], false);
+        return;
+      }
+
+      // ✅ نفس الطريقة في app.js
+      const freeAddons = product.extras_list
+        ? product.extras_list.split("\n").map(e => e.trim()).filter(Boolean)
+        : [];
 
       const { data: paidAddons } = await supabase
         .from("product_addons")
@@ -863,48 +873,37 @@
         .eq("product_id", productId)
         .eq("active", true);
 
-      const { data: product } = await supabase
-        .from("products")
-        .select("extras_list")
-        .eq("id", productId)
-        .single();
+      const { data: variants } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", productId)
+        .eq("active", true);
 
-      let freeAddons = [];
-      if (product?.extras_list) {
-        try {
-          let extras = product.extras_list
-            .split("\n")
-            .map(e => e.trim())
-            .filter(Boolean);
-
-          freeAddons = extras.map((e, i) => ({
-            id: `free-${i}`,
-            name: e,
-            price: 0
-          }));
-        } catch (e) {
-          console.error("Error parsing extras:", e);
-        }
+      // إذا في أحجام
+      if (product.has_variants && variants?.length > 0) {
+        showVariantModal(productId, productName, variants, freeAddons, paidAddons || [], product.is_spicy);
+      } 
+      // إذا في إضافات أو أحجام
+      else if (freeAddons.length > 0 || paidAddons?.length > 0 || product.is_spicy) {
+        showAddonsModal(productId, productName, price, freeAddons, paidAddons || [], product.is_spicy, null);
       }
-
-      if (variants?.length > 0) {
-        showVariantModal(productId, productName, variants, freeAddons, paidAddons || []);
-      } else {
-        showAddonsModal(productId, productName, price, freeAddons, paidAddons || []);
+      // بدون أحجام أو إضافات
+      else {
+        addItemToCart(productId, productName, price, [], [], product.is_spicy);
       }
     } catch (error) {
       console.error("Error:", error);
-      addItemToCart(productId, productName, price, []);
+      addItemToCart(productId, productName, price, [], [], false);
     }
   };
 
-  // VARIANT MODAL
-  function showVariantModal(productId, productName, variants, freeAddons, paidAddons) {
+  // VARIANT MODAL - نفس الطريقة في app.js
+  function showVariantModal(productId, productName, variants, freeAddons, paidAddons, isSpicy) {
     document.getElementById("variantTitle").textContent = productName;
     const html = variants
       .map(v => `
-        <button class="variant-btn" onclick="selectVariant('${productId}', '${productName.replace(/'/g, "\\'")}', '${v.id}', '${v.name.replace(/'/g, "\\'")}', ${v.price}, ${JSON.stringify(freeAddons).replace(/"/g, '&quot;')}, ${JSON.stringify(paidAddons).replace(/"/g, '&quot;')})">
-          ${v.label} — ${parseFloat(v.price || 0).toFixed(3)} د.ب
+        <button class="variant-btn" onclick="selectVariant('${productId}', '${productName.replace(/'/g, "\\'")}', '${v.id}', '${(v.label || v.name).replace(/'/g, "\\'")}', ${v.price}, ${JSON.stringify(freeAddons).replace(/"/g, '&quot;')}, ${JSON.stringify(paidAddons).replace(/"/g, '&quot;')}, ${isSpicy || false})">
+          ${v.label || v.name} — ${parseFloat(v.price || 0).toFixed(3)} د.ب
         </button>
       `)
       .join("");
@@ -912,31 +911,34 @@
     openModal("variantModal");
   }
 
-  window.selectVariant = (productId, productName, variantId, variantLabel, variantPrice, freeAddons, paidAddons) => {
+  window.selectVariant = (productId, productName, variantId, variantLabel, variantPrice, freeAddons, paidAddons, isSpicy) => {
     closeModal("variantModal");
-    const fullName = `${productName} (${variantName})`;
-    showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons);
+    const fullName = `${productName} (${variantLabel})`;
+    showAddonsModal(productId, fullName, variantPrice, freeAddons, paidAddons, isSpicy, variantId);
   };
 
-  // ADDONS MODAL
-  function showAddonsModal(productId, productName, price, freeAddons, paidAddons) {
+  // ADDONS MODAL - نفس الطريقة في app.js
+  function showAddonsModal(productId, productName, price, freeAddons, paidAddons, isSpicy, variantId) {
     currentAddonsData = {
       productId,
       productName,
       price: parseFloat(price || 0),
       freeAddons: freeAddons || [],
-      paidAddons: paidAddons || []
+      paidAddons: paidAddons || [],
+      isSpicy: isSpicy || false,
+      variantId: variantId || null
     };
 
     document.getElementById("addonsTitle").textContent = productName;
     document.getElementById("basePrice").textContent = parseFloat(price || 0).toFixed(3) + " د.ب";
     document.getElementById("summaryBase").textContent = parseFloat(price || 0).toFixed(3) + " د.ب";
 
-    if (freeAddons.length > 0) {
-      const freeHtml = freeAddons.map(a => `
+    // ✅ الإضافات المجانية - checked افتراضياً (ما يريد الزبون إزالته)
+    if (freeAddons && freeAddons.length > 0) {
+      const freeHtml = freeAddons.map((addon, i) => `
         <label class="addon-item">
-          <input type="checkbox" data-price="0" data-name="${a.name}" onchange="updateAddonsPrice(${parseFloat(price || 0)})" checked>
-          <span class="addon-name">${a.name}</span>
+          <input type="checkbox" class="free-addon" data-name="${addon}" onchange="updateAddonsPrice(${parseFloat(price || 0)})" checked>
+          <span class="addon-name">${addon}</span>
           <span class="addon-price">مجاني</span>
         </label>
       `).join("");
@@ -946,10 +948,11 @@
       document.getElementById("freeAddonsContainer").style.display = "none";
     }
 
-    if (paidAddons.length > 0) {
+    // ✅ الإضافات المدفوعة - unchecked افتراضياً (ما يريده الزبون)
+    if (paidAddons && paidAddons.length > 0) {
       const paidHtml = paidAddons.map(a => `
         <label class="addon-item">
-          <input type="checkbox" data-price="${parseFloat(a.price || 0)}" data-name="${a.name}" onchange="updateAddonsPrice(${parseFloat(price || 0)})">
+          <input type="checkbox" class="paid-addon" data-price="${parseFloat(a.price || 0)}" data-name="${a.name}" onchange="updateAddonsPrice(${parseFloat(price || 0)})">
           <span class="addon-name">${a.name}</span>
           <span class="addon-price">+${parseFloat(a.price || 0).toFixed(3)} د.ب</span>
         </label>
@@ -960,18 +963,32 @@
       document.getElementById("paidAddonsContainer").style.display = "none";
     }
 
+    // ✅ خيار spicy
+    if (isSpicy) {
+      const spicySection = document.createElement('div');
+      spicySection.className = 'addons-section';
+      spicySection.innerHTML = `
+        <label class="addon-item">
+          <input type="checkbox" id="spicyOption" onchange="updateAddonsPrice(${parseFloat(price || 0)})">
+          <span class="addon-name">🌶️ سبايسي</span>
+        </label>
+      `;
+      const modal = document.getElementById("addonsModal");
+      const body = modal.querySelector('.modal-body');
+      body.insertBefore(spicySection, body.querySelector('.price-summary'));
+    }
+
     updateAddonsPrice(price);
     openModal("addonsModal");
   }
 
   window.updateAddonsPrice = (basePrice) => {
-    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
+    // ✅ الإضافات المدفوعة فقط تضاف للسعر
+    const paidAddons = document.querySelectorAll(".paid-addon:checked");
     let addonsTotal = 0;
 
-    allAddons.forEach(cb => {
-      if (cb.checked) {
-        addonsTotal += parseFloat(cb.dataset.price) || 0;
-      }
+    paidAddons.forEach(cb => {
+      addonsTotal += parseFloat(cb.dataset.price) || 0;
     });
 
     const total = parseFloat(basePrice || 0) + addonsTotal;
@@ -981,41 +998,68 @@
   };
 
   window.confirmAddons = () => {
-    const allAddons = document.querySelectorAll("#freeAddonsBody input, #paidAddonsBody input");
-    const addons = [];
+    // ✅ الإضافات المجانية - اجمع اللي غير مختارة (اللي الزبون ما يريدها)
+    const uncheckedFree = [...document.querySelectorAll(".free-addon:not(:checked)")]
+      .map(cb => cb.dataset.name);
 
-    allAddons.forEach(cb => {
-      if (cb.checked) {
-        addons.push({
-          name: cb.dataset.name,
-          price: parseFloat(cb.dataset.price) || 0
-        });
-      }
-    });
+    // ✅ الإضافات المدفوعة - اجمع المختارة
+    const selectedPaid = [...document.querySelectorAll(".paid-addon:checked")]
+      .map(cb => ({
+        name: cb.dataset.name,
+        price: parseFloat(cb.dataset.price) || 0
+      }));
 
-    let total = currentAddonsData.price;
-    addons.forEach(a => { total += a.price; });
+    // ✅ spicy option
+    const isSpicy = document.getElementById("spicyOption")?.checked || false;
+
+    // حساب السعر
+    let paidAddonsTotal = selectedPaid.reduce((s, a) => s + a.price, 0);
+    let finalPrice = currentAddonsData.price + paidAddonsTotal;
+
+    // بناء الاسم مع الإضافات
+    let nameWithExtras = currentAddonsData.productName;
+    
+    if (isSpicy) {
+      nameWithExtras += " 🌶️ سبايسي";
+    }
+    
+    if (uncheckedFree.length > 0) {
+      nameWithExtras += ` (بدون: ${uncheckedFree.join("، ")})`;
+    }
+    
+    if (selectedPaid.length > 0) {
+      nameWithExtras += ` (+ ${selectedPaid.map(a => a.name).join("، ")})`;
+    }
 
     closeModal("addonsModal");
-    addItemToCart(currentAddonsData.productId, currentAddonsData.productName, total, addons);
+    addItemToCart(
+      currentAddonsData.productId, 
+      nameWithExtras, 
+      finalPrice, 
+      selectedPaid, 
+      uncheckedFree,
+      isSpicy
+    );
   };
 
   // ========== CART FUNCTIONS ==========
-  function addItemToCart(productId, productName, price, addons = []) {
+  function addItemToCart(productId, productName, price, addons = [], extrasRemoved = [], isSpicy = false) {
     const priceNum = parseFloat(price || 0);
     
-    // ✅ شيك لو الآيتم موجود بنفس الإضافات
-    const addonKey = JSON.stringify((addons || []).map(a => ({ 
-      name: a.name, 
-      price: parseFloat(a.price || 0).toFixed(3)
-    })));
+    // ✅ المفتاح الفريد يشمل الإضافات والإضافات المزالة و spicy
+    const itemKey = JSON.stringify({
+      addons: (addons || []).map(a => ({ name: a.name, price: parseFloat(a.price || 0).toFixed(3) })),
+      extrasRemoved: extrasRemoved || [],
+      isSpicy: isSpicy
+    });
     
     const existing = cart.find(c => 
       c.productId === productId && 
-      JSON.stringify((c.addons || []).map(a => ({ 
-        name: a.name, 
-        price: parseFloat(a.price || 0).toFixed(3)
-      }))) === addonKey
+      JSON.stringify({
+        addons: (c.addons || []).map(a => ({ name: a.name, price: parseFloat(a.price || 0).toFixed(3) })),
+        extrasRemoved: c.extrasRemoved || [],
+        isSpicy: c.isSpicy
+      }) === itemKey
     );
 
     if (existing) {
@@ -1024,12 +1068,14 @@
       cart.push({ 
         productId, 
         productName, 
-        price: priceNum.toFixed(3),  // ✅ معالج
+        price: priceNum.toFixed(3),
         qty: 1, 
-        addons: (addons || []).map(a => ({  // ✅ موحد
+        addons: (addons || []).map(a => ({
           name: a.name,
           price: parseFloat(a.price || 0).toFixed(3)
-        }))
+        })),
+        extrasRemoved: extrasRemoved || [],
+        isSpicy: isSpicy
       });
     }
     
@@ -1067,24 +1113,23 @@
     // ✅ معالجة الأسعار صح
     const total = cart.reduce((sum, item) => {
       const itemPrice = parseFloat(item.price || 0);
-      const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
-      return sum + ((itemPrice + addonPrice) * item.qty);
+      return sum + (itemPrice * item.qty);
     }, 0);
     
     let html = '<div style="margin-bottom: 20px;">';
 
     cart.forEach((item, idx) => {
       const itemPrice = parseFloat(item.price || 0);
-      const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
-      const itemTotal = (itemPrice + addonPrice) * item.qty;
+      const itemTotal = itemPrice * item.qty;
       
       html += `
         <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
           <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
           <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
-            السعر: ${itemPrice.toFixed(3)} د.ب
-            ${(item.addons || []).length > 0 ? `<br>الإضافات: ${item.addons.map(a => `${a.name} (+${parseFloat(a.price || 0).toFixed(3)} د.ب)`).join(", ")}` : ""}
-            <br>الإجمالي: ${itemTotal.toFixed(3)} د.ب
+            ${(item.addons || []).length > 0 ? `الإضافات: ${item.addons.map(a => `${a.name}`).join(", ")}<br>` : ""}
+            ${(item.extrasRemoved || []).length > 0 ? `بدون: ${item.extrasRemoved.join(", ")}<br>` : ""}
+            ${item.isSpicy ? "🌶️ سبايسي<br>" : ""}
+            الإجمالي: ${itemTotal.toFixed(3)} د.ب
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
             <button onclick="changeQty(${idx}, -1)" style="width: 28px; height: 28px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">−</button>
@@ -1209,7 +1254,7 @@
 
     if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
 
-    // ✅ هيكل البيانات موحد تماماً مع الكاشير
+    // ✅ هيكل البيانات موحد تماماً مع الكاشير - نفس شكل app.js
     const orderData = {
       customer_name: name || "عميل QR",
       customer_phone: phone,
@@ -1221,7 +1266,9 @@
         addons: (item.addons || []).map(a => ({
           name: a.name,
           price: parseFloat(a.price || 0).toFixed(3)
-        }))
+        })),
+        extras_removed: item.extrasRemoved || [],
+        is_spicy: item.isSpicy || false
       })),
       delivery_type: type,
       delivery_area: type === "delivery" ? document.getElementById("deliveryArea").value : null,
