@@ -789,18 +789,19 @@ function subscribeToPendingOrders() {
     .channel("pending-orders-realtime")
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "pending_orders" },  // ✅ اعرض جديد
+      { event: "INSERT", schema: "public", table: "pending_orders" },
       (payload) => {
         console.log("🟠 NEW PENDING ORDER:", payload.new);
         showPendingOrderModal(payload.new);
+        // ✅ تحديث الطلبات فوراً
+        loadActiveOrders();
       }
     )
     .on(
       "postgres_changes",
-      { event: "UPDATE", schema: "public", table: "pending_orders" },  // ✅ اعرض التحديثات
+      { event: "UPDATE", schema: "public", table: "pending_orders" },
       (payload) => {
         console.log("🟡 PENDING ORDER UPDATED:", payload.new);
-        // احذف المودال لو تحدثت الحالة
         const modal = document.getElementById(`pending-modal-${payload.new.id}`);
         if (modal) modal.remove();
       }
@@ -808,6 +809,9 @@ function subscribeToPendingOrders() {
     .subscribe((status) => {
       console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
     });
+    
+  // ✅ تحميل الطلبات المعلقة فوراً
+  setTimeout(() => loadPendingOrders(), 200);
 }
 
 function subscribeToNewOrders() {
