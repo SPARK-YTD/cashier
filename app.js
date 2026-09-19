@@ -1162,7 +1162,7 @@ div.innerHTML = `
   ` : ""
   }
 
-  ${order.order_items && Array.isArray(order.order_items) ? `
+  ${order.order_items && Array.isArray(order.order_items) && order.order_items.length > 0 ? `
     <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
       <strong>📦 الأصناف:</strong>
       ${order.order_items.map(item => `
