@@ -865,7 +865,14 @@ function showPendingOrderModal(order) {
   `;
 
   document.body.appendChild(modal);
-  playNotificationSound();
+  
+  setTimeout(() => {
+    try {
+      playNotificationSound();
+    } catch (e) {
+      console.log("Sound error:", e);
+    }
+  }, 100);
 }
   
 async function loadPendingOrders() {
