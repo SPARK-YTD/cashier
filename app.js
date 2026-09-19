@@ -885,7 +885,7 @@ async function loadPendingOrders() {
     const { data, error } = await supabase
       .from("pending_orders")
       .select("*")
-      .eq("status", "completed")
+      .eq("status", "pending")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
