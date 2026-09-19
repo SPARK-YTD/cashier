@@ -922,7 +922,6 @@ window.approvePendingOrder = async function(orderId) {
         total: order.total_price,
         is_delivery: order.delivery_type === 'delivery',
         customer_area: order.delivery_area,
-        customer_address: order.delivery_address,
         notes: order.notes,
         status: "active",
         business_day_id: currentBusinessDay.id,
