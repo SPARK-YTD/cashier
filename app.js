@@ -890,7 +890,9 @@ async function loadPendingOrders() {
       data.forEach(order => {
         console.log("🟠 EXISTING PENDING ORDER:", order);
         showPendingOrderModal(order);
-      });
+           });
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       loadActiveOrders();
     }
     
@@ -942,8 +944,11 @@ window.approvePendingOrder = async function(orderId) {
     if (modal) modal.remove();
 
     // 5️⃣ تنبيه نجاح
-       alert("✅ تم قبول الطلب!");
-    loadActiveOrders();  
+          alert("✅ تم قبول الطلب!");
+    
+    // اتوقف 500 ملي ثانية عشان Supabase تحدّث البيانات
+    await new Promise(resolve => setTimeout(resolve, 500));
+    loadActiveOrders();
     
   } catch (error) {
     console.error("Error approving order:", error);
