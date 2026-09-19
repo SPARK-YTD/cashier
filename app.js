@@ -119,7 +119,7 @@ setInterval(() => {
     loadActiveOrders();    
     subscribeToOrders();
     subscribeToPendingOrders();
-    
+    loadPendingOrders();
   });
 
   /* ===============================
@@ -814,7 +814,7 @@ function showPendingOrderModal(order) {
   modal.id = `pending-modal-${order.id}`;
   modal.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 9999; display: flex;
+    background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
     align-items: center; justify-content: center;
   `;
   
