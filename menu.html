@@ -746,35 +746,35 @@
   };
 
   // RENDER PRODUCTS
-  function renderProducts(category) {
-    let products = allProducts;
-    if (category !== "all") {
-      products = products.filter(p => p.category === category);
-    }
-
-    if (products.length === 0) {
-      document.getElementById("grid").style.display = "none";
-      document.getElementById("empty").style.display = "block";
-      return;
-    }
-
-    document.getElementById("grid").style.display = "grid";
-    document.getElementById("empty").style.display = "none";
-
-    const html = products.map(p => `
-      <div class="product-card" onclick="addToCart('${p.id}', '${p.name}', ${p.price || 0})">
-        <div class="product-img">
-          ${p.image_url ? `<img src="${p.image_url}">` : "🍽️"}
-        </div>
-        <div class="product-info">
-          <div class="product-name">${p.name || p.product_name || p.title || "بدون اسم"}</div>
-          <div class="product-price">${(p.price || 0).toFixed(3)} د.ب</div>
-        </div>
-      </div>
-    `).join("");
-
-    document.getElementById("grid").innerHTML = html;
+function renderProducts(category) {
+  let products = allProducts;
+  if (category !== "all") {
+    products = products.filter(p => p.category === category);
   }
+
+  if (products.length === 0) {
+    document.getElementById("grid").style.display = "none";
+    document.getElementById("empty").style.display = "block";
+    return;
+  }
+
+  document.getElementById("grid").style.display = "grid";
+  document.getElementById("empty").style.display = "none";
+
+  const html = products.map(p => `
+    <div class="product-card" onclick="addToCart('${p.id}', '${p.name || "صنف بدون اسم"}', ${p.price || 0})">
+      <div class="product-img">
+        ${p.image_url ? `<img src="${p.image_url}">` : "🍽️"}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name || "صنف بدون اسم"}</div>
+        <div class="product-price">${(p.price || 0).toFixed(3)} د.ب</div>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("grid").innerHTML = html;
+}
 
   // ADD TO CART
   window.addToCart = async (productId, productName, price) => {   productName = productName || "صنف بدون اسم";  // ✅ تأكد من الاسم
