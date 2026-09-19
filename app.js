@@ -1037,6 +1037,7 @@ function playNotificationSound() {
   customer_name,
   customer_phone,
   customer_area,
+  order_items,
   employees:employees!orders_employee_code_fkey(name)
 `)
   .in("status", ["pending", "active"])
