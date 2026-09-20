@@ -776,6 +776,7 @@
   let cart = [];
   let currentAddonsData = {};
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
+  let whatsappPhone = null;
 
   // INIT
   document.addEventListener("DOMContentLoaded", async () => {
@@ -790,28 +791,30 @@
     try {
       const { data, error } = await supabase
         .from("restaurant_settings")
-        .select("ordering_enabled")
+        .select("ordering_enabled, whatsapp_phone")
         .eq("id", 1)
         .single();
 
       if (error) throw error;
 
       orderingEnabled = data.ordering_enabled !== false;
+      whatsappPhone = data.whatsapp_phone || null;
     } catch (error) {
       console.error("Error checking ordering status:", error);
       orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
     }
 
     const banner = document.getElementById("viewOnlyBanner");
-    const cartBtn = document.getElementById("cartBtn");
+    const submitBtn = document.getElementById("submitBtn");
 
     if (!orderingEnabled) {
       banner.style.display = "block";
-      cartBtn.style.display = "none";
+      banner.textContent = "📱 الطلبات حالياً تُرسل عبر واتساب - اضغط إرسال وأكمل من واتسابك";
       document.body.style.paddingBottom = "60px";
+      if (submitBtn) submitBtn.textContent = "📱 إرسال عبر واتساب";
     } else {
       banner.style.display = "none";
-      cartBtn.style.display = "flex";
+      if (submitBtn) submitBtn.textContent = "إرسال الطلب";
     }
   }
 
@@ -870,7 +873,7 @@
     document.getElementById("empty").style.display = "none";
 
     const html = products.map(p => `
-      <div class="product-card" ${orderingEnabled ? `onclick="addToCart('${p.id}', '${(p.name || "صنف").replace(/'/g, "\\'")}', ${p.price || 0})"` : `style="cursor:default;"`}>
+      <div class="product-card" onclick="addToCart('${p.id}', '${(p.name || "صنف").replace(/'/g, "\\'")}', ${p.price || 0})">
         <div class="product-img">
           ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}">` : "🍽️"}
         </div>
@@ -886,10 +889,6 @@
 
   // ADD TO CART - نفس الطريقة في app.js
   window.addToCart = async (productId, productName, price) => {
-    if (!orderingEnabled) {
-      alert("⚠️ استقبال الطلبات متوقف مؤقتاً، المنيو للعرض فقط");
-      return;
-    }
     productName = productName || "صنف بدون اسم";
     try {
       const { data: product } = await supabase
@@ -1256,6 +1255,48 @@
 
   window.DEBUG_MENU = true; // 🟢 DEBUG MODE
 
+  // ✅ تطبيع رقم الهاتف لصيغة wa.me (973XXXXXXXX بدون + أو مسافات)
+  function normalizePhoneForWhatsApp(phone) {
+    let digits = (phone || "").replace(/\D/g, "");
+    if (digits.startsWith("00973")) digits = digits.slice(2);
+    if (digits.length === 8) digits = "973" + digits;
+    return digits;
+  }
+
+  // ✅ بناء نص رسالة الطلب لواتساب
+  function buildWhatsAppMessage({ name, phone, type, area, address, notes, grandTotal }) {
+    let msg = `🧾 *طلب جديد من المنيو*\n\n`;
+    msg += `👤 الاسم: ${name || "عميل"}\n`;
+    msg += `📱 الهاتف: ${phone}\n`;
+    msg += `🏪 النوع: ${type === "pickup" ? "استقبال من المحل" : "توصيل"}\n`;
+    if (type === "delivery") {
+      msg += `📍 المنطقة: ${area || "—"}\n`;
+      msg += `🏠 العنوان: ${address || "—"}\n`;
+    }
+    msg += `\n📦 *الأصناف:*\n`;
+    cart.forEach(item => {
+      const variantLabel = item.variant ? ` - ${item.variant.label || ""}` : "";
+      const itemPrice = parseFloat(item.price || 0);
+      const addonPrice = (item.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
+      const lineTotal = (itemPrice + addonPrice) * item.qty;
+      msg += `• ${item.productName}${variantLabel} ×${item.qty} = ${lineTotal.toFixed(3)} د.ب\n`;
+      if (item.addons && item.addons.length) {
+        msg += `   ➕ ${item.addons.map(a => a.name).join('، ')}\n`;
+      }
+      if (item.extrasRemoved && item.extrasRemoved.length) {
+        msg += `   ❌ بدون: ${item.extrasRemoved.join('، ')}\n`;
+      }
+      if (item.isSpicy) {
+        msg += `   🌶️ سبايسي\n`;
+      }
+    });
+    if (notes) {
+      msg += `\n📝 ملاحظات: ${notes}\n`;
+    }
+    msg += `\n💰 *الإجمالي: ${grandTotal.toFixed(3)} د.ب*`;
+    return msg;
+  }
+
   window.submitOrder = async () => {
     const submitBtn = document.getElementById("submitBtn");
     const name = document.getElementById("customerName").value.trim();
@@ -1287,6 +1328,31 @@
     const grandTotal = itemsTotal + fee;
 
     if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
+
+    // ✅ لو استقبال الطلبات من النظام معطّل → أرسل عبر واتساب فقط
+    if (!orderingEnabled) {
+      if (!whatsappPhone) {
+        alert("❌ ما فيه رقم واتساب مسجّل للمطعم، تواصل معهم مباشرة");
+        return;
+      }
+
+      const area = type === "delivery" ? document.getElementById("deliveryArea").value : null;
+      const address = type === "delivery" ? document.getElementById("deliveryAddress").value : null;
+
+      const message = buildWhatsAppMessage({ name, phone, type, area, address, notes, grandTotal });
+      const waPhone = normalizePhoneForWhatsApp(whatsappPhone);
+      const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
+
+      if (window.DEBUG_MENU) console.log("📱 Opening WhatsApp:", waUrl);
+
+      window.open(waUrl, "_blank");
+
+      closeModal("orderModal");
+      cart = [];
+      saveCart();
+      updateBadge();
+      return;
+    }
 
     // ✅ هيكل البيانات موحد تماماً مع الكاشير - نفس شكل app.js
     const orderData = {
