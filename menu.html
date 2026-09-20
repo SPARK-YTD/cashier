@@ -180,9 +180,13 @@
       font-weight: 700;
       font-size: 15px;
       cursor: pointer;
-      z-index: 50;
+      z-index: 600;
       box-shadow: 0 8px 20px rgba(212, 165, 116, 0.3);
-      transition: all 0.3s;
+      transition: all 0.3s, bottom 0.3s;
+    }
+
+    .cart-btn.above-banner {
+      bottom: 74px;
     }
 
     .cart-btn:active {
@@ -806,14 +810,16 @@
 
     const banner = document.getElementById("viewOnlyBanner");
     const submitBtn = document.getElementById("submitBtn");
+    const cartBtn = document.getElementById("cartBtn");
 
     if (!orderingEnabled) {
       banner.style.display = "block";
       banner.textContent = "📱 الطلبات حالياً تُرسل عبر واتساب - اضغط إرسال وأكمل من واتسابك";
-      document.body.style.paddingBottom = "60px";
+      if (cartBtn) cartBtn.classList.add("above-banner");
       if (submitBtn) submitBtn.textContent = "📱 إرسال عبر واتساب";
     } else {
       banner.style.display = "none";
+      if (cartBtn) cartBtn.classList.remove("above-banner");
       if (submitBtn) submitBtn.textContent = "إرسال الطلب";
     }
   }
