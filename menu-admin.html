@@ -447,8 +447,8 @@
       const enabled = data.ordering_enabled;
       toggle.classList.toggle("active", enabled);
       hint.textContent = enabled
-        ? "✅ العملاء يقدرون يرسلون طلبات من المنيو"
-        : "⚠️ المنيو للعرض فقط - العملاء ما يقدرون يطلبون";
+        ? "🛒 الطلبات تُرسل مباشرة للكاشير (النظام)"
+        : "📱 الطلبات تُرسل عبر واتساب فقط (العميل يضغط إرسال بنفسه)";
     } catch (error) {
       console.error("Error loading ordering status:", error);
       hint.textContent = "❌ تعذر تحميل الحالة (تأكد من إضافة جدول restaurant_settings)";
@@ -471,8 +471,8 @@
 
       toggle.classList.toggle("active", newValue);
       hint.textContent = newValue
-        ? "✅ العملاء يقدرون يرسلون طلبات من المنيو"
-        : "⚠️ المنيو للعرض فقط - العملاء ما يقدرون يطلبون";
+        ? "🛒 الطلبات تُرسل مباشرة للكاشير (النظام)"
+        : "📱 الطلبات تُرسل عبر واتساب فقط (العميل يضغط إرسال بنفسه)";
     } catch (error) {
       console.error("Error updating ordering status:", error);
       alert("❌ خطأ في تحديث الحالة");
@@ -482,7 +482,7 @@
   };
 
   // ========== SETTINGS ==========
-  window.saveSettings = () => {
+  window.saveSettings = async () => {
     const phone = document.getElementById("restaurantPhone").value.trim();
     const status = document.getElementById("saveStatus");
 
@@ -498,7 +498,20 @@
     }
 
     localStorage.setItem("restaurantPhone", phone);
-    showStatus("✅ تم حفظ إعدادات المطعم بنجاح!", true);
+
+    try {
+      const { error } = await supabase
+        .from("restaurant_settings")
+        .update({ whatsapp_phone: phone, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+
+      if (error) throw error;
+      showStatus("✅ تم حفظ إعدادات المطعم بنجاح!", true);
+      await loadOrderingStatus();
+    } catch (error) {
+      console.error("Error saving whatsapp phone:", error);
+      showStatus("⚠️ انحفظ محلياً بس صار خطأ بالمزامنة", false);
+    }
   };
 
   function loadSettings() {
