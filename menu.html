@@ -529,6 +529,58 @@
         max-width: 100%;
       }
     }
+    /* ========== ORDER STATUS OVERLAY ========== */
+    .status-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #F3F4F6;
+      border-top: 4px solid #D4A574;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-icon-success {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .btn-whatsapp {
+      display: block;
+      width: 100%;
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 16px;
+      text-decoration: none;
+    }
+
+    .btn-whatsapp:active {
+      background: #1EBE57;
+    }
+
+    .btn-status-secondary {
+      display: block;
+      width: 100%;
+      background: transparent;
+      color: #6B7280;
+      border: none;
+      padding: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 8px;
+      text-decoration: underline;
+    }
+
   </style>
 </head>
 <body>
@@ -711,6 +763,13 @@
       <button class="btn btn-cancel" onclick="closeModal('orderModal')">إلغاء</button>
       <button class="btn btn-confirm" id="submitBtn" onclick="submitOrder()">إرسال الطلب</button>
     </div>
+  </div>
+</div>
+
+<!-- ORDER STATUS OVERLAY -->
+<div id="orderStatusOverlay" style="display:none; position:fixed; inset:0; background:rgba(17,24,39,0.85); z-index:900; align-items:center; justify-content:center; padding:20px;">
+  <div id="orderStatusCard" style="background:white; border-radius:16px; padding:28px 22px; max-width:420px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <!-- المحتوى ينحقن ديناميكياً -->
   </div>
 </div>
 
@@ -1303,6 +1362,51 @@
     return msg;
   }
 
+  // ✅ رسالة واتساب بعد الموافقة - تأكيد وتواصل مباشر مع المحل
+  function buildApprovalWhatsAppMessage({ name, invoiceNo }) {
+    let msg = `مرحباً 👋 معكم ${name || "عميل"}\n`;
+    if (invoiceNo) {
+      msg += `رقم فاتورتي: *${invoiceNo}*\n`;
+    }
+    msg += `تم قبول طلبي، بس حابب أتأكد إن كل شي وصلكم صح ✅`;
+    return msg;
+  }
+
+  // ✅ عرض/تحديث شاشة حالة الطلب (انتظار / موافقة)
+  function showOrderStatusScreen(state, data = {}) {
+    const overlay = document.getElementById("orderStatusOverlay");
+    const card = document.getElementById("orderStatusCard");
+
+    if (state === "pending") {
+      card.innerHTML = `
+        <div class="status-spinner"></div>
+        <h2 style="margin:0 0 8px; color:#111827;">تم إرسال طلبك</h2>
+        <p style="color:#6B7280; margin:0 0 4px; font-size:14px;">⏳ ينتظر الموافقة من المحل...</p>
+        <p style="color:#9CA3AF; margin:0; font-size:12px;">راح تتغيّر الصفحة تلقائياً عند القبول</p>
+        <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">إخفاء (بيستمر الانتظار بالخلفية)</button>
+      `;
+    } else if (state === "approved") {
+      const waMessage = buildApprovalWhatsAppMessage(data);
+      const waPhone = normalizePhoneForWhatsApp(whatsappPhone || "");
+      const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`;
+
+      card.innerHTML = `
+        <div class="status-icon-success">🎉</div>
+        <h2 style="margin:0 0 8px; color:#111827;">تم الموافقة على طلبك!</h2>
+        <p style="color:#6B7280; margin:0 0 12px; font-size:14px;">الرجاء الانتظار حتى تتم معالجة الطلب بشكل كامل</p>
+        ${data.invoiceNo ? `<div style="background:#F0FDF4; border:1px dashed #10B981; border-radius:8px; padding:10px; margin-bottom:8px;"><strong style="color:#10B981;">رقم الفاتورة: ${data.invoiceNo}</strong></div>` : ""}
+        ${whatsappPhone ? `<a class="btn-whatsapp" href="${waUrl}" target="_blank">📱 تواصل مع المحل عبر واتساب</a>` : ""}
+        <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">العودة للمنيو</button>
+      `;
+    }
+
+    overlay.style.display = "flex";
+  }
+
+  window.hideOrderStatusScreen = () => {
+    document.getElementById("orderStatusOverlay").style.display = "none";
+  };
+
   window.submitOrder = async () => {
     const submitBtn = document.getElementById("submitBtn");
     const name = document.getElementById("customerName").value.trim();
@@ -1430,23 +1534,26 @@
               console.log("🟢 status:", payload.new.status);
             }
             if (payload.new.id === orderId && payload.new.status === "approved") {
-              console.log("🎉 ORDER APPROVED BY CASHIER!");
-              
+              if (window.DEBUG_MENU) console.log("🎉 ORDER APPROVED BY CASHIER!");
+
               // احذف الـ listener
               supabase.removeChannel(statusListener);
-              
-              // اظهر رسالة النجاح
-              closeModal("orderModal");
-              alert("🎉 تم قبول طلبك!\nيجاري تحضيره في المطبخ...\n⏱️ الوقت المتوقع: 20-30 دقيقة");
-              
+
               // امسح السلة
               cart = [];
               saveCart();
               updateBadge();
-              
-              setTimeout(() => {
-                location.href = "menu.html";
-              }, 2000);
+
+              // ✅ حدّث نفس الشاشة لحالة الموافقة (بدون alert وبدون redirect)
+              showOrderStatusScreen("approved", {
+                name: name,
+                invoiceNo: payload.new.linked_invoice_no || null
+              });
+            } else if (payload.new.id === orderId && payload.new.status === "rejected") {
+              if (window.DEBUG_MENU) console.log("❌ ORDER REJECTED BY CASHIER");
+              supabase.removeChannel(statusListener);
+              hideOrderStatusScreen();
+              alert("❌ عذراً، تم رفض طلبك من المحل. الرجاء التواصل معهم مباشرة.");
             }
           }
         )
@@ -1459,9 +1566,11 @@
         supabase.removeChannel(statusListener);
       }, 5 * 60 * 1000);
 
-      // اظهر رسالة pending أولاً
+      // ✅ اظهر شاشة الانتظار (تفضل ظاهرة لحين الموافقة أو الرفض)
       closeModal("orderModal");
-      alert("✅ تم إرسال طلبك! \n⏳ ينتظر الموافقة من المحل...");
+      showOrderStatusScreen("pending", { name });
+      submitBtn.disabled = false;
+      submitBtn.textContent = orderingEnabled ? "إرسال الطلب" : "📱 إرسال عبر واتساب";
 
     } catch (error) {
       console.error("Error submitting order:", error);
