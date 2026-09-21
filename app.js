@@ -1000,10 +1000,16 @@ window.approvePendingOrder = async function(orderId) {
 
     console.log("✅ NEW ORDER CREATED:", newOrder);
 
-    // ✅ حدّث pending_orders إلى approved
+    // ✅ حدّث pending_orders إلى approved + نمرر رقم الفاتورة عشان تنبعث للعميل عبر Realtime
+    const createdOrder = newOrder && newOrder[0] ? newOrder[0] : null;
+
     await supabase
       .from("pending_orders")
-      .update({ status: "approved" })
+      .update({
+        status: "approved",
+        linked_invoice_no: createdOrder && createdOrder.invoice_no != null ? String(createdOrder.invoice_no) : null,
+        linked_order_id: createdOrder ? createdOrder.id : null
+      })
       .eq("id", orderId);
 
     // ✅ احذف المودال فوراً
