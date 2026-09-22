@@ -1738,12 +1738,21 @@ await supabase.from("orders").update({
   ================================ */
   
   window.viewOrder = async function (orderId) {
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("qty, price, item_name, extras_removed, addons")
-      .eq("order_id", orderId);
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("order_items, total, invoice_no, customer_name")
+      .eq("id", orderId)
+      .single();
 
-    if (!items || items.length === 0) {
+    if (error || !order) {
+      console.error("Error fetching order for invoice:", error);
+      alert("لا توجد بيانات للفاتورة");
+      return;
+    }
+
+    const items = order.order_items || [];
+
+    if (!Array.isArray(items) || items.length === 0) {
       alert("لا توجد بيانات للفاتورة");
       return;
     }
@@ -1753,16 +1762,24 @@ await supabase.from("orders").update({
 
     overlay.innerHTML = `
       <div class="variant-box" id="invoiceContent" style="max-width:500px">
-        <h3>🧾 تفاصيل الفاتورة</h3>
+        <h3>🧾 تفاصيل الفاتورة ${order.invoice_no ? `#${order.invoice_no}` : ""}</h3>
 
         <div style="text-align:right;max-height:300px;overflow:auto">
-          ${items.map(i => `
+          ${items.map(i => {
+            const variantLabel = i.variant ? ` - ${i.variant.label || ""}` : "";
+            const itemName = (i.productName || i.item_name || "صنف") + variantLabel;
+            const qty = i.qty || 1;
+            const price = parseFloat(i.price || 0);
+            const addonsTotal = (i.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
+            const lineTotal = (price + addonsTotal) * qty;
+            const extrasRemoved = i.extras_removed || i.extrasRemoved || [];
+            return `
             <div style="border-bottom:1px dashed #ddd;padding:8px 0">
-              <strong>${i.item_name}</strong>
+              <strong>${itemName}</strong>
               ${
-                i.extras_removed?.length
+                extrasRemoved.length
                   ? `<div style="font-size:13px;color:#555">
-                       بدون: ${i.extras_removed.join("، ")}
+                       بدون: ${extrasRemoved.join("، ")}
                      </div>`
                   : ""
               }
@@ -1773,13 +1790,22 @@ await supabase.from("orders").update({
                      </div>`
                   : ""
               }
-              الكمية: ${i.qty}<br>
-              السعر: ${(i.price * i.qty).toFixed(3)} د.ب
+              ${
+                i.is_spicy || i.isSpicy
+                  ? `<div style="font-size:13px;color:#D97706">🌶️ سبايسي</div>`
+                  : ""
+              }
+              الكمية: ${qty}<br>
+              السعر: ${lineTotal.toFixed(3)} د.ب
             </div>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
-  
-  
+
+        <div style="text-align:left;margin-top:10px;font-weight:900">
+          الإجمالي: ${parseFloat(order.total || 0).toFixed(3)} د.ب
+        </div>
+
         <button class="variant-cancel" style="margin-top:10px">إغلاق</button>
       </div>
     `;
