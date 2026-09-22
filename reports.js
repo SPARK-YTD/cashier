@@ -278,13 +278,43 @@ async function deleteReportPrompt(dayId) {
   if (!confirm) return;
   
   try {
+    // 1️⃣ جيب كل معرّفات الطلبات المرتبطة بهذا اليوم
+    const { data: dayOrders, error: fetchOrdersError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("business_day_id", dayId);
+
+    if (fetchOrdersError) throw fetchOrdersError;
+
+    const orderIds = (dayOrders || []).map(o => o.id);
+
+    // 2️⃣ احذف order_items المرتبطة بهذه الطلبات أولاً (لازم قبل حذف الطلبات نفسها بسبب الـ foreign key)
+    if (orderIds.length > 0) {
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .delete()
+        .in("order_id", orderIds);
+
+      if (itemsError) throw itemsError;
+    }
+
+    // 3️⃣ احذف الطلبات
     const { error: ordersError } = await supabase
       .from("orders")
       .delete()
       .eq("business_day_id", dayId);
     
     if (ordersError) throw ordersError;
+
+    // 4️⃣ احذف التقرير المحفوظ المرتبط بهذا اليوم (إن وجد)
+    const { error: reportError } = await supabase
+      .from("daily_reports")
+      .delete()
+      .eq("business_day_id", dayId);
+
+    if (reportError) throw reportError;
     
+    // 5️⃣ احذف اليوم نفسه
     const { error: dayError } = await supabase
       .from("business_days")
       .delete()
@@ -299,7 +329,7 @@ async function deleteReportPrompt(dayId) {
     renderReports();
   } catch (error) {
     console.error("Error deleting report:", error);
-    alert("❌ خطأ في حذف التقرير");
+    alert("❌ خطأ في حذف التقرير: " + (error.message || error.details || "سبب غير معروف"));
   }
 }
 
