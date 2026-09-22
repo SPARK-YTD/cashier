@@ -887,7 +887,12 @@ function showPendingOrderModal(order) {
         <p><strong>👤 الاسم:</strong> ${order.customer_name || 'عميل'}</p>
         <p><strong>📱 الرقم:</strong> ${order.customer_phone}</p>
         <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استقبال من المحل' : '🚗 توصيل'}</p>
-        ${order.delivery_type === 'delivery' ? `<p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p><p><strong>🏠 العنوان:</strong> ${order.delivery_address || 'N/A'}</p>` : ''}
+        ${order.delivery_type === 'delivery' ? `
+          <p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p>
+          <p><strong>🏘️ العنوان:</strong> مجمع ${order.delivery_block || '—'} - طريق ${order.delivery_road || '—'} - منزل ${order.delivery_building || '—'}</p>
+          ${order.delivery_address ? `<p><strong>📝 تفاصيل إضافية:</strong> ${order.delivery_address}</p>` : ''}
+          ${order.delivery_lat && order.delivery_lng ? `<p><a href="https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}" target="_blank" style="color:#2563EB;font-weight:700;">🗺️ فتح الموقع على الخريطة</a></p>` : `<p style="color:#DC2626;">⚠️ العميل ما حدد موقعه على الخريطة</p>`}
+        ` : ''}
         ${order.notes ? `<p><strong>📝 ملاحظات:</strong> ${order.notes}</p>` : ''}
       </div>
 
@@ -1004,6 +1009,15 @@ window.approvePendingOrder = async function(orderId) {
     // إضافة delivery_address إذا كانت موجودة في جدول orders
     if (order.delivery_address) {
       orderData.customer_address = order.delivery_address;
+    }
+
+    // ✅ ترحيل بيانات العنوان التفصيلية والموقع الجغرافي
+    if (order.delivery_type === 'delivery') {
+      orderData.delivery_block = order.delivery_block || null;
+      orderData.delivery_road = order.delivery_road || null;
+      orderData.delivery_building = order.delivery_building || null;
+      orderData.delivery_lat = order.delivery_lat || null;
+      orderData.delivery_lng = order.delivery_lng || null;
     }
     
     const { data: newOrder, error: insertError } = await supabase
@@ -1142,6 +1156,12 @@ function playNotificationSound() {
   customer_name,
   customer_phone,
   customer_area,
+  customer_address,
+  delivery_block,
+  delivery_road,
+  delivery_building,
+  delivery_lat,
+  delivery_lng,
   order_items,
   source,
   employees:employees!orders_employee_code_fkey(name)
@@ -1226,7 +1246,9 @@ div.innerHTML = `
           <div>👤 ${order.customer_name || "—"}</div>
           <div>📞 ${order.customer_phone || "—"}</div>
           <div>📍 ${order.customer_area || "—"}</div>
-          ${order.customer_address ? `<div>🏠 ${order.customer_address}</div>` : ""}
+          ${order.delivery_block || order.delivery_road || order.delivery_building ? `<div>🏘️ مجمع ${order.delivery_block || "—"} - طريق ${order.delivery_road || "—"} - منزل ${order.delivery_building || "—"}</div>` : ""}
+          ${order.customer_address ? `<div>📝 ${order.customer_address}</div>` : ""}
+          ${order.delivery_lat && order.delivery_lng ? `<div><a href="https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}" target="_blank" style="color:#2563EB;font-weight:700;">🗺️ فتح الموقع على الخريطة</a></div>` : ""}
         </div>
       `
       : order.source === 'qr_menu' ? `
@@ -1427,7 +1449,17 @@ window.markCompleted = async function (orderId) {
       alert("❌ قاعدة البيانات رفضت الإقفال");
       return;
     }
-    await deductConsumables(orderId);
+
+    // ✅ فاتورة التوصيل من العميل (QR) تُسجّل وتُحتسب بإقفال اليوم بشكل طبيعي،
+    // لكن بدون خصم المخزون/المواد الاستهلاكية - بناءً على طلب صاحب المشروع
+    const isCustomerDelivery = order.source === 'qr_menu' && order.is_delivery;
+
+    if (!isCustomerDelivery) {
+      await deductConsumables(orderId);
+    } else {
+      console.log("⏭️ تخطي خصم المخزون - طلب توصيل من العميل (QR)");
+    }
+
     await processEmployeePayout(orderId);
     await loadActiveOrders();
 
@@ -1757,24 +1789,6 @@ await supabase.from("orders").update({
     await supabase.from("order_items").delete().eq("order_id", id);
     await supabase.from("orders").delete().eq("id", id);
     loadActiveOrders();
-  };
-
-  /* ✅ إكمال الطلب */
-  window.markCompleted = async id => {
-    if (!confirm("تأكيد إكمال الطلب؟")) return;
-    
-    try {
-      await supabase.from("orders").update({
-        is_completed: true,
-        completed_at: new Date().toISOString(),
-        status: "completed"
-      }).eq("id", id);
-      
-      loadActiveOrders();
-      alert("✅ تم إكمال الطلب!");
-    } catch (error) {
-      alert("❌ خطأ: " + error.message);
-    }
   };
   /* ===============================
      👁 عرض الفاتورة + طباعة
