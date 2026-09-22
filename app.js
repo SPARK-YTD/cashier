@@ -113,6 +113,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   setTimeout(() => {
     loadActiveOrders();
   }, 500);
+
+  // ✅ طبقة حماية إضافية: تحقق دوري كل 15 ثانية من الطلبات المعلقة والجارية
+  // حتى لو Realtime انقطع بهدوء لأي سبب (مثلاً بعد تعديل بقاعدة البيانات)، ما نحتاج رفرش يدوي أبداً
+  setInterval(() => {
+    loadPendingOrders();
+    loadActiveOrders();
+  }, 15000);
 });
 
   /* ===============================
@@ -810,6 +817,11 @@ function subscribeToPendingOrders() {
     )
     .subscribe((status) => {
       if (window.DEBUG_CASHIER) console.log("🔵 PENDING ORDERS CHANNEL STATUS:", status);
+      // ✅ إعادة اتصال تلقائية لو القناة انقطعت (يحصل أحياناً بعد تعديلات بقاعدة البيانات)
+      if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.warn("⚠️ Pending orders channel dropped, reconnecting in 2s...");
+        setTimeout(() => subscribeToPendingOrders(), 2000);
+      }
     });
 }
 
@@ -832,6 +844,11 @@ function subscribeToNewOrders() {
     )
     .subscribe((status) => {
       console.log("🟢 ORDERS SUBSCRIPTION STATUS:", status);
+      // ✅ إعادة اتصال تلقائية لو القناة انقطعت
+      if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.warn("⚠️ New orders channel dropped, reconnecting in 2s...");
+        setTimeout(() => subscribeToNewOrders(), 2000);
+      }
     });
 }
 
@@ -947,14 +964,19 @@ async function loadPendingOrders() {
     if (error) throw error;
 
     if (data && data.length > 0) {
-      console.log("📋 Found pending orders:", data.length);
-      data.forEach(order => {
-        console.log("🟠 EXISTING PENDING ORDER:", order);
-        showPendingOrderModal(order);
-           });
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      loadActiveOrders();
+      // ✅ نعرض بس الطلبات اللي مالها مودال ظاهر حالياً (يمنع التكرار عند الـ polling)
+      const newOnes = data.filter(order => !document.getElementById(`pending-modal-${order.id}`));
+
+      if (newOnes.length > 0) {
+        console.log("📋 Found pending orders (new):", newOnes.length);
+        newOnes.forEach(order => {
+          console.log("🟠 EXISTING PENDING ORDER:", order);
+          showPendingOrderModal(order);
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        loadActiveOrders();
+      }
     }
     
   } catch (error) {
