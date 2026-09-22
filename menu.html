@@ -1167,7 +1167,7 @@
     } else {
       cart.push({ 
         productId, 
-        productName: variant ? `${productName} - ${variant.label}` : productName,
+        productName: productName, // ✅ يتضمن الحجم أصلاً (مُضاف مرة واحدة في selectVariant)
         variantId: variant?.id || null,
         variant: variant ? { id: variant.id, label: variant.label } : null,
         price: priceNum.toFixed(3),
@@ -1223,10 +1223,12 @@
     cart.forEach((item, idx) => {
       const itemPrice = parseFloat(item.price || 0);
       const itemTotal = itemPrice * item.qty;
+      const baseName = (item.productName || "صنف").split(" - ")[0];
+      const itemLabel = item.variant && item.variant.label ? `${baseName} (${item.variant.label})` : baseName;
       
       html += `
         <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-          <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.productName}</div>
+          <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${itemLabel}</div>
           <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
             ${(item.addons || []).length > 0 ? `الإضافات: ${item.addons.map(a => `${a.name}`).join(", ")}<br>` : ""}
             ${(item.extrasRemoved || []).length > 0 ? `بدون: ${item.extrasRemoved.join(", ")}<br>` : ""}
@@ -1346,11 +1348,12 @@
     }
     msg += `\n📦 *الأصناف:*\n`;
     cart.forEach(item => {
-      const variantLabel = item.variant ? ` - ${item.variant.label || ""}` : "";
+      const baseName = (item.productName || "صنف").split(" - ")[0];
+      const itemLabel = item.variant && item.variant.label ? `${baseName} (${item.variant.label})` : baseName;
       const itemPrice = parseFloat(item.price || 0);
       const addonPrice = (item.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
       const lineTotal = (itemPrice + addonPrice) * item.qty;
-      msg += `• ${item.productName}${variantLabel} ×${item.qty} = ${lineTotal.toFixed(3)} د.ب\n`;
+      msg += `• ${itemLabel} ×${item.qty} = ${lineTotal.toFixed(3)} د.ب\n`;
       if (item.addons && item.addons.length) {
         msg += `   ➕ ${item.addons.map(a => a.name).join('، ')}\n`;
       }
