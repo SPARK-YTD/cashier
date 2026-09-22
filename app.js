@@ -908,6 +908,7 @@ function showPendingOrderModal(order) {
           <p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p>
           <p><strong>🏘️ العنوان:</strong> مجمع ${order.delivery_block || '—'} - طريق ${order.delivery_road || '—'} - منزل ${order.delivery_building || '—'}</p>
           ${order.delivery_address ? `<p><strong>📝 تفاصيل إضافية:</strong> ${order.delivery_address}</p>` : ''}
+          ${order.delivery_fee ? `<p><strong>🚚 رسوم التوصيل:</strong> ${parseFloat(order.delivery_fee).toFixed(3)} د.ب</p>` : ''}
           ${order.delivery_lat && order.delivery_lng ? `<p><a href="https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}" target="_blank" style="color:#2563EB;font-weight:700;">🗺️ فتح الموقع على الخريطة</a></p>` : `<p style="color:#DC2626;">⚠️ العميل ما حدد موقعه على الخريطة</p>`}
         ` : ''}
         ${order.notes ? `<p><strong>📝 ملاحظات:</strong> ${order.notes}</p>` : ''}
@@ -1060,6 +1061,7 @@ window.approvePendingOrder = async function(orderId) {
       orderData.delivery_building = order.delivery_building || null;
       orderData.delivery_lat = order.delivery_lat || null;
       orderData.delivery_lng = order.delivery_lng || null;
+      orderData.delivery_fee = parseFloat(order.delivery_fee || 0);
     }
     
     const { data: newOrder, error: insertError } = await supabase
@@ -1090,6 +1092,22 @@ window.approvePendingOrder = async function(orderId) {
           addons: i.addons || []
         };
       });
+
+      // ✅ رسوم التوصيل كبند مستقل - عشان "إجمالي المبيعات" يطابق "تفاصيل الأصناف" بالتقرير
+      // ويظهر بالتقرير كصف مستقل: الكمية = عدد التوصيلات، الإجمالي = مجموع مبالغ التوصيل
+      const deliveryFee = parseFloat(order.delivery_fee || 0);
+      if (order.delivery_type === 'delivery' && deliveryFee > 0) {
+        itemsForInsert.push({
+          order_id: createdOrder.id,
+          product_id: null,
+          variant_id: null,
+          item_name: "🚚 رسوم التوصيل",
+          qty: 1,
+          price: deliveryFee,
+          extras_removed: [],
+          addons: []
+        });
+      }
 
       const { error: itemsError } = await supabase
         .from("order_items")
@@ -1207,6 +1225,7 @@ function playNotificationSound() {
   order_items,
   source,
   customer_order_confirmed,
+  delivery_fee,
   employees:employees!orders_employee_code_fkey(name)
 `)
   .in("status", ["pending", "active"])
@@ -1300,6 +1319,7 @@ div.innerHTML = `
           <div>📍 ${order.customer_area || "—"}</div>
           ${order.delivery_block || order.delivery_road || order.delivery_building ? `<div>🏘️ مجمع ${order.delivery_block || "—"} - طريق ${order.delivery_road || "—"} - منزل ${order.delivery_building || "—"}</div>` : ""}
           ${order.customer_address ? `<div>📝 ${order.customer_address}</div>` : ""}
+          ${order.delivery_fee ? `<div>🚚 رسوم التوصيل: ${parseFloat(order.delivery_fee).toFixed(3)} د.ب</div>` : ""}
           ${order.delivery_lat && order.delivery_lng ? `<div><a href="https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}" target="_blank" style="color:#2563EB;font-weight:700;">🗺️ فتح الموقع على الخريطة</a></div>` : ""}
         </div>
       `
