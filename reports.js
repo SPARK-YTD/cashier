@@ -288,8 +288,28 @@ async function deleteReportPrompt(dayId) {
 
     const orderIds = (dayOrders || []).map(o => o.id);
 
-    // 2️⃣ احذف order_items المرتبطة بهذه الطلبات أولاً (لازم قبل حذف الطلبات نفسها بسبب الـ foreign key)
     if (orderIds.length > 0) {
+      // 2️⃣ جيب معرّفات order_items المرتبطة بهذه الطلبات
+      const { data: dayOrderItems, error: fetchItemsError } = await supabase
+        .from("order_items")
+        .select("id")
+        .in("order_id", orderIds);
+
+      if (fetchItemsError) throw fetchItemsError;
+
+      const orderItemIds = (dayOrderItems || []).map(i => i.id);
+
+      // 3️⃣ احذف employee_sales المرتبطة بهذه الـ order_items أولاً (foreign key عليها)
+      if (orderItemIds.length > 0) {
+        const { error: employeeSalesError } = await supabase
+          .from("employee_sales")
+          .delete()
+          .in("order_item_id", orderItemIds);
+
+        if (employeeSalesError) throw employeeSalesError;
+      }
+
+      // 4️⃣ احذف order_items المرتبطة بهذه الطلبات (لازم قبل حذف الطلبات نفسها بسبب الـ foreign key)
       const { error: itemsError } = await supabase
         .from("order_items")
         .delete()
@@ -298,7 +318,7 @@ async function deleteReportPrompt(dayId) {
       if (itemsError) throw itemsError;
     }
 
-    // 3️⃣ احذف الطلبات
+    // 5️⃣ احذف الطلبات
     const { error: ordersError } = await supabase
       .from("orders")
       .delete()
@@ -306,7 +326,7 @@ async function deleteReportPrompt(dayId) {
     
     if (ordersError) throw ordersError;
 
-    // 4️⃣ احذف التقرير المحفوظ المرتبط بهذا اليوم (إن وجد)
+    // 6️⃣ احذف التقرير المحفوظ المرتبط بهذا اليوم (إن وجد)
     const { error: reportError } = await supabase
       .from("daily_reports")
       .delete()
@@ -314,7 +334,7 @@ async function deleteReportPrompt(dayId) {
 
     if (reportError) throw reportError;
     
-    // 5️⃣ احذف اليوم نفسه
+    // 7️⃣ احذف اليوم نفسه
     const { error: dayError } = await supabase
       .from("business_days")
       .delete()
