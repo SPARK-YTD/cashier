@@ -24,7 +24,8 @@ function calculateReportData(orders) {
     benefitTotal += Number(o.benefit_amount || 0);
 
     o.order_items.forEach(i => {
-      const name = i.products.name;
+      // ✅ الاسم من جدول products لو موجود، وإلا من item_name المخزّن مباشرة (زي رسوم التوصيل اللي مالها منتج مرتبط)
+      const name = i.products?.name || i.item_name || "صنف غير معروف";
       const itemTotal = i.qty * i.price;
 
       itemsMap[name] ??= { qty: 0, total: 0 };
@@ -138,6 +139,7 @@ const { data: orders, error: ordersError } = await supabase
   order_items (
     qty,
     price,
+    item_name,
     products ( name )
   )
 `)
