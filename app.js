@@ -984,6 +984,26 @@ async function loadPendingOrders() {
   }
 }
 
+// ✅ تأكيد طلب العميل (QR) من قبل الكاشير - يميّز الفاتورة عشان المطعم يبدأ التحضير
+window.confirmCustomerOrder = async function(orderId) {
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        customer_order_confirmed: true,
+        confirmed_at: new Date().toISOString()
+      })
+      .eq("id", orderId);
+
+    if (error) throw error;
+
+    loadActiveOrders();
+  } catch (error) {
+    console.error("Error confirming customer order:", error);
+    alert("❌ خطأ في تأكيد الطلب: " + error.message);
+  }
+};
+
 window.approvePendingOrder = async function(orderId) {
   try {
     const { data: order, error: fetchError } = await supabase
@@ -1186,6 +1206,7 @@ function playNotificationSound() {
   delivery_lng,
   order_items,
   source,
+  customer_order_confirmed,
   employees:employees!orders_employee_code_fkey(name)
 `)
   .in("status", ["pending", "active"])
@@ -1253,6 +1274,15 @@ function playNotificationSound() {
 div.innerHTML = `
   <strong>فاتورة رقم ${order.invoice_no || "—"}</strong>
   <br>
+  ${
+    order.source === 'qr_menu'
+      ? (
+          order.customer_order_confirmed
+            ? `<div style="background:#16A34A;color:white;font-weight:900;padding:6px 10px;border-radius:6px;margin:6px 0;text-align:center;font-size:13px;">✅ تم تأكيد الطلب - جاهز للتحضير</div>`
+            : `<button onclick="confirmCustomerOrder('${order.id}')" style="width:100%;background:#F59E0B;color:white;font-weight:900;padding:8px 10px;border:none;border-radius:6px;margin:6px 0;cursor:pointer;font-size:13px;">⚠️ اضغط لتأكيد طلب العميل</button>`
+        )
+      : ""
+  }
   ${
     order.is_delivery
       ? `
