@@ -970,7 +970,19 @@ window.approvePendingOrder = async function(orderId) {
     console.log("🔍 PENDING ORDER DATA:", JSON.stringify(order, null, 2));
     console.log("🔍 ORDER_ITEMS:", order.order_items);
 
-    // ✅ Insert في orders مع كل البيانات
+    // ✅ رقم فاتورة صحيح مرتبط بعداد اليوم الحالي - نفس آلية الكاشير العادي بالضبط
+    const { data: invoiceNo, error: rpcError } = await supabase
+      .rpc("increment_invoice_counter", { row_id: currentBusinessDay.id });
+
+    if (rpcError || !Number.isInteger(invoiceNo)) {
+      console.error("RPC ERROR:", rpcError);
+      alert("❌ فشل توليد رقم الفاتورة");
+      return;
+    }
+
+    currentBusinessDay.invoice_counter = invoiceNo;
+
+    // ✅ Insert في orders - نفس حالة الطلب العادي المكتمل (active) عشان يحتسب باليوم والتقارير فوراً
     const orderData = {
       customer_name: order.customer_name,
       customer_phone: order.customer_phone,
@@ -978,8 +990,10 @@ window.approvePendingOrder = async function(orderId) {
       total: order.total_price,
       is_delivery: order.delivery_type === 'delivery',
       customer_area: order.delivery_area,
-      status: "pending", 
+      status: "active",
       business_day_id: currentBusinessDay.id,
+      invoice_no: invoiceNo,
+      timer_started_at: new Date().toISOString(),
       kitchen_ready: false,
       is_completed: false,
       is_paid: false,
@@ -1001,14 +1015,43 @@ window.approvePendingOrder = async function(orderId) {
 
     console.log("✅ NEW ORDER CREATED:", newOrder);
 
-    // ✅ حدّث pending_orders إلى approved + نمرر رقم الفاتورة عشان تنبعث للعميل عبر Realtime
     const createdOrder = newOrder && newOrder[0] ? newOrder[0] : null;
 
+    // ✅ إدراج كل صنف بجدول order_items المنفصل - نفس ما يسويه الكاشير العادي بالضبط
+    // عشان الطلب يحتسب صح في التقرير والأرشيف (شنو انباع فعلياً)
+    if (createdOrder && Array.isArray(order.order_items) && order.order_items.length > 0) {
+      const itemsForInsert = order.order_items.map(i => {
+        const baseName = (i.productName || "صنف").split(" - ")[0];
+        const itemName = i.variant && i.variant.label ? `${baseName} (${i.variant.label})` : baseName;
+        return {
+          order_id: createdOrder.id,
+          product_id: i.productId || null,
+          variant_id: i.variantId || null,
+          item_name: itemName,
+          qty: i.qty || 1,
+          price: parseFloat(i.price || 0),
+          extras_removed: i.extras_removed || [],
+          addons: i.addons || []
+        };
+      });
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(itemsForInsert);
+
+      if (itemsError) {
+        console.error("❌ Error inserting order_items:", itemsError);
+      } else {
+        console.log("✅ order_items inserted for report/archive:", itemsForInsert.length);
+      }
+    }
+
+    // ✅ حدّث pending_orders إلى approved + نمرر رقم الفاتورة عشان تنبعث للعميل عبر Realtime
     await supabase
       .from("pending_orders")
       .update({
         status: "approved",
-        linked_invoice_no: createdOrder && createdOrder.invoice_no != null ? String(createdOrder.invoice_no) : null,
+        linked_invoice_no: String(invoiceNo),
         linked_order_id: createdOrder ? createdOrder.id : null
       })
       .eq("id", orderId);
@@ -1025,7 +1068,7 @@ window.approvePendingOrder = async function(orderId) {
       subscribeToOrders();
     }, 300);
 
-    const successMsg = `✅ تم قبول طلب ${order.customer_name || 'العميل'}\n📱 الرقم: ${order.customer_phone}\n💰 المبلغ: ${parseFloat(order.total_price || 0).toFixed(3)} د.ب`;
+    const successMsg = `✅ تم قبول طلب ${order.customer_name || 'العميل'}\n🧾 فاتورة رقم: ${invoiceNo}\n📱 الرقم: ${order.customer_phone}\n💰 المبلغ: ${parseFloat(order.total_price || 0).toFixed(3)} د.ب`;
     alert(successMsg);
     
   } catch (error) {
