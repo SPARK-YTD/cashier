@@ -1589,6 +1589,7 @@
       delivery_address: type === "delivery" ? document.getElementById("deliveryAddress").value.trim() : null,
       delivery_lat: type === "delivery" && customerLocation ? customerLocation.lat : null,
       delivery_lng: type === "delivery" && customerLocation ? customerLocation.lng : null,
+      delivery_fee: type === "delivery" ? getDeliveryFee() : 0,
       notes: notes,
       total_price: parseFloat(grandTotal.toFixed(3)),
       status: "pending",
