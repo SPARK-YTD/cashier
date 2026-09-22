@@ -853,7 +853,8 @@ function showPendingOrderModal(order) {
   
   const itemsHtml = items.map(i => {
     const variant = i.variant ? (i.variant.label || i.variant.id) : '';
-    const displayName = variant ? `${(i.productName || '').split(' - ')[0]} - ${variant}` : (i.productName || 'صنف');
+    const baseName = (i.productName || 'صنف').split(' - ')[0];
+    const displayName = variant ? `${baseName} (${variant})` : baseName;
     return `
     <div style="background: #f5f5f5; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-right: 3px solid #D4A574;">
       <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">
@@ -1204,11 +1205,13 @@ div.innerHTML = `
   ${order.order_items && Array.isArray(order.order_items) && order.order_items.length > 0 ? `
     <div style="border-top: 1px solid #ddd; margin-top: 8px; padding-top: 8px; font-size: 12px;">
       <strong>📦 الأصناف:</strong>
-      ${order.order_items.map((item, itemIdx) => {
-        console.log(`    Item ${itemIdx}:`, item);
+      ${order.order_items.map((item) => {
+        // ✅ نأخذ الجزء الأول قبل أول " - " فقط (يعالج أي تكرار قديم بالبيانات)
+        const baseName = (item.productName || item.name || "صنف").split(" - ")[0];
+        const itemLabel = item.variant && item.variant.label ? `${baseName} (${item.variant.label})` : baseName;
         return `
         <div style="margin: 4px 0;">
-          🔹 ${item.productName || item.name || "صنف"} ×${item.qty} = ${parseFloat(item.price || 0).toFixed(3)} د.ب
+          🔹 ${itemLabel} ×${item.qty} = ${parseFloat(item.price || 0).toFixed(3)} د.ب
           ${item.addons && item.addons.length ? `
             <div style="margin-left: 12px; font-size: 11px; color: #666;">
               ➕ ${item.addons.map(a => a.name).join(", ")}
@@ -1228,11 +1231,8 @@ div.innerHTML = `
       `;
       }).join("")}
     </div>
-  ` : `
-    <div style="background: #FEE2E2; padding: 8px; border-radius: 4px; margin-top: 8px; color: #DC2626; font-size: 12px;">
-      ⚠️ لا توجد بيانات للفاتورة
-    </div>
-  `}
+  ` : ``}
+
 
   ${
     order.is_employee_order
@@ -1788,8 +1788,9 @@ await supabase.from("orders").update({
       invoiceNo = order.invoice_no;
 
       itemsHtml = order.order_items.map(i => {
-        const variantLabel = i.variant ? ` - ${i.variant.label || ""}` : "";
-        const itemName = (i.productName || "صنف") + variantLabel;
+        // ✅ نأخذ الجزء الأول قبل أول " - " فقط (يعالج أي تكرار قديم بالبيانات)
+        const baseName = (i.productName || "صنف").split(" - ")[0];
+        const itemName = i.variant && i.variant.label ? `${baseName} (${i.variant.label})` : baseName;
         const qty = i.qty || 1;
         const price = parseFloat(i.price || 0);
         const addonsTotal = (i.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
