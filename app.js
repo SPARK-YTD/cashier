@@ -1045,6 +1045,7 @@ window.approvePendingOrder = async function(orderId) {
       kitchen_ready: false,
       is_completed: false,
       is_paid: false,
+      is_employee_order: false,
       source: 'qr_menu',
       created_at: new Date().toISOString()
     };
