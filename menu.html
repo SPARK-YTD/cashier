@@ -560,8 +560,14 @@
       font-weight: 700;
       font-size: 15px;
       cursor: pointer;
-      margin-top: 16px;
+      margin-top: 4px;
       text-decoration: none;
+      animation: pulse-wa 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-wa {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
     }
 
     .btn-whatsapp:active {
@@ -1393,9 +1399,15 @@
       card.innerHTML = `
         <div class="status-icon-success">🎉</div>
         <h2 style="margin:0 0 8px; color:#111827;">تم الموافقة على طلبك!</h2>
-        <p style="color:#6B7280; margin:0 0 12px; font-size:14px;">الرجاء الانتظار حتى تتم معالجة الطلب بشكل كامل</p>
-        ${data.invoiceNo ? `<div style="background:#F0FDF4; border:1px dashed #10B981; border-radius:8px; padding:10px; margin-bottom:8px;"><strong style="color:#10B981;">رقم الفاتورة: ${data.invoiceNo}</strong></div>` : ""}
-        ${whatsappPhone ? `<a class="btn-whatsapp" href="${waUrl}" target="_blank">📱 تواصل مع المحل عبر واتساب</a>` : ""}
+        ${data.invoiceNo ? `<div style="background:#F0FDF4; border:1px dashed #10B981; border-radius:8px; padding:10px; margin-bottom:14px;"><strong style="color:#10B981;">رقم الفاتورة: ${data.invoiceNo}</strong></div>` : ""}
+        ${whatsappPhone ? `
+        <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:8px; padding:12px; margin-bottom:14px; text-align:right;">
+          <p style="margin:0; color:#92400E; font-size:14px; font-weight:700;">⚠️ خطوة أخيرة مطلوبة</p>
+          <p style="margin:6px 0 0; color:#92400E; font-size:13px;">اضغط الزر الأخضر تحت وأرسل الرسالة الجاهزة عبر واتساب، عشان المحل يتأكد من طلبك ويبدأ التحضير فوراً</p>
+        </div>
+        <a class="btn-whatsapp" href="${waUrl}" target="_blank">📱 اضغط هنا للتأكيد عبر واتساب</a>
+        <p style="color:#9CA3AF; margin:10px 0 0; font-size:12px;">بعد ما تفتح واتساب، بس اضغط "إرسال" على الرسالة الجاهزة</p>
+        ` : `<p style="color:#6B7280; margin:0 0 12px; font-size:14px;">الرجاء الانتظار حتى تتم معالجة الطلب بشكل كامل</p>`}
         <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">العودة للمنيو</button>
       `;
     }
