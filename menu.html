@@ -1330,9 +1330,10 @@
 
   window.updateOrderTotal = () => {
     const itemsTotal = cart.reduce((sum, item) => {
+      // ✅ item.price يشمل الإضافات المدفوعة أصلاً (اتحسبت وقت الإضافة للسلة في confirmAddons)
+      // ما نضيفها مرة ثانية هنا عشان ما يتكرر احتساب سعر الإضافة
       const itemPrice = parseFloat(item.price || 0);
-      const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
-      return sum + ((itemPrice + addonPrice) * item.qty);
+      return sum + (itemPrice * item.qty);
     }, 0);
     
     const isDelivery = document.querySelector('input[name="orderType"]:checked').value === "delivery";
@@ -1378,9 +1379,9 @@
     cart.forEach(item => {
       const baseName = (item.productName || "صنف").split(" - ")[0];
       const itemLabel = item.variant && item.variant.label ? `${baseName} (${item.variant.label})` : baseName;
+      // ✅ item.price يشمل الإضافات المدفوعة أصلاً - ما نضيفها مرة ثانية
       const itemPrice = parseFloat(item.price || 0);
-      const addonPrice = (item.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
-      const lineTotal = (itemPrice + addonPrice) * item.qty;
+      const lineTotal = itemPrice * item.qty;
       msg += `• ${itemLabel} ×${item.qty} = ${lineTotal.toFixed(3)} د.ب\n`;
       if (item.addons && item.addons.length) {
         msg += `   ➕ ${item.addons.map(a => a.name).join('، ')}\n`;
@@ -1525,9 +1526,10 @@
     }
 
     const itemsTotal = cart.reduce((sum, item) => {
+      // ✅ item.price يشمل الإضافات المدفوعة أصلاً (اتحسبت وقت الإضافة للسلة في confirmAddons)
+      // ما نضيفها مرة ثانية هنا عشان ما يتكرر احتساب سعر الإضافة
       const itemPrice = parseFloat(item.price || 0);
-      const addonPrice = (item.addons || []).reduce((adSum, a) => adSum + parseFloat(a.price || 0), 0);
-      return sum + ((itemPrice + addonPrice) * item.qty);
+      return sum + (itemPrice * item.qty);
     }, 0);
     
     const fee = type === "delivery" ? getDeliveryFee() : 0;
