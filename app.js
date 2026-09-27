@@ -1228,6 +1228,8 @@ function playNotificationSound() {
   source,
   customer_order_confirmed,
   delivery_fee,
+  is_delivered,
+  delivered_at,
   employees:employees!orders_employee_code_fkey(name)
 `)
   .in("status", ["pending", "active"])
@@ -1316,6 +1318,15 @@ div.innerHTML = `
           font-size:13px;
         ">
           <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
+          ${
+            order.source === 'qr_menu'
+              ? (
+                  order.is_delivered
+                    ? `<div style="background:#16A34A;color:white;font-weight:900;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">🚚✅ وصل التوصيل${order.delivered_at ? ` - ${new Date(order.delivered_at).toLocaleTimeString('ar-BH', { hour: '2-digit', minute: '2-digit' })}` : ''}</div>`
+                    : `<div style="background:#FEF3C7;color:#92400E;font-weight:700;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">⏳ بانتظار السائق</div>`
+                )
+              : ""
+          }
           <div>👤 ${order.customer_name || "—"}</div>
           <div>📞 ${order.customer_phone || "—"}</div>
           <div>📍 ${order.customer_area || "—"}</div>
@@ -1923,9 +1934,9 @@ await supabase.from("orders").update({
         const baseName = (i.productName || "صنف").split(" - ")[0];
         const itemName = i.variant && i.variant.label ? `${baseName} (${i.variant.label})` : baseName;
         const qty = i.qty || 1;
+        // ✅ i.price يشمل الإضافات المدفوعة أصلاً (اتحسبت وقت إرسال الطلب من المنيو) - ما نضيفها مرة ثانية
         const price = parseFloat(i.price || 0);
-        const addonsTotal = (i.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
-        const lineTotal = (price + addonsTotal) * qty;
+        const lineTotal = price * qty;
         const extrasRemoved = i.extras_removed || [];
         return `
         <div style="border-bottom:1px dashed #ddd;padding:8px 0">
