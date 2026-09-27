@@ -1047,9 +1047,10 @@ window.approvePendingOrder = async function(orderId) {
       is_paid: false,
       is_employee_order: false,
       source: 'qr_menu',
+      notes: order.notes || null,
       created_at: new Date().toISOString()
     };
-    
+
     // إضافة delivery_address إذا كانت موجودة في جدول orders
     if (order.delivery_address) {
       orderData.customer_address = order.delivery_address;
