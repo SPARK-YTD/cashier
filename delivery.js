@@ -3,57 +3,49 @@ window.supabase = supabase;
 
 /*********************************
  * صفحة التوصيل | Get-Break Cashier
+ * صفحة مستقلة تماماً عن الكاشير - حساب دخول خاص بالديلفري (delivery_accounts)
  * تعرض فقط طلبات التوصيل من العميل (QR) اللي:
  *   1) اتقبلت من الكاشير (approvePendingOrder)
  *   2) اتأكدت من الكاشير (تأكيد الطلب - customer_order_confirmed)
- *   3) لسا نشطة (status = active)
+ *   3) لسا ما اتوصلت (is_delivered = false)
  * بدون عرض سعر الأصناف/الإجمالي - بس رسوم التوصيل + الموقع + بيانات العنوان
+ *
+ * ✅ "تم التوصيل" ما يقفل الفاتورة ولا يخفيها من الكاشير -
+ * بس يعلّم إنها اتوصلت (is_delivered / delivered_at). الكاشير يشوفها لسا
+ * بقائمة الطلبات الجارية مع شارة "🚚 وصل التوصيل"، ويقفلها هو بنفسه لاحقاً
+ * بنفس آلية إتمام الفاتورة العادية.
  *********************************/
 
-let currentBusinessDay = null;
 let deliveryOrders = [];
 let ordersChannel;
 let pollTimer;
 
-async function getOpenBusinessDay() {
-  const { data, error } = await supabase
-    .from("business_days")
-    .select("*")
-    .eq("is_open", true)
-    .order("opened_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("❌ Error fetching open day:", error);
-    return null;
-  }
-  return data;
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = sessionStorage.getItem("delivery_session");
   if (!session) {
-    location.href = "login.html";
+    location.href = "delivery-login.html";
     return;
   }
 
-  currentBusinessDay = await getOpenBusinessDay();
-
-  if (!currentBusinessDay) {
-    document.getElementById("deliveryList").innerHTML = `
-      <div class="empty-state"><p>⚠️ لا يوجد يوم عمل مفتوح حالياً</p></div>
-    `;
-    return;
-  }
+  try {
+    const account = JSON.parse(session);
+    const nameEl = document.getElementById("driverNameSub");
+    if (nameEl && account.name) {
+      nameEl.textContent = `مرحباً ${account.name} - طلبات التوصيل بانتظار التسليم`;
+    }
+  } catch {}
 
   await loadDeliveryOrders();
   subscribeToDeliveryOrders();
 
   // ✅ شبكة أمان: بولينج كل 15 ثانية بنفس فلسفة app.js
-  // (لو انقطع الـ realtime لأي سبب، الصفحة تبقى محدثة)
   pollTimer = setInterval(loadDeliveryOrders, 15000);
 });
+
+window.logoutDelivery = function () {
+  sessionStorage.removeItem("delivery_session");
+  location.href = "delivery-login.html";
+};
 
 async function loadDeliveryOrders() {
   const { data, error } = await supabase
@@ -74,17 +66,14 @@ async function loadDeliveryOrders() {
       notes,
       kitchen_ready,
       status,
-      is_paid,
-      total,
       is_delivery,
       customer_order_confirmed,
-      is_delivered,
-      business_day_id
+      is_delivered
     `)
     .eq("is_delivery", true)
     .eq("customer_order_confirmed", true)
-    .eq("status", "active")
-    .eq("business_day_id", currentBusinessDay.id)
+    .eq("is_delivered", false)
+    .in("status", ["pending", "active"])
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -184,48 +173,18 @@ window.markDelivered = async function (orderId) {
   }
 
   try {
-    const { data: freshOrder, error: fetchErr } = await supabase
+    // ✅ بس نعلّم إنها اتوصلت - ما نلمس status ولا is_paid
+    // عشان الطلب يبقى ظاهر بالكاشير للإقفال المحاسبي العادي
+    const { error } = await supabase
       .from("orders")
-      .select("id, status, is_paid, total")
-      .eq("id", orderId)
-      .single();
-
-    if (fetchErr || !freshOrder) throw fetchErr || new Error("الطلب غير موجود");
-
-    if (freshOrder.status === "completed") {
-      alert("✔ هذا الطلب مكتمل مسبقاً");
-      await loadDeliveryOrders();
-      return;
-    }
-
-    const updates = {
-      is_delivered: true,
-      delivered_at: new Date().toISOString(),
-      status: "completed",
-      closed_at: new Date().toISOString(),
-      kitchen_ready: true
-    };
-
-    // ✅ طلبات توصيل العميل (QR) تُدفع نقداً عند التسليم (COD)
-    // إذا ما كانت مسجلة كمدفوعة مسبقاً من الكاشير
-    if (!freshOrder.is_paid) {
-      updates.is_paid = true;
-      updates.payment_method = "cash";
-      updates.cash_amount = freshOrder.total;
-      updates.benefit_amount = 0;
-    }
-
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update(updates)
+      .update({
+        is_delivered: true,
+        delivered_at: new Date().toISOString()
+      })
       .eq("id", orderId);
 
-    if (updateError) throw updateError;
+    if (error) throw error;
 
-    // ⏭️ لا نخصم من المخزون - كل طلبات هذه الصفحة هي توصيل عميل (QR) بقرار صاحب المشروع
-    console.log("⏭️ تخطي خصم المخزون - طلب توصيل عميل (QR)");
-
-    await processEmployeePayout(orderId);
     await loadDeliveryOrders();
 
   } catch (err) {
@@ -237,55 +196,6 @@ window.markDelivered = async function (orderId) {
     }
   }
 };
-
-// نسخة مطابقة لدالة app.js عشان عمولات الموظفين تنحسب بنفس الطريقة
-// حتى لو الطلب اتقفل من صفحة التوصيل بدل الكاشير
-async function processEmployeePayout(orderId) {
-  try {
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("id, product_id, qty, price")
-      .eq("order_id", orderId);
-
-    if (!items) return;
-
-    for (const item of items) {
-      const saleTotal = Number(item.price) * Number(item.qty);
-
-      const { data: productEmployees } = await supabase
-        .from("product_employees")
-        .select("employee_id, commission_percent")
-        .eq("product_id", item.product_id);
-
-      if (!productEmployees || productEmployees.length === 0) continue;
-
-      for (const pe of productEmployees) {
-        const payout = saleTotal * (Number(pe.commission_percent) / 100);
-
-        const { data: cycle } = await supabase
-          .from("employee_cycles")
-          .select("id")
-          .eq("employee_id", pe.employee_id)
-          .eq("status", "open")
-          .maybeSingle();
-
-        if (!cycle) continue;
-
-        await supabase.from("employee_sales").insert({
-          employee_id: pe.employee_id,
-          product_id: item.product_id,
-          order_item_id: item.id,
-          cycle_id: cycle.id,
-          quantity: item.qty,
-          sale_price: item.price,
-          payout_amount: payout
-        });
-      }
-    }
-  } catch (err) {
-    console.error("PAYOUT ERROR:", err);
-  }
-}
 
 function subscribeToDeliveryOrders() {
   if (ordersChannel) {
