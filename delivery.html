@@ -37,10 +37,10 @@
       opacity: 0.85;
     }
 
-    .back-to-cashier {
+    .logout-btn {
       position: absolute;
       top: 20px;
-      right: 20px;
+      left: 20px;
       background: rgba(255,255,255,0.12);
       color: white;
       border: none;
@@ -51,7 +51,7 @@
       font-weight: 600;
     }
 
-    .back-to-cashier:hover {
+    .logout-btn:hover {
       background: rgba(255,255,255,0.22);
     }
 
@@ -215,10 +215,10 @@
     }
 
     @media (max-width: 600px) {
-      .back-to-cashier {
+      .logout-btn {
         position: static;
         display: inline-block;
-        margin-bottom: 10px;
+        margin-top: 10px;
       }
     }
   </style>
@@ -228,12 +228,10 @@
 <div class="delivery-container">
 
   <div class="header">
-    <button class="back-to-cashier" onclick="window.location.href='index.html'" title="رجوع للكاشير">
-      ← العودة للكاشير
-    </button>
     <h1>🚚 صفحة التوصيل</h1>
-    <div class="sub">طلبات التوصيل المعتمدة بانتظار التسليم</div>
+    <div class="sub" id="driverNameSub">طلبات التوصيل المعتمدة بانتظار التسليم</div>
     <div class="count-pill">📦 <span id="deliveryCount">0</span> طلب</div>
+    <button class="logout-btn" onclick="logoutDelivery()">🚪 خروج</button>
   </div>
 
   <div id="deliveryList" class="delivery-list">
@@ -242,7 +240,7 @@
 
 </div>
 
-<script type="module" src="auth-guard.js"></script>
+<script src="delivery-guard.js"></script>
 <script type="module" src="delivery.js"></script>
 
 </body>
