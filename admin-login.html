@@ -12,8 +12,10 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  height:100vh;
+  min-height:100vh;
   margin:0;
+  padding:20px;
+  box-sizing:border-box;
 }
 .card{
   background:white;
@@ -28,6 +30,8 @@ input{
   margin-bottom:12px;
   border-radius:6px;
   border:1px solid #ddd;
+  box-sizing:border-box;
+  font-family:inherit;
 }
 button{
   width:100%;
@@ -44,11 +48,114 @@ button{
   font-size:13px;
   margin-bottom:10px;
 }
+
+/* ============== Delivery Admin Panel (بعد تسجيل الدخول) ============== */
+.panel{
+  display:none;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.08);
+  width:100%;
+  max-width:700px;
+}
+
+.panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.panel-header h3{
+  margin:0;
+}
+
+.panel-nav{
+  display:flex;
+  gap:8px;
+}
+
+.panel-nav button{
+  width:auto;
+  padding:8px 12px;
+  font-size:13px;
+}
+
+.gray{background:#6b7280;}
+.success{background:#16a34a;}
+.danger{background:#dc2626;}
+.primary-yellow{background:#F59E0B;}
+
+.top-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:12px;
+  text-align:center;
+  border-bottom:1px solid #eee;
+  font-size:14px;
+}
+
+th{
+  background:#f8fafc;
+  font-weight:700;
+}
+
+.badge{
+  padding:4px 10px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.active-badge{background:#dcfce7;color:#166534;}
+.inactive-badge{background:#fee2e2;color:#991b1b;}
+
+td button{
+  width:auto;
+  padding:6px 10px;
+  font-size:12px;
+  margin:2px;
+}
+
+/* Modal لإضافة ديلفري */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.modal-content{
+  background:white;
+  padding:25px;
+  border-radius:14px;
+  width:320px;
+}
+
+.modal-content h3{
+  margin-top:0;
+}
 </style>
 </head>
 <body>
 
-<div class="card">
+<!-- ===== شاشة تسجيل الدخول ===== -->
+<div class="card" id="loginCard">
   <h3>🔐 دخول الإدارة</h3>
   <div class="error" id="errorMsg"></div>
 
@@ -56,6 +163,51 @@ button{
   <input type="password" id="adminPin" placeholder="كلمة المرور">
 
   <button onclick="loginAdmin()">دخول</button>
+</div>
+
+<!-- ===== لوحة الإدارة (تظهر بعد تسجيل الدخول) ===== -->
+<div class="panel" id="adminPanel">
+  <div class="panel-header">
+    <h3>🚚 إدارة حسابات الديلفري</h3>
+    <div class="panel-nav">
+      <button class="gray" onclick="window.location.href='admin-employees.html'">👥 إدارة الموظفين</button>
+      <button class="gray" onclick="logoutAdmin()">🚪 خروج</button>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button class="primary-yellow" onclick="openDeliveryModal()" style="width:auto;padding:8px 14px;">
+      ➕ إضافة ديلفري
+    </button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>اسم المستخدم</th>
+        <th>الحالة</th>
+        <th>الإدارة</th>
+      </tr>
+    </thead>
+    <tbody id="deliveryTable">
+      <tr><td colspan="4" style="padding:25px;">⏳ جاري التحميل...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal إضافة ديلفري -->
+<div class="modal" id="deliveryModal">
+  <div class="modal-content">
+    <h3>إضافة ديلفري</h3>
+
+    <input id="delName" placeholder="اسم السائق">
+    <input id="delUsername" placeholder="اسم المستخدم (للدخول)">
+    <input id="delPin" placeholder="كلمة المرور">
+
+    <button class="success" onclick="saveDelivery()">حفظ</button>
+    <button class="gray" onclick="closeDeliveryModal()">إلغاء</button>
+  </div>
 </div>
 
 <script type="module" src="admin-login.js"></script>
