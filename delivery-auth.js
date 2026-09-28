@@ -1,4 +1,15 @@
 import { supabase } from "./supabase.js";
+import { t, applyStaticTranslations, renderLanguageSwitcher } from "./delivery-i18n.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyStaticTranslations();
+  renderLanguageSwitcher("langSwitcher");
+});
+
+window.__onLangChange = function () {
+  applyStaticTranslations();
+  renderLanguageSwitcher("langSwitcher");
+};
 
 window.loginDelivery = async function () {
   const username = document.getElementById("deliveryUsername").value.trim();
@@ -8,7 +19,7 @@ window.loginDelivery = async function () {
   errorMsg.textContent = "";
 
   if (!username || !pin) {
-    errorMsg.textContent = "أدخل اسم المستخدم وكلمة المرور";
+    errorMsg.textContent = t("err_required");
     return;
   }
 
@@ -19,17 +30,17 @@ window.loginDelivery = async function () {
     .single();
 
   if (error || !account) {
-    errorMsg.textContent = "الحساب غير موجود";
+    errorMsg.textContent = t("err_not_found");
     return;
   }
 
   if (!account.active) {
-    errorMsg.textContent = "الحساب موقوف";
+    errorMsg.textContent = t("err_inactive");
     return;
   }
 
   if (account.pin_hash !== pin) {
-    errorMsg.textContent = "كلمة المرور غير صحيحة";
+    errorMsg.textContent = t("err_wrong_password");
     return;
   }
 
