@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>صفحة التوصيل 🚚</title>
+  <title>Delivery Page 🚚</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body {
@@ -14,6 +14,30 @@
       max-width: 900px;
       margin: 0 auto;
       padding: 16px;
+    }
+
+    .lang-switcher {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .lang-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #E2E8F0;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .lang-btn.active {
+      background: #0F172A;
+      color: white;
+      border-color: #0F172A;
     }
 
     .header {
@@ -287,16 +311,18 @@
 
 <div class="delivery-container">
 
+  <div class="lang-switcher" id="langSwitcher"></div>
+
   <div class="header">
-    <h1>🚚 صفحة التوصيل</h1>
-    <div class="sub" id="driverNameSub">طلبات التوصيل المعتمدة بانتظار التسليم</div>
-    <div class="count-pill">📦 <span id="deliveryCount">0</span> طلب</div>
-    <div class="location-status" id="locationStatus">📍 جاري تفعيل مشاركة الموقع...</div>
-    <button class="logout-btn" onclick="logoutDelivery()">🚪 خروج</button>
+    <h1 data-i18n="header_title">🚚 صفحة التوصيل</h1>
+    <div class="sub" id="driverNameSub" data-i18n="default_sub">طلبات التوصيل المعتمدة بانتظار التسليم</div>
+    <div class="count-pill">📦 <span id="deliveryCount">0</span> <span data-i18n="order_word">طلب</span></div>
+    <div class="location-status" id="locationStatus" data-i18n="location_activating">📍 جاري تفعيل مشاركة الموقع...</div>
+    <button class="logout-btn" data-i18n="logout_btn" onclick="logoutDelivery()">🚪 خروج</button>
   </div>
 
   <div id="deliveryList" class="delivery-list">
-    <div class="empty-state"><p>⏳ جاري التحميل...</p></div>
+    <div class="empty-state"><p data-i18n="loading">⏳ جاري التحميل...</p></div>
   </div>
 
 </div>
