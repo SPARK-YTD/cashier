@@ -66,6 +66,28 @@
       margin-top: 8px;
     }
 
+    .location-status {
+      display: inline-block;
+      margin-top: 8px;
+      margin-right: 8px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #334155;
+      color: #E2E8F0;
+    }
+
+    .location-status.active {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .location-status.denied {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
     .delivery-list {
       display: flex;
       flex-direction: column;
@@ -231,6 +253,7 @@
     <h1>🚚 صفحة التوصيل</h1>
     <div class="sub" id="driverNameSub">طلبات التوصيل المعتمدة بانتظار التسليم</div>
     <div class="count-pill">📦 <span id="deliveryCount">0</span> طلب</div>
+    <div class="location-status" id="locationStatus">📍 جاري تفعيل مشاركة الموقع...</div>
     <button class="logout-btn" onclick="logoutDelivery()">🚪 خروج</button>
   </div>
 
