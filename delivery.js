@@ -19,6 +19,9 @@ window.supabase = supabase;
 let deliveryOrders = [];
 let ordersChannel;
 let pollTimer;
+let locationWatchId = null;
+let lastLocationSentAt = 0;
+const LOCATION_UPDATE_INTERVAL = 15000; // ما نرسل تحديث موقع أكثر من مرة كل 15 ثانية
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = sessionStorage.getItem("delivery_session");
@@ -27,8 +30,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  let account = null;
   try {
-    const account = JSON.parse(session);
+    account = JSON.parse(session);
     const nameEl = document.getElementById("driverNameSub");
     if (nameEl && account.name) {
       nameEl.textContent = `مرحباً ${account.name} - طلبات التوصيل بانتظار التسليم`;
@@ -40,12 +44,71 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ شبكة أمان: بولينج كل 15 ثانية بنفس فلسفة app.js
   pollTimer = setInterval(loadDeliveryOrders, 15000);
+
+  // ✅ مشاركة موقع السائق اللحظي عشان المطعم يقدر يشوف وينه
+  if (account && account.id) {
+    startLocationSharing(account.id);
+  }
 });
 
 window.logoutDelivery = function () {
+  if (locationWatchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(locationWatchId);
+  }
   sessionStorage.removeItem("delivery_session");
   location.href = "delivery-login.html";
 };
+
+/* ===============================
+   مشاركة موقع السائق اللحظي
+   (يرسل الموقع لجدول delivery_accounts كل ما يتحرك، بحد أقصى مرة كل 15 ثانية)
+================================ */
+function startLocationSharing(accountId) {
+  if (!navigator.geolocation) {
+    console.warn("⚠️ المتصفح ما يدعم تحديد الموقع");
+    setLocationStatus("denied", "⚠️ المتصفح ما يدعم تحديد الموقع");
+    return;
+  }
+
+  locationWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const now = Date.now();
+      if (now - lastLocationSentAt < LOCATION_UPDATE_INTERVAL) return;
+      lastLocationSentAt = now;
+      updateDriverLocation(accountId, pos.coords.latitude, pos.coords.longitude);
+    },
+    (err) => {
+      console.warn("⚠️ LOCATION ERROR:", err);
+      setLocationStatus("denied", "⚠️ فعّل صلاحية الموقع من المتصفح عشان المطعم يشوف مكانك");
+    },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+  );
+}
+
+async function updateDriverLocation(accountId, lat, lng) {
+  const { error } = await supabase
+    .from("delivery_accounts")
+    .update({
+      current_lat: lat,
+      current_lng: lng,
+      location_updated_at: new Date().toISOString()
+    })
+    .eq("id", accountId);
+
+  if (error) {
+    console.error("❌ UPDATE LOCATION ERROR:", error);
+    setLocationStatus("denied", "⚠️ تعذر إرسال الموقع");
+  } else {
+    setLocationStatus("active", "📍 مشاركة الموقع مفعّلة");
+  }
+}
+
+function setLocationStatus(state, text) {
+  const el = document.getElementById("locationStatus");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "location-status" + (state ? ` ${state}` : "");
+}
 
 async function loadDeliveryOrders() {
   const { data, error } = await supabase
