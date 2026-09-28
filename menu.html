@@ -51,18 +51,72 @@
       align-items: center;
     }
 
-    .timer-badge {
-      background: #10B981;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 13px;
-      font-family: 'Courier New', monospace;
+    /* ========== PHONE GATE ========== */
+    .phone-gate-overlay {
+      position: fixed;
+      inset: 0;
+      background: #111827;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
 
-    .timer-badge.warning {
-      background: #EF4444;
+    .phone-gate-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .phone-gate-card h2 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+    }
+
+    .phone-gate-card p {
+      color: #6B7280;
+      font-size: 14px;
+      margin: 0 0 20px 0;
+    }
+
+    .phone-gate-card input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #D1D5DB;
+      font-size: 18px;
+      text-align: center;
+      margin-bottom: 10px;
+      direction: ltr;
+    }
+
+    .phone-gate-error {
+      color: #DC2626;
+      font-size: 13px;
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+
+    .phone-gate-btn {
+      width: 100%;
+      background: #10B981;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .phone-gate-btn:hover {
+      background: #059669;
     }
 
     /* ========== CONTAINER ========== */
@@ -594,8 +648,16 @@
 <!-- HEADER -->
 <div class="header">
   <span class="header-title">🍽️ القائمة</span>
-  <div class="header-right">
-    <span class="timer-badge" id="timerBadge">10:00</span>
+</div>
+
+<!-- PHONE GATE -->
+<div class="phone-gate-overlay" id="phoneGateOverlay">
+  <div class="phone-gate-card">
+    <h2>👋 أهلاً بك</h2>
+    <p>أدخل رقم هاتفك عشان تدخل المنيو</p>
+    <input type="tel" id="gatePhoneInput" placeholder="33123456" inputmode="numeric" autofocus>
+    <div class="phone-gate-error" id="gatePhoneError"></div>
+    <button class="phone-gate-btn" onclick="submitPhoneGate()">دخول المنيو</button>
   </div>
 </div>
 
@@ -806,15 +868,13 @@
   import { supabase } from "./supabase.js";
 
   // ========== SESSION MANAGEMENT ==========
+  // ✅ ما فيه تايمر جلسة (شيلناه) - السلة تضل محفوظة لين الزبون يسوي الطلب بنفسه
   let sessionId = null;
-  let sessionTimer = null;
-  const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 دقايق
 
   function initializeSession() {
     sessionId = generateSessionId();
     console.log("🆔 Session ID:", sessionId);
     sessionStorage.setItem("sessionId", sessionId);
-    startSessionTimer();
   }
 
   function generateSessionId() {
@@ -825,43 +885,44 @@
     return `cart_${sessionId}`;
   }
 
-  function startSessionTimer() {
-    let timeRemaining = SESSION_TIMEOUT;
+  // ========== PHONE GATE ==========
+  // ✅ بوابة دخول برقم الهاتف - بدون OTP/تحقق فعلي (بناءً على طلب المطعم):
+  // بس نجمع الرقم قبل ما يدخل المنيو ونحفظه، ونعبيه تلقائياً بنموذج الطلب بعدين
+  // عشان ما يكتبه مرتين. ما يمنع رقم غلط، بس يقلل الاحتكاك وقت الطلب.
+  const PHONE_GATE_KEY = "customer_gate_phone";
 
-    function updateTimerDisplay() {
-      const minutes = Math.floor(timeRemaining / 60000);
-      const seconds = Math.floor((timeRemaining % 60000) / 1000);
-      const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  function normalizeGatePhone(raw) {
+    return (raw || "").replace(/[^\d+]/g, "");
+  }
 
-      const timerBadge = document.getElementById("timerBadge");
-      if (timerBadge) {
-        timerBadge.textContent = display;
-        if (minutes === 0 && seconds <= 60) {
-          timerBadge.classList.add('warning');
-        }
-      }
+  function isValidGatePhone(phone) {
+    const digitsOnly = phone.replace(/\D/g, "");
+    // ✅ رقم بحريني محلي 8 أرقام، أو رقم دولي (مع رمز الدولة) 8-15 رقم
+    return digitsOnly.length >= 8 && digitsOnly.length <= 15;
+  }
+
+  window.submitPhoneGate = () => {
+    const input = document.getElementById("gatePhoneInput");
+    const errorEl = document.getElementById("gatePhoneError");
+    const phone = normalizeGatePhone(input.value);
+
+    if (!isValidGatePhone(phone)) {
+      errorEl.textContent = "⚠️ أدخل رقم هاتف صحيح";
+      return;
     }
 
-    updateTimerDisplay();
+    errorEl.textContent = "";
+    sessionStorage.setItem(PHONE_GATE_KEY, phone);
+    document.getElementById("phoneGateOverlay").style.display = "none";
+    startApp();
+  };
 
-    sessionTimer = setInterval(() => {
-      timeRemaining -= 1000;
-      updateTimerDisplay();
-
-      if (timeRemaining <= 0) {
-        clearInterval(sessionTimer);
-        expireSession();
-      }
-    }, 1000);
-  }
-
-  function expireSession() {
-    localStorage.removeItem(getCartKey());
-    sessionStorage.removeItem("sessionId");
-    cart = [];
-    alert("⏰ انتهت مهلة الجلسة (10 دقايق)!\nالرجاء بدء طلب جديد.");
-    location.reload();
-  }
+  // ✅ Enter تسوي نفس عمل زر الدخول
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("gatePhoneInput")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitPhoneGate();
+    });
+  });
 
   // ========== GLOBAL STATE ==========
   let allProducts = [];
@@ -872,12 +933,23 @@
   let whatsappPhone = null;
 
   // INIT
-  document.addEventListener("DOMContentLoaded", async () => {
+  document.addEventListener("DOMContentLoaded", () => {
+    const savedPhone = sessionStorage.getItem(PHONE_GATE_KEY);
+    if (savedPhone) {
+      // ✅ الزبون سبق دخل رقمه بنفس الجلسة (نفس التبويب) - ما نطلبه مرة ثانية
+      document.getElementById("phoneGateOverlay").style.display = "none";
+      startApp();
+    }
+    // إذا ما فيه رقم محفوظ، البوابة تضل ظاهرة (هذا وضعها الافتراضي بالـ CSS)
+    // وتنتظر submitPhoneGate()
+  });
+
+  async function startApp() {
     initializeSession();
     await checkOrderingEnabled();
     await loadProducts();
     loadCart();
-  });
+  }
 
   // ========== ORDERING ENABLED CHECK ==========
   async function checkOrderingEnabled() {
@@ -1327,6 +1399,12 @@
   window.goToOrder = () => {
     closeModal("cartModal");
     updateOrderTotal();
+    // ✅ نعبي رقم الهاتف تلقائياً من رقم بوابة الدخول (الزبون ما يكتبه مرتين)
+    const gatePhone = sessionStorage.getItem(PHONE_GATE_KEY);
+    const phoneInput = document.getElementById("customerPhone");
+    if (gatePhone && phoneInput && !phoneInput.value) {
+      phoneInput.value = gatePhone;
+    }
     openModal("orderModal");
   };
 
