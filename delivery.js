@@ -21,6 +21,7 @@ let ordersChannel;
 let pollTimer;
 let locationWatchId = null;
 let lastLocationSentAt = 0;
+let currentDriverAccount = null;
 const LOCATION_UPDATE_INTERVAL = 15000; // ما نرسل تحديث موقع أكثر من مرة كل 15 ثانية
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -33,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let account = null;
   try {
     account = JSON.parse(session);
+    currentDriverAccount = account;
     const nameEl = document.getElementById("driverNameSub");
     if (nameEl && account.name) {
       nameEl.textContent = `مرحباً ${account.name} - طلبات التوصيل بانتظار التسليم`;
@@ -131,7 +133,8 @@ async function loadDeliveryOrders() {
       status,
       is_delivery,
       customer_order_confirmed,
-      is_delivered
+      is_delivered,
+      assigned_driver_id
     `)
     .eq("is_delivery", true)
     .eq("customer_order_confirmed", true)
@@ -213,11 +216,52 @@ function renderDeliveryOrders() {
         }
       </div>
 
+      ${renderClaimSection(order)}
+
       <button class="delivered-btn" onclick="markDelivered('${order.id}')">✅ تم التوصيل</button>
     `;
     box.appendChild(card);
   });
 }
+
+// ✅ زر "راح أوصلها أنا" - يربط الطلب بالسائق الحالي عشان صفحة تتبع السائقين
+// ترسم خط بينه وبين موقع الزبون وتحسب وقت وصول تقديري
+function renderClaimSection(order) {
+  const myId = currentDriverAccount?.id;
+
+  if (!order.assigned_driver_id) {
+    return `<button class="claim-btn" onclick="claimOrder('${order.id}')">🚴 راح أوصلها أنا</button>`;
+  }
+
+  if (order.assigned_driver_id === myId) {
+    return `<div class="claim-badge mine">🚴 انت مستلم هالطلب</div>`;
+  }
+
+  return `<div class="claim-badge other">🚴 مستلمة من سائق ثاني</div>`;
+}
+
+window.claimOrder = async function (orderId) {
+  if (!currentDriverAccount?.id) return;
+
+  // ✅ نستخدم .is("assigned_driver_id", null) عشان لو سائق ثاني ضغط بنفس اللحظة، بس أول وحد ينجح
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ assigned_driver_id: currentDriverAccount.id })
+    .eq("id", orderId)
+    .is("assigned_driver_id", null)
+    .select();
+
+  if (error) {
+    alert("❌ فشل استلام الطلب: " + error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert("⚠️ سائق ثاني استلم الطلب قبلك بلحظات");
+  }
+
+  await loadDeliveryOrders();
+};
 
 function escapeHtml(str) {
   return String(str)
