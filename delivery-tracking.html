@@ -112,6 +112,60 @@
       font-size: 13px;
     }
 
+    .section-title {
+      padding: 14px 16px 6px;
+      font-weight: 800;
+      color: #0F172A;
+      font-size: 13px;
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .order-row {
+      padding: 12px 16px;
+      border-bottom: 1px solid #F1F5F9;
+      cursor: pointer;
+    }
+
+    .order-row:hover {
+      background: #F8FAFC;
+    }
+
+    .order-row .invoice {
+      font-weight: 700;
+      color: #0F172A;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .order-row .meta {
+      font-size: 12px;
+      color: #64748B;
+      line-height: 1.6;
+    }
+
+    .eta-pill {
+      display: inline-block;
+      background: #FEF3C7;
+      color: #92400E;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .unassigned-pill {
+      display: inline-block;
+      background: #FEE2E2;
+      color: #991B1B;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
     @media (max-width: 700px) {
       .layout {
         flex-direction: column;
@@ -139,6 +193,11 @@
   <div class="drivers-sidebar">
     <div class="sidebar-title">🚚 السائقين (<span id="driverCount">0</span>)</div>
     <div id="driversList">
+      <div class="empty-sidebar">⏳ جاري التحميل...</div>
+    </div>
+
+    <div class="section-title">📦 طلبات التوصيل بالطريق (<span id="ordersCount">0</span>)</div>
+    <div id="ordersList">
       <div class="empty-sidebar">⏳ جاري التحميل...</div>
     </div>
   </div>
