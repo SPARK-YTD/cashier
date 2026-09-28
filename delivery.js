@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { t, applyStaticTranslations, renderLanguageSwitcher } from "./delivery-i18n.js";
 window.supabase = supabase;
 
 /*********************************
@@ -14,6 +15,9 @@ window.supabase = supabase;
  * بس يعلّم إنها اتوصلت (is_delivered / delivered_at). الكاشير يشوفها لسا
  * بقائمة الطلبات الجارية مع شارة "🚚 وصل التوصيل"، ويقفلها هو بنفسه لاحقاً
  * بنفس آلية إتمام الفاتورة العادية.
+ *
+ * ✅ 3 لغات (عربي/English/اردو) عشان السواق أجانب - كل النصوص الديناميكية
+ * تمر من دالة t() بملف delivery-i18n.js، واختيار اللغة يتحفظ بالمتصفح.
  *********************************/
 
 let deliveryOrders = [];
@@ -25,6 +29,9 @@ let currentDriverAccount = null;
 const LOCATION_UPDATE_INTERVAL = 15000; // ما نرسل تحديث موقع أكثر من مرة كل 15 ثانية
 
 document.addEventListener("DOMContentLoaded", async () => {
+  applyStaticTranslations();
+  renderLanguageSwitcher("langSwitcher");
+
   const session = sessionStorage.getItem("delivery_session");
   if (!session) {
     location.href = "delivery-login.html";
@@ -35,10 +42,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     account = JSON.parse(session);
     currentDriverAccount = account;
-    const nameEl = document.getElementById("driverNameSub");
-    if (nameEl && account.name) {
-      nameEl.textContent = `مرحباً ${account.name} - طلبات التوصيل بانتظار التسليم`;
-    }
+    updateWelcomeText();
   } catch {}
 
   await loadDeliveryOrders();
@@ -52,6 +56,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     startLocationSharing(account.id);
   }
 });
+
+// ✅ لما اللغة تتغير من الشريط، نعيد ترجمة كل شي (الثابت + المتحرك من JS)
+window.__onLangChange = function () {
+  applyStaticTranslations();
+  renderLanguageSwitcher("langSwitcher");
+  updateWelcomeText();
+  renderDeliveryOrders();
+};
+
+function updateWelcomeText() {
+  const nameEl = document.getElementById("driverNameSub");
+  if (nameEl && currentDriverAccount?.name) {
+    nameEl.textContent = t("welcome_sub", { name: currentDriverAccount.name });
+  }
+}
 
 window.logoutDelivery = function () {
   if (locationWatchId !== null && navigator.geolocation) {
@@ -67,8 +86,8 @@ window.logoutDelivery = function () {
 ================================ */
 function startLocationSharing(accountId) {
   if (!navigator.geolocation) {
-    console.warn("⚠️ المتصفح ما يدعم تحديد الموقع");
-    setLocationStatus("denied", "⚠️ المتصفح ما يدعم تحديد الموقع");
+    console.warn("⚠️ Location not supported");
+    setLocationStatus("denied", t("location_no_support"));
     return;
   }
 
@@ -81,7 +100,7 @@ function startLocationSharing(accountId) {
     },
     (err) => {
       console.warn("⚠️ LOCATION ERROR:", err);
-      setLocationStatus("denied", "⚠️ فعّل صلاحية الموقع من المتصفح عشان المطعم يشوف مكانك");
+      setLocationStatus("denied", t("location_denied"));
     },
     { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
   );
@@ -99,13 +118,16 @@ async function updateDriverLocation(accountId, lat, lng) {
 
   if (error) {
     console.error("❌ UPDATE LOCATION ERROR:", error);
-    setLocationStatus("denied", "⚠️ تعذر إرسال الموقع");
+    setLocationStatus("denied", t("location_send_fail"));
   } else {
-    setLocationStatus("active", "📍 مشاركة الموقع مفعّلة");
+    setLocationStatus("active", t("location_active"));
   }
 }
 
+let lastLocationState = null;
+
 function setLocationStatus(state, text) {
+  lastLocationState = state;
   const el = document.getElementById("locationStatus");
   if (!el) return;
   el.textContent = text;
@@ -158,7 +180,7 @@ function renderDeliveryOrders() {
 
   if (deliveryOrders.length === 0) {
     box.innerHTML = `
-      <div class="empty-state"><p>🚚 لا توجد طلبات توصيل بانتظار التسليم حالياً</p></div>
+      <div class="empty-state"><p>${t("empty_orders")}</p></div>
     `;
     return;
   }
@@ -175,9 +197,9 @@ function renderDeliveryOrders() {
       : null;
 
     const addressParts = [
-      order.delivery_block ? `مجمع ${order.delivery_block}` : null,
-      order.delivery_road ? `طريق ${order.delivery_road}` : null,
-      order.delivery_building ? `مبنى ${order.delivery_building}` : null
+      order.delivery_block ? `#${order.delivery_block}` : null,
+      order.delivery_road ? `Rd ${order.delivery_road}` : null,
+      order.delivery_building ? `Bldg ${order.delivery_building}` : null
     ].filter(Boolean).join(" - ");
 
     const card = document.createElement("div");
@@ -185,12 +207,12 @@ function renderDeliveryOrders() {
     card.id = `delivery-${order.id}`;
     card.innerHTML = `
       <div class="delivery-card-header">
-        <span class="invoice-badge">🧾 فاتورة #${order.invoice_no ?? "—"}</span>
-        <span class="time-badge">${minutesAgo <= 0 ? "الآن" : `منذ ${minutesAgo} دقيقة`}</span>
+        <span class="invoice-badge">${t("invoice_prefix")}${order.invoice_no ?? "—"}</span>
+        <span class="time-badge">${minutesAgo <= 0 ? t("time_now") : t("time_minutes_ago", { m: minutesAgo })}</span>
       </div>
 
       <div class="delivery-row">
-        <strong>👤 ${escapeHtml(order.customer_name || "بدون اسم")}</strong>
+        <strong>👤 ${escapeHtml(order.customer_name || t("no_name"))}</strong>
         ${order.customer_phone ? `<a href="tel:${order.customer_phone}" class="phone-link">📞 ${order.customer_phone}</a>` : ""}
       </div>
 
@@ -198,27 +220,27 @@ function renderDeliveryOrders() {
 
       ${
         mapLink
-          ? `<a href="${mapLink}" target="_blank" rel="noopener" class="map-btn">🗺 فتح الموقع في خرائط قوقل</a>`
-          : `<div class="delivery-row" style="color:#DC2626;">⚠️ العميل ما أرسل موقعه</div>`
+          ? `<a href="${mapLink}" target="_blank" rel="noopener" class="map-btn">${t("open_map")}</a>`
+          : `<div class="delivery-row" style="color:#DC2626;">${t("no_location")}</div>`
       }
 
       ${order.notes ? `<div class="delivery-row notes">📝 ${escapeHtml(order.notes)}</div>` : ""}
 
       <div class="delivery-row fee-row">
-        💰 رسوم التوصيل: ${Number(order.delivery_fee || 0).toFixed(3)} د.ب
+        ${t("fee_label")} ${Number(order.delivery_fee || 0).toFixed(3)} BHD
       </div>
 
       <div class="delivery-row kitchen-status">
         ${
           order.kitchen_ready
-            ? `<span class="badge ready">🟢 الطلب جاهز من المطبخ</span>`
-            : `<span class="badge waiting">⏳ الطلب قيد التحضير</span>`
+            ? `<span class="badge ready">${t("kitchen_ready")}</span>`
+            : `<span class="badge waiting">${t("kitchen_waiting")}</span>`
         }
       </div>
 
       ${renderClaimSection(order)}
 
-      <button class="delivered-btn" onclick="markDelivered('${order.id}')">✅ تم التوصيل</button>
+      <button class="delivered-btn" onclick="markDelivered('${order.id}')">${t("delivered_btn")}</button>
     `;
     box.appendChild(card);
   });
@@ -230,14 +252,14 @@ function renderClaimSection(order) {
   const myId = currentDriverAccount?.id;
 
   if (!order.assigned_driver_id) {
-    return `<button class="claim-btn" onclick="claimOrder('${order.id}')">🚴 راح أوصلها أنا</button>`;
+    return `<button class="claim-btn" onclick="claimOrder('${order.id}')">${t("claim_btn")}</button>`;
   }
 
   if (order.assigned_driver_id === myId) {
-    return `<div class="claim-badge mine">🚴 انت مستلم هالطلب</div>`;
+    return `<div class="claim-badge mine">${t("claim_mine")}</div>`;
   }
 
-  return `<div class="claim-badge other">🚴 مستلمة من سائق ثاني</div>`;
+  return `<div class="claim-badge other">${t("claim_other")}</div>`;
 }
 
 window.claimOrder = async function (orderId) {
@@ -252,12 +274,12 @@ window.claimOrder = async function (orderId) {
     .select();
 
   if (error) {
-    alert("❌ فشل استلام الطلب: " + error.message);
+    alert(t("claim_fail") + error.message);
     return;
   }
 
   if (!data || data.length === 0) {
-    alert("⚠️ سائق ثاني استلم الطلب قبلك بلحظات");
+    alert(t("claim_race"));
   }
 
   await loadDeliveryOrders();
@@ -271,12 +293,12 @@ function escapeHtml(str) {
 }
 
 window.markDelivered = async function (orderId) {
-  if (!confirm("تأكيد أن الطلب وصل للعميل فعلاً؟")) return;
+  if (!confirm(t("delivered_confirm"))) return;
 
   const btn = document.querySelector(`#delivery-${orderId} .delivered-btn`);
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "⏳ جارِ التأكيد...";
+    btn.textContent = t("delivered_progress");
   }
 
   try {
@@ -296,10 +318,10 @@ window.markDelivered = async function (orderId) {
 
   } catch (err) {
     console.error("MARK DELIVERED ERROR:", err);
-    alert("❌ حصل خطأ أثناء تأكيد التوصيل: " + (err.message || ""));
+    alert(t("delivered_fail") + (err.message || ""));
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "✅ تم التوصيل";
+      btn.textContent = t("delivered_btn");
     }
   }
 };
