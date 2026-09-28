@@ -1069,6 +1069,19 @@
     document.getElementById("basePrice").textContent = parseFloat(price || 0).toFixed(3) + " د.ب";
     document.getElementById("summaryBase").textContent = parseFloat(price || 0).toFixed(3) + " د.ب";
 
+    // ✅ FIX: نمسح دايماً محتوى الصندوقين أول شي - قبل لا نعبيهم من جديد.
+    // قبل هذا التعديل كان يصير: لو منتج سابق فيه إضافة مدفوعة معلّمة (checked)،
+    // وبعدها تفتح منتج ثاني ماله ولا إضافة، الكود كان بس يخفي الصندوق
+    // (display:none) بدون ما يمسح الـ checkbox القديم من الصفحة. ودالة
+    // updateAddonsPrice() تفتش كل الصفحة (querySelectorAll) فتلقط الإضافة
+    // المخفية من المنتج السابق وتضيف سعرها على المنتج الجديد بدون ما الزبون يشوفها.
+    document.getElementById("freeAddonsBody").innerHTML = "";
+    document.getElementById("paidAddonsBody").innerHTML = "";
+
+    // ✅ خيار السبايسي: نشيل أي نسخة قديمة قبل لا نضيف وحدة جديدة
+    // (نفس المشكلة: كان ينضاف عنصر جديد كل فتحة بدون ما يمسح القديم)
+    document.getElementById("spicySection")?.remove();
+
     // ✅ الإضافات المجانية - checked افتراضياً (ما يريد الزبون إزالته)
     if (freeAddons && freeAddons.length > 0) {
       const freeHtml = freeAddons.map((addon, i) => `
@@ -1102,6 +1115,7 @@
     // ✅ خيار spicy
     if (isSpicy) {
       const spicySection = document.createElement('div');
+      spicySection.id = "spicySection";
       spicySection.className = 'addons-section';
       spicySection.innerHTML = `
         <label class="addon-item">
@@ -1120,7 +1134,9 @@
 
   window.updateAddonsPrice = (basePrice) => {
     // ✅ الإضافات المدفوعة فقط تضاف للسعر
-    const paidAddons = document.querySelectorAll(".paid-addon:checked");
+    // ✅ FIX: نفتش بس داخل #addonsModal (مو document كله) عشان ما نلقط
+    // أي checkbox من منتج سابق حتى لو صار خطأ تاني بالمستقبل
+    const paidAddons = document.querySelectorAll("#addonsModal .paid-addon:checked");
     let addonsTotal = 0;
 
     paidAddons.forEach(cb => {
@@ -1135,11 +1151,12 @@
 
   window.confirmAddons = () => {
     // ✅ الإضافات المجانية - اجمع اللي غير مختارة (اللي الزبون ما يريدها)
-    const uncheckedFree = [...document.querySelectorAll(".free-addon:not(:checked)")]
+    // ✅ FIX: نفتش بس داخل #addonsModal مو الصفحة كلها (نفس سبب إصلاح updateAddonsPrice)
+    const uncheckedFree = [...document.querySelectorAll("#addonsModal .free-addon:not(:checked)")]
       .map(cb => cb.dataset.name);
 
     // ✅ الإضافات المدفوعة - اجمع المختارة
-    const selectedPaid = [...document.querySelectorAll(".paid-addon:checked")]
+    const selectedPaid = [...document.querySelectorAll("#addonsModal .paid-addon:checked")]
       .map(cb => ({
         name: cb.dataset.name,
         price: parseFloat(cb.dataset.price) || 0
