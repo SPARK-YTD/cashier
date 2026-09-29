@@ -150,6 +150,7 @@ async function loadDeliveryOrders() {
       delivery_lat,
       delivery_lng,
       delivery_fee,
+      total,
       notes,
       kitchen_ready,
       status,
@@ -226,9 +227,24 @@ function renderDeliveryOrders() {
 
       ${order.notes ? `<div class="delivery-row notes">📝 ${escapeHtml(order.notes)}</div>` : ""}
 
-      <div class="delivery-row fee-row">
-        ${t("fee_label")} ${Number(order.delivery_fee || 0).toFixed(3)} BHD
-      </div>
+      ${(() => {
+        // ✅ order.total = مبلغ الأصناف + رسوم التوصيل (نفس القيمة اللي يشوفها الكاشير).
+        // نطرح رسوم التوصيل عشان نطلع "مبلغ الطلب" (الأصناف بس) منفصل عن رسوم التوصيل.
+        const grandTotal = Number(order.total || 0);
+        const deliveryFee = Number(order.delivery_fee || 0);
+        const itemsAmount = Math.max(0, grandTotal - deliveryFee);
+        return `
+          <div class="delivery-row amount-row">
+            ${t("order_amount_label")} ${itemsAmount.toFixed(3)} BHD
+          </div>
+          <div class="delivery-row fee-row">
+            ${t("fee_label")} ${deliveryFee.toFixed(3)} BHD
+          </div>
+          <div class="delivery-row collect-row">
+            ${t("collect_total_label")} ${grandTotal.toFixed(3)} BHD
+          </div>
+        `;
+      })()}
 
       <div class="delivery-row kitchen-status">
         ${
