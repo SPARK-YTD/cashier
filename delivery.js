@@ -157,7 +157,9 @@ async function loadDeliveryOrders() {
       is_delivery,
       customer_order_confirmed,
       is_delivered,
-      assigned_driver_id
+      assigned_driver_id,
+      is_paid,
+      payment_method
     `)
     .eq("is_delivery", true)
     .eq("customer_order_confirmed", true)
@@ -203,14 +205,19 @@ function renderDeliveryOrders() {
       order.delivery_building ? `Bldg ${order.delivery_building}` : null
     ].filter(Boolean).join(" - ");
 
+    const isPaid = !!order.is_paid;
+
     const card = document.createElement("div");
-    card.className = "delivery-card";
+    // ✅ لون مميز حسب حالة الدفع: paid = أخضر، unpaid = برتقالي/أحمر (نفس فكرة الكاشير)
+    card.className = "delivery-card" + (isPaid ? " paid" : " unpaid");
     card.id = `delivery-${order.id}`;
     card.innerHTML = `
       <div class="delivery-card-header">
         <span class="invoice-badge">${t("invoice_prefix")}${order.invoice_no ?? "—"}</span>
         <span class="time-badge">${minutesAgo <= 0 ? t("time_now") : t("time_minutes_ago", { m: minutesAgo })}</span>
       </div>
+
+      ${renderPaymentBadge(order, isPaid)}
 
       <div class="delivery-row">
         <strong>👤 ${escapeHtml(order.customer_name || t("no_name"))}</strong>
@@ -240,9 +247,13 @@ function renderDeliveryOrders() {
           <div class="delivery-row fee-row">
             ${t("fee_label")} ${deliveryFee.toFixed(3)} BHD
           </div>
-          <div class="delivery-row collect-row">
-            ${t("collect_total_label")} ${grandTotal.toFixed(3)} BHD
-          </div>
+          ${
+            // ✅ لو مدفوع أصلاً، ما فيه داعي نقول للسايق "حصّل" - يشوش عليه.
+            // نعرض "المطلوب تحصيله" بس لما الطلب غير مدفوع.
+            !isPaid
+              ? `<div class="delivery-row collect-row">${t("collect_total_label")} ${grandTotal.toFixed(3)} BHD</div>`
+              : ""
+          }
         `;
       })()}
 
@@ -260,6 +271,20 @@ function renderDeliveryOrders() {
     `;
     box.appendChild(card);
   });
+}
+
+// ✅ بادج حالة الدفع - يعتمد على is_paid اللي يسجله الكاشير حق المطعم وقت الطلب/التحصيل
+function renderPaymentBadge(order, isPaid) {
+  if (isPaid) {
+    const methodKey =
+      order.payment_method === "cash" ? "pay_method_cash" :
+      order.payment_method === "benefit" ? "pay_method_benefit" :
+      order.payment_method === "employee" ? "pay_method_employee" :
+      null;
+    const methodText = methodKey ? ` (${t("paid_via")}${t(methodKey)})` : "";
+    return `<div class="payment-badge paid">${t("paid_badge")}${methodText}</div>`;
+  }
+  return `<div class="payment-badge unpaid">${t("unpaid_badge")}</div>`;
 }
 
 // ✅ زر "راح أوصلها أنا" - يربط الطلب بالسائق الحالي عشان صفحة تتبع السائقين
