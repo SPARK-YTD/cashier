@@ -1,0 +1,23 @@
+{
+  "name": "توصيل - خذ لك بريك",
+  "short_name": "ديلفري",
+  "description": "صفحة طلبات التوصيل حق السائق",
+  "start_url": "delivery-login.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
