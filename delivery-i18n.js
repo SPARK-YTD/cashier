@@ -64,7 +64,15 @@ const DICT = {
   delivered_progress:  { ar: "⏳ جارِ التأكيد...",               en: "⏳ Confirming...",                ur: "⏳ تصدیق ہو رہی ہے..." },
   delivered_fail:      { ar: "❌ حصل خطأ أثناء تأكيد التوصيل: ", en: "❌ Error confirming delivery: ",   ur: "❌ ڈیلیوری کی تصدیق میں خرابی: " },
 
-  no_location_alert:   { ar: "⚠️ ما فيه موقع محدث لهذا الطلب",   en: "⚠️ No location for this order",   ur: "⚠️ اس آرڈر کی کوئی لوکیشن نہیں" }
+  no_location_alert:   { ar: "⚠️ ما فيه موقع محدث لهذا الطلب",   en: "⚠️ No location for this order",   ur: "⚠️ اس آرڈر کی کوئی لوکیشن نہیں" },
+
+  // ===== تأكيد الدفع عند التسليم =====
+  payment_confirm_title: { ar: "💰 تأكيد استلام الدفع",           en: "💰 Confirm payment received",     ur: "💰 ادائیگی کی تصدیق کریں" },
+  payment_confirm_sub:   { ar: "اختر الطريقة اللي دفع فيها الزبون", en: "Choose how the customer paid",    ur: "کسٹمر نے کس طریقے سے ادائیگی کی؟" },
+  payment_confirm_note_only: { ar: "📝 هذا إشعار للمطعم بس - ما يسجل كدفعة رسمية", en: "📝 This just notifies the restaurant - not recorded as an official payment", ur: "📝 یہ صرف ریسٹورنٹ کے لیے اطلاع ہے - سرکاری ادائیگی کے طور پر درج نہیں ہوتی" },
+  pay_cash_btn:           { ar: "💵 كاش",                          en: "💵 Cash",                          ur: "💵 کیش" },
+  pay_card_btn:           { ar: "💳 بطاقة",                        en: "💳 Card",                          ur: "💳 کارڈ" },
+  payment_confirm_cancel: { ar: "إلغاء",                           en: "Cancel",                          ur: "منسوخ کریں" }
 };
 
 function getLang() {
