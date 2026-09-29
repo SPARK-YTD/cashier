@@ -359,6 +359,76 @@
         margin-top: 10px;
       }
     }
+
+    /* ========== PAYMENT CONFIRM MODAL ========== */
+    .payment-confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17,24,39,0.8);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .payment-confirm-card {
+      background: white;
+      border-radius: 16px;
+      padding: 26px 22px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .payment-confirm-card h3 {
+      margin: 0 0 6px 0;
+      font-size: 18px;
+    }
+
+    .payment-confirm-card p {
+      color: #6B7280;
+      font-size: 13px;
+      margin: 0 0 18px 0;
+    }
+
+    .payment-confirm-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .pay-choice-btn {
+      flex: 1;
+      padding: 16px 10px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .pay-choice-btn.cash {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .pay-choice-btn.card {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    .payment-confirm-cancel-btn {
+      width: 100%;
+      background: transparent;
+      color: #6B7280;
+      border: none;
+      padding: 10px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -379,6 +449,20 @@
     <div class="empty-state"><p data-i18n="loading">⏳ جاري التحميل...</p></div>
   </div>
 
+</div>
+
+<!-- PAYMENT CONFIRM MODAL -->
+<div class="payment-confirm-overlay" id="paymentConfirmOverlay">
+  <div class="payment-confirm-card">
+    <h3 data-i18n="payment_confirm_title">💰 تأكيد استلام الدفع</h3>
+    <p data-i18n="payment_confirm_sub">اختر الطريقة اللي دفع فيها الزبون</p>
+    <p style="font-size:11px;color:#9CA3AF;margin-top:-12px;margin-bottom:16px;" data-i18n="payment_confirm_note_only">📝 هذا إشعار للمطعم بس - ما يسجل كدفعة رسمية</p>
+    <div class="payment-confirm-buttons">
+      <button class="pay-choice-btn cash" data-i18n="pay_cash_btn" onclick="confirmPaymentAndDeliver('cash')">💵 كاش</button>
+      <button class="pay-choice-btn card" data-i18n="pay_card_btn" onclick="confirmPaymentAndDeliver('benefit')">💳 بطاقة</button>
+    </div>
+    <button class="payment-confirm-cancel-btn" data-i18n="payment_confirm_cancel" onclick="closePaymentConfirmModal()">إلغاء</button>
+  </div>
 </div>
 
 <script src="delivery-guard.js"></script>
