@@ -1211,6 +1211,7 @@ function playNotificationSound() {
   payment_method,
   cash_amount,
   benefit_amount,
+  driver_payment_note,
   kitchen_ready,
   is_employee_order,
   employee_code,
@@ -1412,6 +1413,19 @@ div.innerHTML = `
       : `
         <button onclick="viewOrder('${order.id}')">👁 عرض الفاتورة</button>
         <button onclick="editOrder('${order.id}')">✏️ تعديل</button>
+        ${
+          // ✅ إشعار بس - مو تسجيل دفع رسمي. السايق يقول للمطعم "الزبون دفع كذا"
+          // لكن هذا ما يغيّر is_paid ولا يدخل بالتقارير اليومية إطلاقاً.
+          // الكاشير هو اللي يسجل الدفع الرسمي بنفسه بزر "💰 تم الدفع" زي ما كان دايماً.
+          !order.is_paid && order.driver_payment_note
+            ? `
+              <div style="background:#FEF3C7;color:#92400E;font-weight:800;font-size:13px;padding:8px 10px;border-radius:6px;margin:6px 0;">
+                📝 السايق ذكر: الزبون دفع ${order.driver_payment_note === "cash" ? "كاش" : order.driver_payment_note === "benefit" ? "بطاقة" : order.driver_payment_note}
+                <div style="font-weight:600;font-size:11px;margin-top:2px;">(إشعار بس - لسا ما تسجل بالنظام، أكّده بنفسك)</div>
+              </div>
+            `
+            : ""
+        }
         ${
           order.is_paid
             ? `
