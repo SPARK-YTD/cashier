@@ -333,9 +333,45 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-window.markDelivered = async function (orderId) {
-  if (!confirm(t("delivered_confirm"))) return;
+// ✅ لو الطلب مو مدفوع، نوقف ونطلب من السايق يأكد طريقة الدفع (كاش/بطاقة)
+// قبل ما نعلّمه "تم التوصيل". لو مدفوع أصلاً (سدده الزبون بالكاشير قبل الإرسال)
+// نكمل مباشرة زي العادة بدون ما نلمس بيانات الدفع.
+let currentDeliveryConfirmOrderId = null;
 
+window.markDelivered = async function (orderId) {
+  const order = deliveryOrders.find(o => o.id === orderId);
+  if (!order) return;
+
+  if (!order.is_paid) {
+    openPaymentConfirmModal(orderId);
+    return;
+  }
+
+  if (!confirm(t("delivered_confirm"))) return;
+  await finalizeDelivery(orderId, null);
+};
+
+function openPaymentConfirmModal(orderId) {
+  currentDeliveryConfirmOrderId = orderId;
+  const overlay = document.getElementById("paymentConfirmOverlay");
+  if (overlay) overlay.style.display = "flex";
+}
+
+window.closePaymentConfirmModal = function () {
+  const overlay = document.getElementById("paymentConfirmOverlay");
+  if (overlay) overlay.style.display = "none";
+  currentDeliveryConfirmOrderId = null;
+};
+
+// ✅ method: "cash" أو "benefit" (بطاقة) - نفس القيم اللي يستخدمها الكاشير بالضبط
+window.confirmPaymentAndDeliver = async function (method) {
+  const orderId = currentDeliveryConfirmOrderId;
+  if (!orderId) return;
+  window.closePaymentConfirmModal();
+  await finalizeDelivery(orderId, method);
+};
+
+async function finalizeDelivery(orderId, paymentMethod) {
   const btn = document.querySelector(`#delivery-${orderId} .delivered-btn`);
   if (btn) {
     btn.disabled = true;
@@ -343,14 +379,23 @@ window.markDelivered = async function (orderId) {
   }
 
   try {
-    // ✅ بس نعلّم إنها اتوصلت - ما نلمس status ولا is_paid
-    // عشان الطلب يبقى ظاهر بالكاشير للإقفال المحاسبي العادي
+    const updatePayload = {
+      is_delivered: true,
+      delivered_at: new Date().toISOString()
+    };
+
+    if (paymentMethod) {
+      // ✅ FIX (حسب طلب المطعم): هذا مجرد إشعار من السايق للكاشير - مو تسجيل
+      // دفع رسمي. ما نلمس is_paid ولا cash_amount ولا benefit_amount إطلاقاً
+      // عشان ما يدخل غلط بالتقارير اليومية. الكاشير هو الوحيد اللي يسجل
+      // الدفع الرسمي بنفسه من شاشته زي ما كان دايماً (زر "💰 تم الدفع").
+      updatePayload.driver_payment_note = paymentMethod; // "cash" | "benefit" - إشعار بس
+      updatePayload.driver_payment_note_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from("orders")
-      .update({
-        is_delivered: true,
-        delivered_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq("id", orderId);
 
     if (error) throw error;
@@ -365,7 +410,7 @@ window.markDelivered = async function (orderId) {
       btn.textContent = t("delivered_btn");
     }
   }
-};
+}
 
 function subscribeToDeliveryOrders() {
   if (ordersChannel) {
