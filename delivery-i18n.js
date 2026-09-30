@@ -72,7 +72,11 @@ const DICT = {
   payment_confirm_note_only: { ar: "📝 هذا إشعار للمطعم بس - ما يسجل كدفعة رسمية", en: "📝 This just notifies the restaurant - not recorded as an official payment", ur: "📝 یہ صرف ریسٹورنٹ کے لیے اطلاع ہے - سرکاری ادائیگی کے طور پر درج نہیں ہوتی" },
   pay_cash_btn:           { ar: "💵 كاش",                          en: "💵 Cash",                          ur: "💵 کیش" },
   pay_card_btn:           { ar: "💳 بطاقة",                        en: "💳 Card",                          ur: "💳 کارڈ" },
-  payment_confirm_cancel: { ar: "إلغاء",                           en: "Cancel",                          ur: "منسوخ کریں" }
+  payment_confirm_cancel: { ar: "إلغاء",                           en: "Cancel",                          ur: "منسوخ کریں" },
+
+  // ===== تثبيت الصفحة كتطبيق (PWA) =====
+  install_app_btn: { ar: "📲 ثبّت التطبيق على شاشتك", en: "📲 Install app on your screen", ur: "📲 ایپ اپنی اسکرین پر انسٹال کریں" },
+  ios_install_hint: { ar: "📲 عشان أفضل تتبع: اضغط زر المشاركة بالمتصفح ثم \"إضافة إلى الشاشة الرئيسية\"", en: "📲 For best tracking: tap the browser share button, then \"Add to Home Screen\"", ur: "📲 بہتر ٹریکنگ کے لیے: براؤزر کا شیئر بٹن دبائیں پھر \"ہوم اسکرین پر شامل کریں\"" }
 };
 
 function getLang() {
