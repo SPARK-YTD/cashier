@@ -1439,7 +1439,16 @@ div.innerHTML = `
             `
             : `<button onclick="markPaid('${order.id}')">💰 تم الدفع</button>`
         }
-        <button onclick="markCompleted('${order.id}')">✅ مكتمل</button>
+        ${
+          order.is_delivery && !order.is_delivered
+            ? `
+              <button disabled title="بانتظار تسليم الديلفري" style="opacity:0.5;cursor:not-allowed;">✅ مكتمل</button>
+              <div style="font-size:11px;color:#92400E;background:#FEF3C7;padding:4px 8px;border-radius:6px;margin-top:4px;display:inline-block;">
+                🚚 بانتظار تسليم الديلفري
+              </div>
+            `
+            : `<button onclick="markCompleted('${order.id}')">✅ مكتمل</button>`
+        }
         <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
       `
   }
@@ -1500,6 +1509,14 @@ div.innerHTML = `
 window.markCompleted = async function (orderId) {
   const order = activeOrders.find(o => o.id === orderId);
   if (!order) return;
+
+  // ✅ طلبات التوصيل تحديداً: ما نقفل الفاتورة إلا بعد ما الديلفري يضغط
+  // "تم التوصيل" فعلياً من صفحته - حتى لو الكاشير سجل الدفع مسبقاً.
+  // هذا يمنع إقفال طلب لسا بالطريق قبل ما يوصل فعلاً.
+  if (order.is_delivery && !order.is_delivered) {
+    alert("❌ ما تقدر تقفل هالفاتورة - الطلب لسا ما وصل للزبون. لازم الديلفري يضغط \"تم التوصيل\" من صفحته أول.");
+    return;
+  }
 
   if (!order.is_paid) {
     alert("❌ لا يمكن إقفال الفاتورة بدون تسجيل الدفع");
