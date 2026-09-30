@@ -29,7 +29,7 @@
       font-size: 20px;
       font-weight: 800;
     }
- 
+
     .back-to-cashier {
       background: rgba(255,255,255,0.12);
       color: white;
@@ -166,6 +166,71 @@
       margin-top: 4px;
     }
 
+    .map-legend {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 500;
+      background: white;
+      border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-size: 12px;
+      line-height: 1.9;
+    }
+
+    .map-legend .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-legend .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .map-wrap {
+      position: relative;
+      flex: 1;
+      height: 100%;
+    }
+
+    .map-wrap #map {
+      height: 100%;
+    }
+
+    .eta-label {
+      background: #2563EB;
+      color: white;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      border: none !important;
+    }
+
+    .recent-row {
+      padding: 10px 16px;
+      border-bottom: 1px solid #F1F5F9;
+      font-size: 12px;
+    }
+
+    .recent-row .invoice {
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 2px;
+    }
+
+    .recent-row .duration {
+      color: #059669;
+      font-weight: 700;
+    }
+
     @media (max-width: 700px) {
       .layout {
         flex-direction: column;
@@ -200,8 +265,22 @@
     <div id="ordersList">
       <div class="empty-sidebar">⏳ جاري التحميل...</div>
     </div>
+
+    <div class="section-title">✅ آخر التسليمات (آخر ساعة)</div>
+    <div id="recentDeliveriesList">
+      <div class="empty-sidebar">لا يوجد تسليمات بآخر ساعة</div>
+    </div>
   </div>
-  <div id="map"></div>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-row"><span class="legend-dot" style="background:#16A34A;"></span> سائق نشط (أقل من دقيقتين)</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#F59E0B;"></span> سائق - آخر تحديث أقدم</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#94A3B8;"></span> سائق غير محدث/أوفلاين</div>
+      <div class="legend-row"><span class="legend-dot" style="background:#DC2626;border-radius:20% 20% 20% 0;"></span> موقع الزبون</div>
+      <div class="legend-row"><span style="width:14px;height:2px;background:#2563EB;display:inline-block;"></span> مسار تقديري (خط مستقيم)</div>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="auth-guard.js"></script>
