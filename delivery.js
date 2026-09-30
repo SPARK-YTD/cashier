@@ -28,9 +28,23 @@ let lastLocationSentAt = 0;
 let currentDriverAccount = null;
 const LOCATION_UPDATE_INTERVAL = 15000; // ما نرسل تحديث موقع أكثر من مرة كل 15 ثانية
 
+// ✅ FIX (طلب المطعم): نحاول نخلي مشاركة الموقع تضل شغالة أطول ما يمكن.
+// مهم نوضح حد الإمكانية: المتصفحات (كل المتصفحات) توقف تحديد الموقع
+// تلقائياً لما الصفحة تصير بالخلفية (السايق يطلع من التاب/يقفل الشاشة)
+// - هذا قيد من نظام الجوال نفسه لحماية البطارية والخصوصية، ما فيه طريقة
+// موقع ويب عادي (بدون تطبيق حقيقي من المتجر) تتجاوزه بالكامل. اللي نقدر
+// نسويه: (1) نخلي شاشة الجوال ما تنطفي وقت الصفحة مفتوحة (Wake Lock)
+// (2) نرجّع الموقع فوراً أول ما السايق يرجع للتاب (visibilitychange)
+// (3) نخليها PWA قابلة للتثبيت على الشاشة الرئيسية - يحسّن الثبات شوي
+// خصوصاً بـAndroid، ويشتغل بدون شريط المتصفح.
+let wakeLock = null;
+let currentDriverAccountIdForWakeLock = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   applyStaticTranslations();
   renderLanguageSwitcher("langSwitcher");
+  registerDeliveryServiceWorker();
+  setupInstallPrompt();
 
   const session = sessionStorage.getItem("delivery_session");
   if (!session) {
@@ -53,9 +67,94 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ مشاركة موقع السائق اللحظي عشان المطعم يقدر يشوف وينه
   if (account && account.id) {
+    currentDriverAccountIdForWakeLock = account.id;
     startLocationSharing(account.id);
+    requestWakeLock();
   }
 });
+
+// ✅ Wake Lock: يمنع شاشة الجوال من الانطفاء تلقائياً وقت الصفحة مفتوحة
+// (يساعد يخلي تحديد الموقع شغال أطول). المتصفح يفكّه تلقائياً أول ما
+// الصفحة تصير مخفية - لازم نطلبه من جديد أول ما ترجع تصير ظاهرة.
+async function requestWakeLock() {
+  try {
+    if ("wakeLock" in navigator) {
+      wakeLock = await navigator.wakeLock.request("screen");
+    }
+  } catch (err) {
+    console.warn("⚠️ WAKE LOCK ERROR:", err);
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    // ✅ السايق رجع للصفحة - نرجّع الـWake Lock ونجيب موقعه فوراً
+    // بدل ما ننتظر watchPosition يرجع يشتغل لحاله
+    if (currentDriverAccountIdForWakeLock) {
+      requestWakeLock();
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            lastLocationSentAt = Date.now();
+            updateDriverLocation(currentDriverAccountIdForWakeLock, pos.coords.latitude, pos.coords.longitude);
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
+      }
+    }
+  }
+});
+
+// ✅ Service Worker - شرط أساسي عشان الصفحة تصير "قابلة للتثبيت" (PWA)
+function registerDeliveryServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("delivery-sw.js").catch((err) => {
+      console.warn("⚠️ SERVICE WORKER REGISTER ERROR:", err);
+    });
+  }
+}
+
+// ✅ زر "ثبّت التطبيق" يطلع بس بـAndroid/Chrome (اللي يدعم beforeinstallprompt).
+// بـiOS ما فيه هالحدث إطلاقاً - نعرض تعليمات نصية بدلاً منه.
+let deferredInstallPrompt = null;
+
+function setupInstallPrompt() {
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) return; // ✅ مثبتة أصلاً - ما نعرض شي
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById("installAppBtn");
+    if (btn) btn.style.display = "inline-block";
+  });
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS) {
+    const iosHint = document.getElementById("iosInstallHint");
+    if (iosHint) iosHint.style.display = "block";
+  }
+}
+
+window.installDeliveryApp = async function () {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  const btn = document.getElementById("installAppBtn");
+  if (btn) btn.style.display = "none";
+};
 
 // ✅ لما اللغة تتغير من الشريط، نعيد ترجمة كل شي (الثابت + المتحرك من JS)
 window.__onLangChange = function () {
@@ -76,6 +175,8 @@ window.logoutDelivery = function () {
   if (locationWatchId !== null && navigator.geolocation) {
     navigator.geolocation.clearWatch(locationWatchId);
   }
+  releaseWakeLock();
+  currentDriverAccountIdForWakeLock = null;
   sessionStorage.removeItem("delivery_session");
   location.href = "delivery-login.html";
 };
