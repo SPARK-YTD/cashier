@@ -12,16 +12,25 @@ window.supabase = supabase;
  *********************************/
 
 const BAHRAIN_CENTER = [26.0667, 50.5577];
-const ASSUMED_SPEED_KMH = 30;   // متوسط تقديري لسرعة القيادة داخل الأحياء/المدينة
+const ASSUMED_SPEED_KMH = 30;   // متوسط افتراضي (يُستخدم بس لو ما فيه بيانات حركة حقيقية كافية)
 const ROAD_FACTOR = 1.35;       // هامش لأن الخط مستقيم مو الطريق الفعلي
+const MIN_REALISTIC_SPEED_KMH = 4;   // أقل من كذا = السائق واقف (ما نحسبها سرعة حقيقية)
+const MAX_REALISTIC_SPEED_KMH = 90;  // أكثر من كذا = قفزة GPS غلط، نتجاهلها
 
 let map;
-let driverMarkers = {};   // account_id -> L.Marker
-let orderMarkers = {};    // order_id -> L.Marker
-let assignmentLines = {}; // order_id -> L.Polyline
+let driverMarkers = {};    // account_id -> L.Marker
+let orderMarkers = {};     // order_id -> L.Marker
+let assignmentLines = {};  // order_id -> L.Polyline
+let etaLabels = {};        // order_id -> L.Marker (تسمية الوقت التقديري فوق الخط)
 let latestDrivers = [];
 let latestOrders = [];
 let pollTimer;
+let didInitialFit = false;
+
+// ✅ نتتبع آخر موقع+وقت لكل سائق عشان نحسب سرعته الفعلية من حركته الحقيقية
+// (بدل ما نفترض دايماً 30 كم/س) - يعطي وقت وصول تقديري أدق بدون أي خدمة توجيه خارجية
+let driverLastFix = {}; // account_id -> { lat, lng, at }
+let driverEstimatedSpeed = {}; // account_id -> km/h
 
 document.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -41,14 +50,118 @@ function initMap() {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(map);
+  L.control.scale({ imperial: false }).addTo(map);
 }
 
 async function refreshAll() {
-  const [drivers, orders] = await Promise.all([loadDrivers(), loadPendingDeliveryOrders()]);
+  const [drivers, orders, recentDeliveries] = await Promise.all([
+    loadDrivers(),
+    loadPendingDeliveryOrders(),
+    loadRecentDeliveries()
+  ]);
+  updateDriverSpeeds(drivers);
   latestDrivers = drivers;
   latestOrders = orders;
   renderDrivers(drivers);
   renderOrders(orders, drivers);
+  renderRecentDeliveries(recentDeliveries);
+  fitMapToEverythingOnce(drivers, orders);
+}
+
+// ✅ آخر التسليمات المكتملة بآخر ساعة - لعرض الوقت الفعلي اللي أخذه التوصيل
+async function loadRecentDeliveries() {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, invoice_no, customer_name, assigned_driver_id, created_at, delivered_at")
+    .eq("is_delivery", true)
+    .eq("is_delivered", true)
+    .gte("delivered_at", oneHourAgo)
+    .order("delivered_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ LOAD RECENT DELIVERIES ERROR:", error);
+    return [];
+  }
+  return data || [];
+}
+
+function renderRecentDeliveries(recentDeliveries) {
+  const listBox = document.getElementById("recentDeliveriesList");
+  if (!listBox) return;
+
+  if (!recentDeliveries || recentDeliveries.length === 0) {
+    listBox.innerHTML = `<div class="empty-sidebar">لا يوجد تسليمات بآخر ساعة</div>`;
+    return;
+  }
+
+  const driversById = {};
+  latestDrivers.forEach(d => { driversById[d.id] = d; });
+
+  listBox.innerHTML = recentDeliveries.map(o => {
+    const driver = o.assigned_driver_id ? driversById[o.assigned_driver_id] : null;
+    let durationLabel = "—";
+    if (o.created_at && o.delivered_at) {
+      const mins = Math.round((new Date(o.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000);
+      durationLabel = mins >= 60 ? `${Math.floor(mins / 60)} س ${mins % 60} د` : `${mins} د`;
+    }
+    return `
+      <div class="recent-row">
+        <div class="invoice">🧾 #${o.invoice_no ?? "—"} - ${escapeHtml(o.customer_name || "عميل")}</div>
+        <div>${driver ? "🚚 " + escapeHtml(driver.name) : "—"} · <span class="duration">${durationLabel}</span></div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ✅ يضبط زوم/حدود الخريطة تلقائياً على كل السائقين والطلبات - مرة واحدة فقط
+// عند أول تحميل، عشان ما يفتح على خريطة فاضية ولا يفاجئ المستخدم بالزوم يتغير
+// من نفسه بعدين وهو شغال على الخريطة
+function fitMapToEverythingOnce(drivers, orders) {
+  if (didInitialFit) return;
+
+  const points = [];
+  drivers.forEach(d => {
+    if (d.current_lat != null && d.current_lng != null) points.push([d.current_lat, d.current_lng]);
+  });
+  orders.forEach(o => {
+    if (o.delivery_lat != null && o.delivery_lng != null) points.push([o.delivery_lat, o.delivery_lng]);
+  });
+
+  if (points.length === 0) return; // ما فيه بيانات كافية بعد - نحاول بالتحديث الجاي
+
+  didInitialFit = true;
+  if (points.length === 1) {
+    map.setView(points[0], 14);
+  } else {
+    map.fitBounds(L.latLngBounds(points), { padding: [60, 60], maxZoom: 15 });
+  }
+}
+
+// ✅ يحسب سرعة كل سائق من الفرق بين موقعه الحالي وموقعه بالتحديث السابق
+// (مسافة ÷ وقت) - سرعة حقيقية مبنية على حركته الفعلية، مو رقم ثابت مفترض
+function updateDriverSpeeds(drivers) {
+  drivers.forEach(d => {
+    if (d.current_lat == null || d.current_lng == null || !d.location_updated_at) return;
+
+    const now = new Date(d.location_updated_at).getTime();
+    const prev = driverLastFix[d.id];
+
+    if (prev && prev.at !== now) {
+      const distKm = haversineKm(prev.lat, prev.lng, d.current_lat, d.current_lng);
+      const hours = (now - prev.at) / 3600000;
+      if (hours > 0) {
+        const speed = distKm / hours;
+        if (speed >= MIN_REALISTIC_SPEED_KMH && speed <= MAX_REALISTIC_SPEED_KMH) {
+          // ✅ متوسط متحرك بسيط (70% القديم + 30% الجديد) عشان ما تتقلب الأرقام بعنف
+          const prevSpeed = driverEstimatedSpeed[d.id] || speed;
+          driverEstimatedSpeed[d.id] = prevSpeed * 0.7 + speed * 0.3;
+        }
+      }
+    }
+
+    driverLastFix[d.id] = { lat: d.current_lat, lng: d.current_lng, at: now };
+  });
 }
 
 async function loadDrivers() {
@@ -99,8 +212,11 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function estimateEtaMinutes(distanceKm) {
-  const hours = (distanceKm * ROAD_FACTOR) / ASSUMED_SPEED_KMH;
+// ✅ لو عندنا سرعة حقيقية محسوبة من حركة السائق الفعلية نستخدمها، وإلا نرجع للافتراضي
+function estimateEtaMinutes(distanceKm, driverId) {
+  const realSpeed = driverId ? driverEstimatedSpeed[driverId] : null;
+  const speed = realSpeed && realSpeed > 0 ? realSpeed : ASSUMED_SPEED_KMH;
+  const hours = (distanceKm * ROAD_FACTOR) / speed;
   return Math.max(1, Math.round(hours * 60));
 }
 
@@ -193,6 +309,7 @@ function renderOrders(orders, drivers) {
     listBox.innerHTML = `<div class="empty-sidebar">لا يوجد طلبات توصيل بالطريق حالياً</div>`;
     clearMarkers(orderMarkers);
     clearLines();
+    clearMarkers(etaLabels);
     return;
   }
 
@@ -211,7 +328,7 @@ function renderOrders(orders, drivers) {
     if (driver) {
       if (hasCustomerLoc && hasDriverLoc) {
         const dist = haversineKm(driver.current_lat, driver.current_lng, o.delivery_lat, o.delivery_lng);
-        const eta = estimateEtaMinutes(dist);
+        const eta = estimateEtaMinutes(dist, driver.id);
         etaHtml = `<span class="eta-pill">🚴 ${escapeHtml(driver.name)} - وصول تقديري ~${eta} د</span>`;
       } else {
         etaHtml = `<span class="eta-pill">🚴 مستلمة: ${escapeHtml(driver.name)}</span>`;
@@ -255,7 +372,7 @@ function renderOrders(orders, drivers) {
     }
   });
 
-  // ✅ خطوط الربط بين السائق المستلم والزبون
+  // ✅ خطوط الربط بين السائق المستلم والزبون + تسمية الوقت التقديري فوق منتصف الخط
   const seenLineIds = new Set();
   orders.forEach(o => {
     if (!o.assigned_driver_id) return;
@@ -276,12 +393,36 @@ function renderOrders(orders, drivers) {
         opacity: 0.8
       }).addTo(map);
     }
+
+    // ✅ تسمية الوقت التقديري تتحدث بسرعة السائق الحقيقية لو محسوبة، وإلا الافتراضي
+    const dist = haversineKm(driver.current_lat, driver.current_lng, o.delivery_lat, o.delivery_lng);
+    const eta = estimateEtaMinutes(dist, driver.id);
+    const midLat = (driver.current_lat + o.delivery_lat) / 2;
+    const midLng = (driver.current_lng + o.delivery_lng) / 2;
+    const labelIcon = L.divIcon({
+      className: "",
+      html: `<div class="eta-label">⏱ ~${eta} د</div>`,
+      iconSize: null
+    });
+
+    if (etaLabels[o.id]) {
+      etaLabels[o.id].setLatLng([midLat, midLng]);
+      etaLabels[o.id].setIcon(labelIcon);
+    } else {
+      etaLabels[o.id] = L.marker([midLat, midLng], { icon: labelIcon, interactive: false }).addTo(map);
+    }
   });
 
   Object.keys(assignmentLines).forEach(id => {
     if (!seenLineIds.has(id)) {
       map.removeLayer(assignmentLines[id]);
       delete assignmentLines[id];
+    }
+  });
+  Object.keys(etaLabels).forEach(id => {
+    if (!seenLineIds.has(id)) {
+      map.removeLayer(etaLabels[id]);
+      delete etaLabels[id];
     }
   });
 }
