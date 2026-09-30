@@ -794,9 +794,6 @@
           <label>المنطقة *</label>
           <select id="deliveryArea" onchange="updateOrderTotal()">
             <option value="">-- اختر المنطقة --</option>
-            <option value="manama">المنامة - 300 فلس</option>
-            <option value="budaiya">البديع - 500 فلس</option>
-            <option value="other">مناطق أخرى - 1 دينار</option>
           </select>
         </div>
 
@@ -1409,6 +1406,71 @@
   };
 
   // ========== ORDER FUNCTIONS ==========
+
+  // ✅ كل مناطق البحرين مقسّمة 3 فئات أسعار توصيل (حسب تحديد المطعم):
+  //   1) مدينة سلمان فقط - 300 فلس
+  //   2) ممر طريق البديع (من البديع إلى المقشع) - 500 فلس
+  //   3) باقي مناطق البحرين بالكامل - 1 دينار
+  // ملاحظة: قائمة "ممر البديع" مبنية على القرى المعروفة بمحاذاة طريق البديع -
+  // راجعها وأخبرني لو فيه منطقة ناقصة أو محطوطة بفئة غلط.
+  const DELIVERY_ZONES = [
+    {
+      fee: 0.300,
+      label: "مدينة سلمان (300 فلس)",
+      areas: ["مدينة سلمان"]
+    },
+    {
+      fee: 0.500,
+      label: "ممر طريق البديع - من البديع إلى المقشع (500 فلس)",
+      areas: [
+        "البديع", "سار", "جنوسان", "الجنبية", "حمالة", "الدراز",
+        "باربار", "كرزكان", "بني جمرة", "الجسرة", "المقشع"
+      ]
+    },
+    {
+      fee: 1.000,
+      label: "باقي مناطق البحرين (1 دينار)",
+      areas: [
+        "المنامة", "العدلية", "الجفير", "أم الحصم", "توبلي", "الحورة",
+        "القضيبية", "الزنج", "الفاتح", "السلمانية", "الماحوز", "الحد",
+        "المحرق", "عراد", "قلالي", "سماهيج", "الديه", "البسيتين",
+        "جزر أمواج", "ديلمونيا", "درة البحرين", "نبيه صالح",
+        "مدينة عيسى", "مدينة حمد", "مدينة خليفة",
+        "الرفاع الشرقي", "الرفاع الغربي", "الرفاع الشمالي",
+        "عالي", "سترة", "النويدرات", "المعامير", "إيكر",
+        "جو", "عسكر", "الزلاق", "الصخير", "عوالي",
+        "جدحفص", "سنابس", "كرباباد", "البلاد القديم",
+        "دمستان", "شهركان", "سدد", "سلماباد", "وادي السيل", "كرانة", "المالكية"
+      ]
+    }
+  ];
+
+  // area name -> fee (مبني تلقائياً من DELIVERY_ZONES عشان ما يصير تكرار أو اختلاف بالبيانات)
+  const AREA_FEES = {};
+  DELIVERY_ZONES.forEach(zone => {
+    zone.areas.forEach(area => { AREA_FEES[area] = zone.fee; });
+  });
+
+  let deliveryAreasPopulated = false;
+  function populateDeliveryAreas() {
+    if (deliveryAreasPopulated) return;
+    const select = document.getElementById("deliveryArea");
+    if (!select) return;
+    DELIVERY_ZONES.forEach(zone => {
+      const group = document.createElement("optgroup");
+      group.label = zone.label;
+      zone.areas.forEach(area => {
+        const opt = document.createElement("option");
+        opt.value = area;
+        opt.textContent = area;
+        group.appendChild(opt);
+      });
+      select.appendChild(group);
+    });
+    deliveryAreasPopulated = true;
+  }
+  populateDeliveryAreas();
+
   window.updateDelivery = () => {
     const isDelivery = document.querySelector('input[name="orderType"]:checked').value === "delivery";
     document.getElementById("deliveryGroup").style.display = isDelivery ? "block" : "none";
@@ -1417,10 +1479,7 @@
 
   function getDeliveryFee() {
     const area = document.getElementById("deliveryArea").value;
-    if (area === "manama") return 0.3;
-    if (area === "budaiya") return 0.5;
-    if (area === "other") return 1;
-    return 0;
+    return AREA_FEES[area] || 0;
   }
 
   window.updateOrderTotal = () => {
