@@ -119,6 +119,157 @@
       background: #059669;
     }
 
+    .phone-gate-btn.secondary {
+      background: #F3F4F6;
+      color: #374151;
+      margin-top: 8px;
+    }
+
+    .phone-gate-btn.secondary:hover {
+      background: #E5E7EB;
+    }
+
+    .phone-gate-back {
+      background: none;
+      border: none;
+      color: #6B7280;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      text-decoration: underline;
+    }
+
+    .pin-input {
+      letter-spacing: 10px;
+      font-weight: 800;
+    }
+
+    /* ========== MY ORDERS BUTTON ========== */
+    .my-orders-btn {
+      background: #111827;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .my-orders-btn:hover {
+      background: #1F2937;
+    }
+
+    /* ========== MY ORDERS MODAL ========== */
+    .myorders-logout {
+      display: block;
+      width: 100%;
+      background: none;
+      border: 1px solid #E5E7EB;
+      color: #6B7280;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 18px;
+    }
+
+    .myorders-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #6B7280;
+      margin: 18px 0 10px;
+    }
+
+    .myorders-empty {
+      text-align: center;
+      color: #9CA3AF;
+      font-size: 13px;
+      padding: 24px 0;
+    }
+
+    .order-card {
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .order-card.active {
+      border-color: #2563EB;
+      background: #EFF6FF;
+    }
+
+    .order-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .order-invoice {
+      font-weight: 800;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .order-date {
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    .order-status-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .order-status-badge.pending { background: #FEF3C7; color: #92400E; }
+    .order-status-badge.rejected { background: #FEE2E2; color: #991B1B; }
+    .order-status-badge.confirm-wa { background: #FEF3C7; color: #92400E; }
+    .order-status-badge.preparing { background: #FEF9C3; color: #854D0E; }
+    .order-status-badge.ready { background: #DCFCE7; color: #166534; }
+    .order-status-badge.on-the-way { background: #DBEAFE; color: #1E40AF; }
+    .order-status-badge.delivered { background: #DCFCE7; color: #166534; }
+    .order-status-badge.done { background: #E5E7EB; color: #374151; }
+
+    .order-items-list {
+      font-size: 12px;
+      color: #374151;
+      border-top: 1px dashed #E5E7EB;
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+
+    .order-items-list .oi-row {
+      margin-bottom: 4px;
+    }
+
+    .order-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 800;
+      font-size: 13px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #E5E7EB;
+    }
+
+    .order-toggle-details {
+      background: none;
+      border: none;
+      color: #2563EB;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 6px;
+    }
+
     /* ========== CONTAINER ========== */
     .container {
       max-width: 800px;
@@ -648,16 +799,13 @@
 <!-- HEADER -->
 <div class="header">
   <span class="header-title">🍽️ القائمة</span>
+  <button class="my-orders-btn" id="myOrdersBtn" style="display:none;" onclick="openMyOrders()">📋 طلباتي</button>
 </div>
 
-<!-- PHONE GATE -->
+<!-- PHONE GATE / حساب الزبون (رقم + رمز سري) -->
 <div class="phone-gate-overlay" id="phoneGateOverlay">
-  <div class="phone-gate-card">
-    <h2>👋 أهلاً بك</h2>
-    <p>أدخل رقم هاتفك عشان تدخل المنيو</p>
-    <input type="tel" id="gatePhoneInput" placeholder="33123456" inputmode="numeric" autofocus>
-    <div class="phone-gate-error" id="gatePhoneError"></div>
-    <button class="phone-gate-btn" onclick="submitPhoneGate()">دخول المنيو</button>
+  <div class="phone-gate-card" id="phoneGateCard">
+    <!-- المحتوى ينحقن ديناميكياً حسب الخطوة (phone / login-pin / register-pin) -->
   </div>
 </div>
 
@@ -861,6 +1009,19 @@
   </div>
 </div>
 
+<!-- MY ORDERS MODAL -->
+<div class="modal" id="myOrdersModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button class="close-modal" onclick="closeModal('myOrdersModal')">✕</button>
+      <h2>📋 طلباتي</h2>
+    </div>
+    <div class="modal-body" id="myOrdersBody">
+      <!-- المحتوى ينحقن ديناميكياً -->
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { supabase } from "./supabase.js";
 
@@ -882,11 +1043,12 @@
     return `cart_${sessionId}`;
   }
 
-  // ========== PHONE GATE ==========
-  // ✅ بوابة دخول برقم الهاتف - بدون OTP/تحقق فعلي (بناءً على طلب المطعم):
-  // بس نجمع الرقم قبل ما يدخل المنيو ونحفظه، ونعبيه تلقائياً بنموذج الطلب بعدين
-  // عشان ما يكتبه مرتين. ما يمنع رقم غلط، بس يقلل الاحتكاك وقت الطلب.
-  const PHONE_GATE_KEY = "customer_gate_phone";
+  // ========== حساب الزبون (رقم هاتف + رمز سري 4 أرقام) ==========
+  // ✅ حماية بسيطة تناسب حجم المشروع - مو Supabase Auth حقيقي. تمنع فضولي عادي
+  // من فتح حساب زبون ثاني، وتخلي كل زبون يرجع يلقى طلباته المحفوظة بنفس جهازه
+  // تلقائياً بدون ما يدخل الرمز كل مرة (localStorage بدل sessionStorage).
+  const CUSTOMER_PHONE_KEY = "customer_account_phone";
+  let pendingGatePhone = null; // الرقم اللي قيد تسجيل الدخول/الإنشاء بالخطوة الحالية
 
   function normalizeGatePhone(raw) {
     return (raw || "").replace(/[^\d+]/g, "");
@@ -898,9 +1060,68 @@
     return digitsOnly.length >= 8 && digitsOnly.length <= 15;
   }
 
-  window.submitPhoneGate = () => {
+  // ✅ تجزئة (hash) الرمز السري عشان ما ينخزن نص صريح بقاعدة البيانات
+  async function hashPin(pin) {
+    const data = new TextEncoder().encode("gb-cashier-pin:" + pin);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  function renderGateStep(step, data = {}) {
+    const card = document.getElementById("phoneGateCard");
+
+    if (step === "phone") {
+      card.innerHTML = `
+        <h2>👋 أهلاً بك</h2>
+        <p>أدخل رقم هاتفك عشان تدخل المنيو</p>
+        <input type="tel" id="gatePhoneInput" placeholder="33123456" inputmode="numeric" autofocus>
+        <div class="phone-gate-error" id="gateError"></div>
+        <button class="phone-gate-btn" onclick="submitGatePhone()">متابعة</button>
+      `;
+      document.getElementById("gatePhoneInput")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitGatePhone();
+      });
+      document.getElementById("gatePhoneInput")?.focus();
+    }
+
+    if (step === "login-pin") {
+      card.innerHTML = `
+        <button class="phone-gate-back" onclick="renderGateStep('phone')">‹ رجوع</button>
+        <h2>🔐 أدخل رمزك السري</h2>
+        <p>حساب برقم ${data.phone} - أدخل الرمز المكوّن من 4 أرقام</p>
+        <input type="password" id="gatePinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
+        <div class="phone-gate-error" id="gateError"></div>
+        <button class="phone-gate-btn" onclick="submitLoginPin()">دخول</button>
+        <p style="font-size:12px; color:#9CA3AF; margin-top:14px;">
+          نسيت رمزك؟ تواصل مع المطعم عبر واتساب وبيعيدون تعيينه لك.
+        </p>
+      `;
+      document.getElementById("gatePinInput")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitLoginPin();
+      });
+      document.getElementById("gatePinInput")?.focus();
+    }
+
+    if (step === "register-pin") {
+      card.innerHTML = `
+        <button class="phone-gate-back" onclick="renderGateStep('phone')">‹ رجوع</button>
+        <h2>🆕 أنشئ رمزك السري</h2>
+        <p>أول مرة تدخل برقم ${data.phone} - اختر رمز مكوّن من 4 أرقام تتذكره، عشان تلقى حسابك وطلباتك كل مرة</p>
+        <input type="password" id="gateNewPinInput" class="pin-input" placeholder="رمز جديد" inputmode="numeric" maxlength="4" autofocus>
+        <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="أعد كتابة الرمز" inputmode="numeric" maxlength="4">
+        <div class="phone-gate-error" id="gateError"></div>
+        <button class="phone-gate-btn" onclick="submitRegisterPin()">إنشاء الحساب والدخول</button>
+      `;
+      document.getElementById("gateConfirmPinInput")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitRegisterPin();
+      });
+      document.getElementById("gateNewPinInput")?.focus();
+    }
+  }
+
+  window.submitGatePhone = async () => {
     const input = document.getElementById("gatePhoneInput");
-    const errorEl = document.getElementById("gatePhoneError");
+    const errorEl = document.getElementById("gateError");
     const phone = normalizeGatePhone(input.value);
 
     if (!isValidGatePhone(phone)) {
@@ -909,17 +1130,105 @@
     }
 
     errorEl.textContent = "";
-    sessionStorage.setItem(PHONE_GATE_KEY, phone);
-    document.getElementById("phoneGateOverlay").style.display = "none";
-    startApp();
+    pendingGatePhone = phone;
+
+    try {
+      const { data: existing, error } = await supabase
+        .from("customers")
+        .select("phone")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (existing) {
+        renderGateStep("login-pin", { phone });
+      } else {
+        renderGateStep("register-pin", { phone });
+      }
+    } catch (err) {
+      console.error("❌ CUSTOMER LOOKUP ERROR:", err);
+      errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
+    }
   };
 
-  // ✅ Enter تسوي نفس عمل زر الدخول
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("gatePhoneInput")?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submitPhoneGate();
-    });
-  });
+  window.submitLoginPin = async () => {
+    const pinInput = document.getElementById("gatePinInput");
+    const errorEl = document.getElementById("gateError");
+    const pin = (pinInput.value || "").trim();
+
+    if (!/^\d{4}$/.test(pin)) {
+      errorEl.textContent = "⚠️ الرمز 4 أرقام فقط";
+      return;
+    }
+
+    try {
+      const pinHash = await hashPin(pin);
+      const { data: match, error } = await supabase
+        .from("customers")
+        .select("phone")
+        .eq("phone", pendingGatePhone)
+        .eq("pin_hash", pinHash)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!match) {
+        errorEl.textContent = "❌ رمز خاطئ، حاول مرة ثانية";
+        pinInput.value = "";
+        pinInput.focus();
+        return;
+      }
+
+      completeGateLogin(pendingGatePhone);
+    } catch (err) {
+      console.error("❌ LOGIN PIN ERROR:", err);
+      errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
+    }
+  };
+
+  window.submitRegisterPin = async () => {
+    const pin = (document.getElementById("gateNewPinInput").value || "").trim();
+    const confirmPin = (document.getElementById("gateConfirmPinInput").value || "").trim();
+    const errorEl = document.getElementById("gateError");
+
+    if (!/^\d{4}$/.test(pin)) {
+      errorEl.textContent = "⚠️ الرمز لازم يكون 4 أرقام";
+      return;
+    }
+    if (pin !== confirmPin) {
+      errorEl.textContent = "⚠️ الرمزين مو متطابقين";
+      return;
+    }
+
+    try {
+      const pinHash = await hashPin(pin);
+      const { error } = await supabase
+        .from("customers")
+        .insert([{ phone: pendingGatePhone, pin_hash: pinHash }]);
+
+      if (error) throw error;
+
+      completeGateLogin(pendingGatePhone);
+    } catch (err) {
+      console.error("❌ REGISTER PIN ERROR:", err);
+      errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
+    }
+  };
+
+  function completeGateLogin(phone) {
+    localStorage.setItem(CUSTOMER_PHONE_KEY, phone);
+    document.getElementById("phoneGateOverlay").style.display = "none";
+    document.getElementById("myOrdersBtn").style.display = "inline-block";
+    startApp();
+  }
+
+  window.logoutCustomerAccount = () => {
+    if (!confirm("تسجيل خروج من حسابك؟")) return;
+    localStorage.removeItem(CUSTOMER_PHONE_KEY);
+    closeModal("myOrdersModal");
+    location.reload();
+  };
 
   // ========== GLOBAL STATE ==========
   let allProducts = [];
@@ -928,24 +1237,31 @@
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
   let customerLocation = null; // { lat, lng }
   let whatsappPhone = null;
+  let loggedInCustomerPhone = null;
+  let myOrdersChannel = null;
 
   // INIT
   document.addEventListener("DOMContentLoaded", () => {
-    const savedPhone = sessionStorage.getItem(PHONE_GATE_KEY);
+    const savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     if (savedPhone) {
-      // ✅ الزبون سبق دخل رقمه بنفس الجلسة (نفس التبويب) - ما نطلبه مرة ثانية
+      // ✅ الزبون سبق سجّل دخوله بنفس الجهاز - ما نطلب الرمز مرة ثانية
       document.getElementById("phoneGateOverlay").style.display = "none";
+      document.getElementById("myOrdersBtn").style.display = "inline-block";
       startApp();
+    } else {
+      renderGateStep("phone");
     }
-    // إذا ما فيه رقم محفوظ، البوابة تضل ظاهرة (هذا وضعها الافتراضي بالـ CSS)
-    // وتنتظر submitPhoneGate()
   });
 
   async function startApp() {
     initializeSession();
+    loggedInCustomerPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     await checkOrderingEnabled();
     await loadProducts();
     loadCart();
+    if (loggedInCustomerPhone) {
+      subscribeToMyOrdersUpdates();
+    }
   }
 
   // ========== ORDERING ENABLED CHECK ==========
@@ -1397,7 +1713,7 @@
     closeModal("cartModal");
     updateOrderTotal();
     // ✅ نعبي رقم الهاتف تلقائياً من رقم بوابة الدخول (الزبون ما يكتبه مرتين)
-    const gatePhone = sessionStorage.getItem(PHONE_GATE_KEY);
+    const gatePhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     const phoneInput = document.getElementById("customerPhone");
     if (gatePhone && phoneInput && !phoneInput.value) {
       phoneInput.value = gatePhone;
@@ -1599,6 +1915,7 @@
         <a class="btn-whatsapp" href="${waUrl}" target="_blank">📱 اضغط هنا للتأكيد عبر واتساب</a>
         <p style="color:#9CA3AF; margin:10px 0 0; font-size:12px;">بعد ما تفتح واتساب، بس اضغط "إرسال" على الرسالة الجاهزة</p>
         ` : `<p style="color:#6B7280; margin:0 0 12px; font-size:14px;">الرجاء الانتظار حتى تتم معالجة الطلب بشكل كامل</p>`}
+        <p style="color:#6B7280; margin:14px 0 0; font-size:12px;">📋 تقدر تتابع حالة طلبك أول بأول من زر "طلباتي" بالأعلى بأي وقت</p>
         <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">العودة للمنيو</button>
       `;
     }
@@ -1844,6 +2161,222 @@
       submitBtn.textContent = "إرسال الطلب";
     }
   };
+
+  // ========== طلباتي (My Orders) ==========
+  function escapeHtmlSafe(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function formatOrderDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleString("ar-BH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function renderOrderItemsHtml(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return `<div style="color:#9CA3AF;">لا يوجد تفاصيل أصناف</div>`;
+    }
+    return items.map(item => {
+      const baseName = escapeHtmlSafe((item.productName || item.name || "صنف").split(" - ")[0]);
+      const label = item.variant && item.variant.label ? `${baseName} (${escapeHtmlSafe(item.variant.label)})` : baseName;
+      const unitPrice = parseFloat(item.price || 0);
+      const lineTotal = unitPrice * (item.qty || 1);
+      let html = `<div class="oi-row">🔹 ${label} ×${item.qty || 1} = ${lineTotal.toFixed(3)} د.ب`;
+      if (item.addons && item.addons.length) {
+        html += `<div style="margin-right:14px;font-size:11px;color:#6B7280;">➕ ${item.addons.map(a => escapeHtmlSafe(a.name)).join("، ")}</div>`;
+      }
+      const removed = item.extras_removed || item.extrasRemoved;
+      if (removed && removed.length) {
+        html += `<div style="margin-right:14px;font-size:11px;color:#DC2626;">❌ بدون: ${removed.map(escapeHtmlSafe).join("، ")}</div>`;
+      }
+      if (item.is_spicy || item.isSpicy) {
+        html += `<div style="margin-right:14px;font-size:11px;color:#D97706;">🌶️ سبايسي</div>`;
+      }
+      html += `</div>`;
+      return html;
+    }).join("");
+  }
+
+  // ✅ حالة الطلب المعروضة للزبون - مبنية على نفس الحقول اللي يستخدمها كاشير المطعم
+  function statusInfoForOrder(o) {
+    if (o.is_employee_order) return { cls: "done", label: "🧑‍🍳 طلب موظف" };
+
+    if (o.status === "completed") {
+      return o.is_delivery
+        ? { cls: "delivered", label: "🎉 تم التوصيل" }
+        : { cls: "done", label: "✅ تم الاستلام" };
+    }
+
+    // خطوة تأكيد الطلب عبر واتساب - تخص طلبات المنيو فقط
+    if (o.source === "qr_menu" && !o.customer_order_confirmed) {
+      return { cls: "confirm-wa", label: "⚠️ بانتظار تأكيدك للطلب عبر واتساب" };
+    }
+
+    if (!o.kitchen_ready) {
+      return { cls: "preparing", label: "👨‍🍳 قيد التحضير" };
+    }
+
+    if (o.is_delivery) {
+      return o.is_delivered
+        ? { cls: "delivered", label: "🎉 تم التوصيل" }
+        : { cls: "on-the-way", label: "🚚 جاهز - بالطريق إليك" };
+    }
+
+    return { cls: "ready", label: "✅ جاهز للاستلام" };
+  }
+
+  function statusInfoForPending(p) {
+    if (p.status === "rejected") return { cls: "rejected", label: "❌ تم رفض الطلب من المطعم" };
+    return { cls: "pending", label: "🕐 قيد الانتظار - بانتظار موافقة المطعم" };
+  }
+
+  function renderOrderCard({ id, invoiceLabel, dateIso, statusInfo, itemsHtml, total, isActive }) {
+    return `
+      <div class="order-card ${isActive ? "active" : ""}">
+        <div class="order-card-top">
+          <span class="order-invoice">${invoiceLabel}</span>
+          <span class="order-date">${formatOrderDate(dateIso)}</span>
+        </div>
+        <span class="order-status-badge ${statusInfo.cls}">${statusInfo.label}</span>
+        <button class="order-toggle-details" onclick="toggleOrderDetails('${id}')">عرض تفاصيل الطلب ▾</button>
+        <div class="order-items-list" id="order-details-${id}" style="display:none;">
+          ${itemsHtml}
+          <div class="order-total-row"><span>الإجمالي</span><span>${parseFloat(total || 0).toFixed(3)} د.ب</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  window.toggleOrderDetails = (id) => {
+    const el = document.getElementById(`order-details-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === "none" ? "block" : "none";
+  };
+
+  async function fetchMyOrdersData() {
+    const phone = loggedInCustomerPhone;
+    if (!phone) return { active: [], history: [] };
+
+    const [ordersRes, pendingRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("id, invoice_no, created_at, total, order_items, is_delivery, is_delivered, customer_order_confirmed, kitchen_ready, status, is_employee_order, source")
+        .eq("customer_phone", phone)
+        .order("created_at", { ascending: false })
+        .limit(30),
+      supabase
+        .from("pending_orders")
+        .select("id, created_at, order_items, total_price, status")
+        .eq("customer_phone", phone)
+        .in("status", ["pending", "rejected"])
+        .order("created_at", { ascending: false })
+        .limit(10)
+    ]);
+
+    if (ordersRes.error) console.error("❌ MY ORDERS FETCH ERROR:", ordersRes.error);
+    if (pendingRes.error) console.error("❌ MY PENDING ORDERS FETCH ERROR:", pendingRes.error);
+
+    const orders = ordersRes.data || [];
+    const pending = pendingRes.data || [];
+
+    const active = [];
+    const history = [];
+
+    pending.forEach(p => {
+      const entry = { kind: "pending", data: p };
+      if (p.status === "pending") active.push(entry);
+      else history.push(entry);
+    });
+
+    orders.forEach(o => {
+      const entry = { kind: "order", data: o };
+      if (o.status === "completed") history.push(entry);
+      else active.push(entry);
+    });
+
+    return { active, history };
+  }
+
+  function renderMyOrdersList(entries) {
+    return entries.map(({ kind, data }) => {
+      if (kind === "pending") {
+        return renderOrderCard({
+          id: `p-${data.id}`,
+          invoiceLabel: "🧾 طلب جديد (بانتظار الموافقة)",
+          dateIso: data.created_at,
+          statusInfo: statusInfoForPending(data),
+          itemsHtml: renderOrderItemsHtml(data.order_items),
+          total: data.total_price,
+          isActive: data.status === "pending"
+        });
+      }
+      const statusInfo = statusInfoForOrder(data);
+      return renderOrderCard({
+        id: `o-${data.id}`,
+        invoiceLabel: `🧾 فاتورة #${data.invoice_no ?? "—"}`,
+        dateIso: data.created_at,
+        statusInfo,
+        itemsHtml: renderOrderItemsHtml(data.order_items),
+        total: data.total,
+        isActive: data.status !== "completed"
+      });
+    }).join("");
+  }
+
+  async function loadAndRenderMyOrders() {
+    const body = document.getElementById("myOrdersBody");
+    body.innerHTML = `<div class="myorders-empty">⏳ جاري التحميل...</div>`;
+
+    const { active, history } = await fetchMyOrdersData();
+
+    let html = "";
+
+    html += `<div class="myorders-section-title">🟢 الطلب الحالي</div>`;
+    html += active.length
+      ? renderMyOrdersList(active)
+      : `<div class="myorders-empty">ما فيه طلب نشط حالياً</div>`;
+
+    html += `<div class="myorders-section-title">📜 سجل الطلبات السابقة</div>`;
+    html += history.length
+      ? renderMyOrdersList(history)
+      : `<div class="myorders-empty">ما فيه طلبات سابقة</div>`;
+
+    html += `<button class="myorders-logout" onclick="logoutCustomerAccount()">🚪 تسجيل خروج من الحساب</button>`;
+
+    body.innerHTML = html;
+  }
+
+  window.openMyOrders = async () => {
+    openModal("myOrdersModal");
+    await loadAndRenderMyOrders();
+  };
+
+  // ✅ تحديث حي لحالة الطلب أثناء فتح لوحة "طلباتي" - بدون تحديث الصفحة يدوياً
+  function subscribeToMyOrdersUpdates() {
+    if (myOrdersChannel) supabase.removeChannel(myOrdersChannel);
+
+    myOrdersChannel = supabase
+      .channel(`my-orders-${loggedInCustomerPhone}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
+        const row = payload.new || payload.old;
+        if (row && row.customer_phone === loggedInCustomerPhone) {
+          const modal = document.getElementById("myOrdersModal");
+          if (modal && modal.classList.contains("show")) loadAndRenderMyOrders();
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pending_orders" }, (payload) => {
+        const row = payload.new || payload.old;
+        if (row && row.customer_phone === loggedInCustomerPhone) {
+          const modal = document.getElementById("myOrdersModal");
+          if (modal && modal.classList.contains("show")) loadAndRenderMyOrders();
+        }
+      })
+      .subscribe();
+  }
 
   // ========== MODAL FUNCTIONS ==========
   function openModal(id) {
