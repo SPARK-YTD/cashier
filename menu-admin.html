@@ -421,7 +421,10 @@
   import { supabase } from "./supabase.js";
 
   let qrInstance = null;
-  const menuUrl = window.location.origin + window.location.pathname.replace('menu-admin.html', 'menu');
+  // ✅ رابط ثابت بدل الاعتماد على استبدال المسار الحالي - Cloudflare Pages يحذف
+  // امتداد .html تلقائياً من الرابط، فلما تفتح الصفحة يكون المسار "/menu-admin"
+  // (بدون .html)، والاستبدال القديم ما يلقى النص المطلوب ويرجع رابط الإدارة نفسه.
+  const menuUrl = window.location.origin + "/menu";
 
   // تحميل الصفحة
   document.addEventListener("DOMContentLoaded", async () => {
@@ -657,4 +660,3 @@
 
 </body>
 </html>
-
