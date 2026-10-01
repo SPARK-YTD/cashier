@@ -1415,6 +1415,10 @@
 
   // INIT
   document.addEventListener("DOMContentLoaded", async () => {
+    // ✅ نجيب رقم واتساب المطعم/الدعم فوراً بغض النظر عن حالة الدخول - عشان زر
+    // "نسيت الرمز السري؟" يشتغل حتى لو الزبون لسا عالق بخطوة الدخول (قبل startApp)
+    checkOrderingEnabled();
+
     const savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     if (savedPhone) {
       if (isCustomerIdleExpired()) {
