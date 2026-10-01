@@ -144,6 +144,33 @@
       font-weight: 800;
     }
 
+    .pin-field-label {
+      display: block;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .phone-gate-link {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      color: #2563EB;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 14px;
+      padding: 4px;
+    }
+
+    .phone-gate-link:hover {
+      color: #1D4ED8;
+    }
+
     /* ========== MY ORDERS BUTTON ========== */
     .my-orders-btn {
       background: #111827;
@@ -1089,12 +1116,11 @@
         <button class="phone-gate-back" onclick="renderGateStep('phone')">‹ رجوع</button>
         <h2>🔐 أدخل رمزك السري</h2>
         <p>حساب برقم ${data.phone} - أدخل الرمز المكوّن من 4 أرقام</p>
+        <label class="pin-field-label">الرمز السري</label>
         <input type="password" id="gatePinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
         <div class="phone-gate-error" id="gateError"></div>
         <button class="phone-gate-btn" onclick="submitLoginPin()">دخول</button>
-        <p style="font-size:12px; color:#9CA3AF; margin-top:14px;">
-          نسيت رمزك؟ تواصل مع المطعم عبر واتساب وبيعيدون تعيينه لك.
-        </p>
+        <button class="phone-gate-link" onclick="openForgotPinWhatsApp()">❓ نسيت الرمز السري؟</button>
       `;
       document.getElementById("gatePinInput")?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") submitLoginPin();
@@ -1107,13 +1133,32 @@
         <button class="phone-gate-back" onclick="renderGateStep('phone')">‹ رجوع</button>
         <h2>🆕 أنشئ رمزك السري</h2>
         <p>أول مرة تدخل برقم ${data.phone} - اختر رمز مكوّن من 4 أرقام تتذكره، عشان تلقى حسابك وطلباتك كل مرة</p>
-        <input type="password" id="gateNewPinInput" class="pin-input" placeholder="رمز جديد" inputmode="numeric" maxlength="4" autofocus>
-        <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="أعد كتابة الرمز" inputmode="numeric" maxlength="4">
+        <label class="pin-field-label">1️⃣ اختر رمز جديد (4 أرقام)</label>
+        <input type="password" id="gateNewPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
+        <label class="pin-field-label">2️⃣ أعد كتابة نفس الرمز للتأكيد</label>
+        <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4">
         <div class="phone-gate-error" id="gateError"></div>
         <button class="phone-gate-btn" onclick="submitRegisterPin()">إنشاء الحساب والدخول</button>
       `;
       document.getElementById("gateConfirmPinInput")?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") submitRegisterPin();
+      });
+      document.getElementById("gateNewPinInput")?.focus();
+    }
+
+    if (step === "reset-pin") {
+      card.innerHTML = `
+        <h2>🔄 إعادة تعيين الرمز السري</h2>
+        <p>المطعم أعاد تفعيل حسابك برقم ${data.phone} - اختر رمز سري جديد من 4 أرقام عشان تكمّل</p>
+        <label class="pin-field-label">1️⃣ الرمز السري الجديد</label>
+        <input type="password" id="gateNewPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
+        <label class="pin-field-label">2️⃣ أعد كتابة نفس الرمز للتأكيد</label>
+        <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4">
+        <div class="phone-gate-error" id="gateError"></div>
+        <button class="phone-gate-btn" onclick="submitResetPin()">حفظ الرمز الجديد والدخول</button>
+      `;
+      document.getElementById("gateConfirmPinInput")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitResetPin();
       });
       document.getElementById("gateNewPinInput")?.focus();
     }
@@ -1135,13 +1180,15 @@
     try {
       const { data: existing, error } = await supabase
         .from("customers")
-        .select("phone")
+        .select("phone, needs_pin_reset")
         .eq("phone", phone)
         .maybeSingle();
 
       if (error) throw error;
 
-      if (existing) {
+      if (existing && existing.needs_pin_reset) {
+        renderGateStep("reset-pin", { phone });
+      } else if (existing) {
         renderGateStep("login-pin", { phone });
       } else {
         renderGateStep("register-pin", { phone });
@@ -1216,6 +1263,56 @@
     }
   };
 
+  window.submitResetPin = async () => {
+    const pin = (document.getElementById("gateNewPinInput").value || "").trim();
+    const confirmPin = (document.getElementById("gateConfirmPinInput").value || "").trim();
+    const errorEl = document.getElementById("gateError");
+
+    if (!/^\d{4}$/.test(pin)) {
+      errorEl.textContent = "⚠️ الرمز لازم يكون 4 أرقام";
+      return;
+    }
+    if (pin !== confirmPin) {
+      errorEl.textContent = "⚠️ الرمزين مو متطابقين";
+      return;
+    }
+
+    try {
+      const pinHash = await hashPin(pin);
+      const { error } = await supabase
+        .from("customers")
+        .update({ pin_hash: pinHash, needs_pin_reset: false })
+        .eq("phone", pendingGatePhone);
+
+      if (error) throw error;
+
+      completeGateLogin(pendingGatePhone);
+    } catch (err) {
+      console.error("❌ RESET PIN ERROR:", err);
+      errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
+    }
+  };
+
+  // ✅ "نسيت الرمز السري" - يفتح واتساب برسالة جاهزة فيها رقم الزبون، يروح لرقم
+  // خدمة استعادة الحساب (support_whatsapp_phone)، أو رقم المطعم العادي كبديل
+  function buildForgotPinWhatsAppMessage(phone) {
+    return `مرحباً 👋\nأنا زبون برقم: ${phone}\nنسيت الرمز السري لحسابي بمنيو المطعم، ممكن تساعدوني بإعادة تعيينه؟`;
+  }
+
+  window.openForgotPinWhatsApp = () => {
+    const phone = pendingGatePhone || "";
+    const targetPhone = normalizePhoneForWhatsApp(supportWhatsappPhone || whatsappPhone || "");
+
+    if (!targetPhone) {
+      alert("⚠️ رقم واتساب خدمة استعادة الحساب غير متوفر حالياً، تواصل مع المحل مباشرة.");
+      return;
+    }
+
+    const msg = buildForgotPinWhatsAppMessage(phone);
+    const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
+  };
+
   function completeGateLogin(phone) {
     localStorage.setItem(CUSTOMER_PHONE_KEY, phone);
     document.getElementById("phoneGateOverlay").style.display = "none";
@@ -1237,6 +1334,7 @@
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
   let customerLocation = null; // { lat, lng }
   let whatsappPhone = null;
+  let supportWhatsappPhone = null;
   let loggedInCustomerPhone = null;
   let myOrdersChannel = null;
 
@@ -1269,7 +1367,7 @@
     try {
       const { data, error } = await supabase
         .from("restaurant_settings")
-        .select("ordering_enabled, whatsapp_phone")
+        .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone")
         .eq("id", 1)
         .single();
 
@@ -1277,6 +1375,7 @@
 
       orderingEnabled = data.ordering_enabled !== false;
       whatsappPhone = data.whatsapp_phone || null;
+      supportWhatsappPhone = data.support_whatsapp_phone || null;
     } catch (error) {
       console.error("Error checking ordering status:", error);
       orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
