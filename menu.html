@@ -1337,19 +1337,87 @@
   let supportWhatsappPhone = null;
   let loggedInCustomerPhone = null;
   let myOrdersChannel = null;
+  let accountSecurityChannel = null;
 
   // INIT
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     const savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     if (savedPhone) {
-      // ✅ الزبون سبق سجّل دخوله بنفس الجهاز - ما نطلب الرمز مرة ثانية
-      document.getElementById("phoneGateOverlay").style.display = "none";
-      document.getElementById("myOrdersBtn").style.display = "inline-block";
-      startApp();
+      // ✅ قبل ما نثبت الدخول التلقائي، نتأكد الكاشير ما طلب إعادة تعيين الرمز
+      // السري من صفحة إدارة الحسابات وإنت غير متصل بالإنترنت وقتها
+      const stillValid = await checkAccountNotReset(savedPhone);
+      if (stillValid) {
+        // ✅ الزبون سبق سجّل دخوله بنفس الجهاز - ما نطلب الرمز مرة ثانية
+        document.getElementById("phoneGateOverlay").style.display = "none";
+        document.getElementById("myOrdersBtn").style.display = "inline-block";
+        startApp();
+      }
     } else {
       renderGateStep("phone");
     }
   });
+
+  // ✅ يرجع false ويجهّز شاشة "إعادة تعيين الرمز السري" لو الكاشير طلب إعادة
+  // تعيين الرمز السري لهذا الرقم (مثلاً: منسي، أو طلب الزبون إعادة التعيين)
+  async function checkAccountNotReset(phone) {
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("needs_pin_reset")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data && data.needs_pin_reset) {
+        forceLogoutForSecurity(phone);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("❌ ACCOUNT CHECK ERROR:", err);
+      return true; // في حال خطأ بالاتصال، ما نمنع الزبون من الدخول
+    }
+  }
+
+  // ✅ تسجيل خروج فوري وقسري من هذا الجهاز - يستخدم لما الكاشير يعيد تعيين
+  // الرمز السري للحساب (من صفحة الإدارة، أو مباشرة بأمر الزبون نفسه)
+  function forceLogoutForSecurity(phone) {
+    localStorage.removeItem(CUSTOMER_PHONE_KEY);
+
+    if (accountSecurityChannel) {
+      supabase.removeChannel(accountSecurityChannel);
+      accountSecurityChannel = null;
+    }
+    if (myOrdersChannel) {
+      supabase.removeChannel(myOrdersChannel);
+      myOrdersChannel = null;
+    }
+
+    document.getElementById("myOrdersBtn").style.display = "none";
+    closeModal("myOrdersModal");
+    document.getElementById("phoneGateOverlay").style.display = "flex";
+
+    pendingGatePhone = phone;
+    renderGateStep("reset-pin", { phone });
+    alert("🔒 تم إعادة تعيين الرمز السري لحسابك من المطعم، سجّلنا خروجك تلقائياً - اختر رمز جديد عشان تكمّل");
+  }
+
+  // ✅ متابعة حية لحساب الزبون - لو الكاشير ضغط "إعادة تعيين الرمز السري" وهو
+  // داخل بنفس الحساب بجهاز آخر فاتح، يتسجل خروج منه فوراً بدون انتظار refresh
+  function subscribeToAccountSecurityUpdates() {
+    if (accountSecurityChannel) supabase.removeChannel(accountSecurityChannel);
+
+    accountSecurityChannel = supabase
+      .channel(`account-security-${loggedInCustomerPhone}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "customers" }, (payload) => {
+        const row = payload.new;
+        if (row && row.phone === loggedInCustomerPhone && row.needs_pin_reset) {
+          forceLogoutForSecurity(loggedInCustomerPhone);
+        }
+      })
+      .subscribe();
+  }
 
   async function startApp() {
     initializeSession();
@@ -1359,6 +1427,7 @@
     loadCart();
     if (loggedInCustomerPhone) {
       subscribeToMyOrdersUpdates();
+      subscribeToAccountSecurityUpdates();
     }
   }
 
