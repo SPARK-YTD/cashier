@@ -187,6 +187,22 @@
       background: #1F2937;
     }
 
+    .header-logout-btn {
+      background: #FEE2E2;
+      color: #991B1B;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 6px;
+    }
+
+    .header-logout-btn:hover {
+      background: #FECACA;
+    }
+
     /* ========== MY ORDERS MODAL ========== */
     .myorders-logout {
       display: block;
@@ -827,6 +843,7 @@
 <div class="header">
   <span class="header-title">🍽️ القائمة</span>
   <button class="my-orders-btn" id="myOrdersBtn" style="display:none;" onclick="openMyOrders()">📋 طلباتي</button>
+  <button class="header-logout-btn" id="headerLogoutBtn" style="display:none;" onclick="logoutCustomerAccount()" title="تسجيل خروج">🚪</button>
 </div>
 
 <!-- PHONE GATE / حساب الزبون (رقم + رمز سري) -->
@@ -1315,14 +1332,17 @@
 
   function completeGateLogin(phone) {
     localStorage.setItem(CUSTOMER_PHONE_KEY, phone);
+    touchCustomerActivity(true);
     document.getElementById("phoneGateOverlay").style.display = "none";
     document.getElementById("myOrdersBtn").style.display = "inline-block";
+    document.getElementById("headerLogoutBtn").style.display = "inline-block";
     startApp();
   }
 
   window.logoutCustomerAccount = () => {
     if (!confirm("تسجيل خروج من حسابك؟")) return;
     localStorage.removeItem(CUSTOMER_PHONE_KEY);
+    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
     closeModal("myOrdersModal");
     location.reload();
   };
@@ -1339,10 +1359,72 @@
   let myOrdersChannel = null;
   let accountSecurityChannel = null;
 
+  // ========== تسجيل خروج تلقائي عند الخمول (5 ساعات) ==========
+  const CUSTOMER_LAST_ACTIVITY_KEY = "customer_account_last_activity";
+  const IDLE_LOGOUT_MS = 5 * 60 * 60 * 1000; // 5 ساعات
+  let idleCheckInterval = null;
+
+  function touchCustomerActivity() {
+    if (localStorage.getItem(CUSTOMER_PHONE_KEY)) {
+      localStorage.setItem(CUSTOMER_LAST_ACTIVITY_KEY, Date.now().toString());
+    }
+  }
+
+  function isCustomerIdleExpired() {
+    const last = parseInt(localStorage.getItem(CUSTOMER_LAST_ACTIVITY_KEY) || "0", 10);
+    if (!last) return false; // ما سجلنا نشاط بعد - ما نعتبره خامل
+    return (Date.now() - last) > IDLE_LOGOUT_MS;
+  }
+
+  function startIdleWatcher() {
+    ["click", "keydown", "touchstart", "scroll"].forEach((evt) => {
+      document.addEventListener(evt, touchCustomerActivity, { passive: true });
+    });
+    touchCustomerActivity();
+
+    if (idleCheckInterval) clearInterval(idleCheckInterval);
+    idleCheckInterval = setInterval(() => {
+      if (isCustomerIdleExpired()) logoutForIdle();
+    }, 5 * 60 * 1000); // يفحص كل 5 دقايق
+  }
+
+  function logoutForIdle() {
+    localStorage.removeItem(CUSTOMER_PHONE_KEY);
+    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+
+    if (idleCheckInterval) {
+      clearInterval(idleCheckInterval);
+      idleCheckInterval = null;
+    }
+    if (accountSecurityChannel) {
+      supabase.removeChannel(accountSecurityChannel);
+      accountSecurityChannel = null;
+    }
+    if (myOrdersChannel) {
+      supabase.removeChannel(myOrdersChannel);
+      myOrdersChannel = null;
+    }
+
+    document.getElementById("myOrdersBtn").style.display = "none";
+    document.getElementById("headerLogoutBtn").style.display = "none";
+    closeModal("myOrdersModal");
+    document.getElementById("phoneGateOverlay").style.display = "flex";
+    renderGateStep("phone");
+    alert("⏳ تم تسجيل خروجك تلقائياً لعدم النشاط لفترة طويلة، سجّل دخولك مرة ثانية");
+  }
+
   // INIT
   document.addEventListener("DOMContentLoaded", async () => {
     const savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     if (savedPhone) {
+      if (isCustomerIdleExpired()) {
+        // ✅ خامل أكثر من 5 ساعات - نسجل خروجه بصمت ونرجعه لشاشة إدخال الرقم
+        localStorage.removeItem(CUSTOMER_PHONE_KEY);
+        localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+        renderGateStep("phone");
+        return;
+      }
+
       // ✅ قبل ما نثبت الدخول التلقائي، نتأكد الكاشير ما طلب إعادة تعيين الرمز
       // السري من صفحة إدارة الحسابات وإنت غير متصل بالإنترنت وقتها
       const stillValid = await checkAccountNotReset(savedPhone);
@@ -1350,6 +1432,7 @@
         // ✅ الزبون سبق سجّل دخوله بنفس الجهاز - ما نطلب الرمز مرة ثانية
         document.getElementById("phoneGateOverlay").style.display = "none";
         document.getElementById("myOrdersBtn").style.display = "inline-block";
+        document.getElementById("headerLogoutBtn").style.display = "inline-block";
         startApp();
       }
     } else {
@@ -1384,7 +1467,12 @@
   // الرمز السري للحساب (من صفحة الإدارة، أو مباشرة بأمر الزبون نفسه)
   function forceLogoutForSecurity(phone) {
     localStorage.removeItem(CUSTOMER_PHONE_KEY);
+    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
 
+    if (idleCheckInterval) {
+      clearInterval(idleCheckInterval);
+      idleCheckInterval = null;
+    }
     if (accountSecurityChannel) {
       supabase.removeChannel(accountSecurityChannel);
       accountSecurityChannel = null;
@@ -1395,6 +1483,7 @@
     }
 
     document.getElementById("myOrdersBtn").style.display = "none";
+    document.getElementById("headerLogoutBtn").style.display = "none";
     closeModal("myOrdersModal");
     document.getElementById("phoneGateOverlay").style.display = "flex";
 
@@ -1428,6 +1517,7 @@
     if (loggedInCustomerPhone) {
       subscribeToMyOrdersUpdates();
       subscribeToAccountSecurityUpdates();
+      startIdleWatcher();
     }
   }
 
