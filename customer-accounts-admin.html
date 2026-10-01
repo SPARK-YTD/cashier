@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة حسابات الكستمر</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #F8FAFC;
+      padding: 20px;
+      font-family: inherit;
+    }
+
+    .admin-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .admin-header {
+      background: linear-gradient(135deg, #0F172A, #1E293B);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .admin-header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .back-btn {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-50%) translateX(-4px);
+    }
+
+    .settings-section {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .settings-section h2 {
+      margin: 0 0 20px 0;
+      color: #0F172A;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-group {
+      margin-bottom: 20px;
+    }
+
+    .setting-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .setting-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    .setting-input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .setting-hint {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 6px;
+    }
+
+    .btn-save {
+      background: #10B981;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    .save-status {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .save-status.success {
+      background: #D1FAE5;
+      color: #065F46;
+      display: block;
+    }
+
+    .save-status.error {
+      background: #FEE2E2;
+      color: #991B1B;
+      display: block;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-row input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 15px;
+      direction: ltr;
+      text-align: right;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .search-row input:focus {
+      outline: none;
+      border-color: #3B82F6;
+    }
+
+    .btn-search {
+      background: #3B82F6;
+      color: white;
+      border: none;
+      padding: 0 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .btn-search:hover {
+      background: #2563EB;
+    }
+
+    .account-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-top: 20px;
+    }
+
+    .account-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #F1F5F9;
+      font-size: 14px;
+    }
+
+    .account-row:last-child {
+      border-bottom: none;
+    }
+
+    .account-row span:first-child {
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    .account-row span:last-child {
+      color: #0F172A;
+      font-weight: 700;
+      direction: ltr;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-pill.ok {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+
+    .status-pill.reset {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    .btn-reset {
+      width: 100%;
+      margin-top: 18px;
+      background: #F59E0B;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-reset:hover {
+      background: #D97706;
+    }
+
+    .btn-reset:disabled {
+      background: #D1D5DB;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: #94A3B8;
+      font-size: 14px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #64748B;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-container">
+  <!-- HEADER -->
+  <div class="admin-header">
+    <button class="back-btn" onclick="window.location.href='index.html'">← رجوع</button>
+    <h1>🔑 إدارة حسابات الكستمر</h1>
+  </div>
+
+  <!-- SUPPORT WHATSAPP NUMBER -->
+  <div class="settings-section">
+    <h2>📞 رقم واتساب خدمة استعادة الحساب</h2>
+    <div class="setting-group">
+      <label class="setting-label">الرقم اللي يوديه الزبون لما يضغط "نسيت الرمز السري" بالمنيو</label>
+      <input
+        type="tel"
+        id="supportPhone"
+        class="setting-input"
+        placeholder="33123456 أو +97333123456"
+        value="">
+      <div class="setting-hint">إذا تركته فاضي، بيستخدم نفس رقم واتساب المطعم العادي تلقائياً</div>
+    </div>
+    <button class="btn-save" onclick="saveSupportPhone()">💾 حفظ الرقم</button>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="settings-section">
+    <h2>🔍 البحث عن حساب زبون</h2>
+    <div class="search-row">
+      <input type="tel" id="searchPhone" placeholder="رقم جوال الزبون" inputmode="numeric">
+      <button class="btn-search" onclick="searchCustomer()">بحث</button>
+    </div>
+  </div>
+
+  <div id="resultArea"></div>
+</div>
+
+<script type="module">
+  import { supabase } from "./supabase.js";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadSupportPhone();
+    document.getElementById("searchPhone")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") searchCustomer();
+    });
+  });
+
+  // ========== رقم واتساب خدمة استعادة الحساب ==========
+  async function loadSupportPhone() {
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_settings")
+        .select("support_whatsapp_phone")
+        .eq("id", 1)
+        .single();
+
+      if (error) throw error;
+
+      document.getElementById("supportPhone").value = data.support_whatsapp_phone || "";
+    } catch (err) {
+      console.error("Error loading support phone:", err);
+    }
+  }
+
+  window.saveSupportPhone = async () => {
+    const phone = document.getElementById("supportPhone").value.trim();
+    const statusEl = document.getElementById("saveStatus");
+
+    try {
+      const { error } = await supabase
+        .from("restaurant_settings")
+        .update({ support_whatsapp_phone: phone, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+
+      if (error) throw error;
+
+      statusEl.textContent = "✅ تم حفظ الرقم بنجاح!";
+      statusEl.className = "save-status success";
+    } catch (err) {
+      console.error("Error saving support phone:", err);
+      statusEl.textContent = "❌ حصل خطأ بالحفظ - تأكد من إضافة عمود support_whatsapp_phone";
+      statusEl.className = "save-status error";
+    }
+  };
+
+  // ========== البحث عن حساب زبون ==========
+  function normalizePhone(raw) {
+    return (raw || "").replace(/[^\d+]/g, "");
+  }
+
+  window.searchCustomer = async () => {
+    const phone = normalizePhone(document.getElementById("searchPhone").value);
+    const resultArea = document.getElementById("resultArea");
+
+    if (!phone) {
+      resultArea.innerHTML = `<div class="empty-state">⚠️ أدخل رقم جوال للبحث</div>`;
+      return;
+    }
+
+    resultArea.innerHTML = `<div class="loading">⏳ جاري البحث...</div>`;
+
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("phone, needs_pin_reset, created_at")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        resultArea.innerHTML = `<div class="empty-state">❌ لا يوجد حساب بهذا الرقم</div>`;
+        return;
+      }
+
+      renderAccountCard(data);
+    } catch (err) {
+      console.error("Error searching customer:", err);
+      resultArea.innerHTML = `<div class="empty-state">⚠️ حصل خطأ بالبحث</div>`;
+    }
+  };
+
+  function renderAccountCard(data) {
+    const resultArea = document.getElementById("resultArea");
+    const createdDate = data.created_at
+      ? new Date(data.created_at).toLocaleDateString("ar-BH")
+      : "—";
+    const pendingReset = !!data.needs_pin_reset;
+
+    resultArea.innerHTML = `
+      <div class="account-card">
+        <div class="account-row"><span>📱 رقم الجوال</span><span>${data.phone}</span></div>
+        <div class="account-row"><span>📅 تاريخ إنشاء الحساب</span><span>${createdDate}</span></div>
+        <div class="account-row"><span>🔐 حالة الرمز السري</span><span>
+          ${pendingReset
+            ? `<span class="status-pill reset">بانتظار تعيين رمز جديد</span>`
+            : `<span class="status-pill ok">نشط</span>`}
+        </span></div>
+        <button class="btn-reset" ${pendingReset ? "disabled" : ""} onclick="resetCustomerPin('${data.phone}')">
+          ${pendingReset ? "✅ تم الطلب - بانتظار الزبون يحط رمز جديد" : "🔄 إعادة تعيين الرمز السري"}
+        </button>
+      </div>
+    `;
+  }
+
+  window.resetCustomerPin = async (phone) => {
+    if (!confirm(`تأكيد إعادة تعيين الرمز السري لحساب ${phone}؟\nالزبون بيُطلب منه يحط رمز جديد أول ما يدخل المنيو بنفس هذا الرقم.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .update({ needs_pin_reset: true })
+        .eq("phone", phone);
+
+      if (error) throw error;
+
+      await searchCustomer();
+    } catch (err) {
+      console.error("Error resetting PIN:", err);
+      alert("❌ حصل خطأ، حاول مرة ثانية");
+    }
+  };
+</script>
+
+</body>
+</html>
