@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "dev.pages.cashier_mrs.twa",
+        "sha256_cert_fingerprints": ["40:90:F4:9A:EC:0E:C8:B6:C7:6C:A8:60:12:02:C2:F8:1C:DD:0B:64:E3:B5:6E:DD:E7:BD:EE:75:66:0F:95:F9"]
+      }
+    }]
