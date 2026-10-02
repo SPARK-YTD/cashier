@@ -115,5 +115,16 @@
   </div>
 
   <script type="module" src="delivery-auth.js"></script>
+
+  <!-- ✅ تسجيل الـService Worker من هنا بالذات (صفحة الدخول) عشان PWABuilder
+       ومتصفح الأندرويد يكتشفونه من أول صفحة يدخل عليها السايق، مو بس بعد تسجيل
+       الدخول. نفس delivery-sw.js المستخدم بصفحة delivery.html. -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("delivery-sw.js").catch((err) => {
+        console.error("Service Worker registration failed:", err);
+      });
+    }
+  </script>
 </body>
 </html>
