@@ -17,6 +17,9 @@ const DICT = {
   err_required:        { ar: "أدخل اسم المستخدم وكلمة المرور", en: "Enter username and password",     ur: "یوزر نیم اور پاس ورڈ درج کریں" },
   err_not_found:       { ar: "الحساب غير موجود",               en: "Account not found",               ur: "اکاؤنٹ نہیں ملا" },
   err_inactive:        { ar: "الحساب موقوف",                   en: "Account disabled",                ur: "اکاؤنٹ بند ہے" },
+  err_locked:          { ar: "محاولات كثيرة خاطئة. حاول بعد {m} دقيقة", en: "Too many wrong attempts. Try again in {m} min", ur: "بہت زیادہ غلط کوششیں۔ {m} منٹ بعد کوشش کریں" },
+  err_session:         { ar: "انتهت الجلسة، سجّل دخولك من جديد", en: "Session expired, please log in again", ur: "سیشن ختم ہو گیا، دوبارہ لاگ ان کریں" },
+  err_generic:         { ar: "حصل خطأ، حاول مرة ثانية",        en: "Something went wrong, try again", ur: "کچھ غلط ہو گیا، دوبارہ کوشش کریں" },
   err_wrong_password:  { ar: "كلمة المرور غير صحيحة",          en: "Incorrect password",              ur: "پاس ورڈ غلط ہے" },
 
   // ===== صفحة التوصيل =====
