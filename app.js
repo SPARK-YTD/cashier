@@ -2088,21 +2088,31 @@ await supabase.from("orders").update({
       return;
     }
 
-    const { data: employee, error } = await supabase
-  .from("employees")
-  .select("id, employee_code, name, pin_hash")
-  .eq("employee_code", employeeCode)
-  .single();
+    const { data: verified, error } = await supabase.rpc("staff_verify_employee", {
+      p_code: employeeCode,
+      p_pin: password
+    });
 
-    if (error || !employee) {
-      errorBox.textContent = "❌ رقم الموظف غير صحيح";
+    if (error || !verified) {
+      errorBox.textContent = "❌ حصل خطأ، حاول مرة ثانية";
       return;
     }
 
-    if (employee.pin_hash !== password) {
-      errorBox.textContent = "❌ الرقم السري غير صحيح";
+    if (!verified.ok) {
+      errorBox.textContent =
+        verified.error === "LOCKED"
+          ? `❌ محاولات كثيرة، حاول بعد ${Math.ceil((verified.retry_after || 60) / 60)} دقيقة`
+          : verified.error === "INACTIVE"
+            ? "❌ الحساب موقوف"
+            : "❌ الرقم الوظيفي أو الرقم السري غير صحيح";
       return;
     }
+
+    const employee = {
+      id: verified.id,
+      employee_code: verified.code,
+      name: verified.name
+    };
 
     const month = new Date().toISOString().slice(0, 7);
 
