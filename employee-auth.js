@@ -1,56 +1,49 @@
 import { supabase } from "./supabase.js";
-import { t, applyStaticTranslations, renderLanguageSwitcher } from "./delivery-i18n.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  applyStaticTranslations();
-  renderLanguageSwitcher("langSwitcher");
-});
+window.loginEmployee = async function () {
 
-window.__onLangChange = function () {
-  applyStaticTranslations();
-  renderLanguageSwitcher("langSwitcher");
-};
-
-window.loginDelivery = async function () {
-  const username = document.getElementById("deliveryUsername").value.trim();
-  const pin = document.getElementById("deliveryPin").value.trim();
+  const code = document.getElementById("employeeCode").value.trim();
+  const pin = document.getElementById("employeePin").value.trim();
   const errorMsg = document.getElementById("errorMsg");
 
   errorMsg.textContent = "";
 
-  if (!username || !pin) {
-    errorMsg.textContent = t("err_required");
+  if (!code || !pin) {
+    errorMsg.textContent = "أدخل الرقم الوظيفي وكلمة المرور";
     return;
   }
 
-  const { data: res, error } = await supabase.rpc("driver_login", {
-    p_username: username,
+  // التحقق يتم بالسيرفر (bcrypt + قفل بعد المحاولات الخاطئة)
+  const { data: res, error } = await supabase.rpc("employee_login", {
+    p_code: code,
     p_pin: pin
   });
 
   if (error || !res) {
-    errorMsg.textContent = t("err_generic");
+    errorMsg.textContent = "حصل خطأ، حاول مرة ثانية";
     return;
   }
 
   if (!res.ok) {
     if (res.error === "LOCKED") {
-      errorMsg.textContent = t("err_locked", { m: Math.ceil((res.retry_after || 60) / 60) });
+      errorMsg.textContent =
+        `محاولات خاطئة كثيرة. حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`;
     } else if (res.error === "INACTIVE") {
-      errorMsg.textContent = t("err_inactive");
+      errorMsg.textContent = "الحساب موقوف";
     } else {
-      // لا نفرّق بين "المستخدم غير موجود" و"كلمة المرور خطأ" (يمنع تخمين أسماء المستخدمين)
-      errorMsg.textContent = t("err_wrong_password");
+      // رسالة موحدة: ما نكشف إذا الرقم الوظيفي موجود أو لا
+      errorMsg.textContent = "الرقم الوظيفي أو كلمة المرور غير صحيحة";
     }
     return;
   }
 
-  sessionStorage.setItem("delivery_session", JSON.stringify({
-    id: res.account.id,
-    name: res.account.name,
-    username: res.account.username,
+  // جلسة الموظف (التوكن يتحقق منه السيرفر بكل طلب)
+  sessionStorage.setItem("employee_session", JSON.stringify({
+    id: res.employee.id,
+    name: res.employee.name,
+    code: res.employee.code,
     token: res.token
   }));
 
-  window.location.href = "delivery.html";
+  window.location.href = "employee-dashboard.html";
 };
