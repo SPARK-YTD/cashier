@@ -119,6 +119,7 @@ function renderDeliveryTable() {
           ${a.active ? "⛔ إيقاف" : "✅ تفعيل"}
         </button>
         <button class="gray" onclick="resetDeliveryPin('${a.id}')">🔑 كلمة المرور</button>
+        <button class="danger" onclick="deleteDelivery('${a.id}')">🗑️ حذف</button>
       </td>
     </tr>
   `).join("");
@@ -211,4 +212,49 @@ window.resetDeliveryPin = async function (id) {
   }
 
   alert("✅ تم تغيير كلمة المرور");
+};
+
+
+window.deleteDelivery = async function (id) {
+  const acc = deliveryAccounts.find(a => a.id === id);
+  const label = acc ? `${acc.name} (${acc.username})` : "هذا السائق";
+
+  const typed = prompt(
+    `⚠️ حذف نهائي للسائق: ${label}\n\n` +
+    `سيُحذف حسابه وموقعه بالكامل، ولا يمكن التراجع.\n` +
+    `الطلبات القديمة تبقى محفوظة بدون ربطها به.\n\n` +
+    `اكتب كلمة: حذف`
+  );
+  if (typed === null) return;
+  if (typed.trim() !== "حذف") {
+    alert("لم يتم الحذف: الكلمة غير مطابقة");
+    return;
+  }
+
+  const managerPin = prompt("🔐 أدخل الرقم السري للمدير لتأكيد الحذف");
+  if (!managerPin) return;
+
+  const { data: res, error } = await supabase.rpc("staff_delete_driver", {
+    p_id: id,
+    p_manager_pin: managerPin.trim()
+  });
+
+  if (error) {
+    alert("❌ فشل الحذف: " + error.message);
+    console.error(error);
+    return;
+  }
+
+  if (!res || res.ok !== true) {
+    const e = res?.error;
+    if (e === "INVALID_MANAGER_PIN") alert("❌ رقم المدير غير صحيح");
+    else if (e === "LOCKED") alert(`❌ محاولات خاطئة كثيرة، حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`);
+    else if (e === "NOT_FOUND") alert("السائق غير موجود (ربما انحذف من قبل)");
+    else alert("❌ فشل الحذف");
+    await loadDeliveryAccounts();
+    return;
+  }
+
+  alert("✅ تم حذف السائق نهائياً");
+  await loadDeliveryAccounts();
 };
