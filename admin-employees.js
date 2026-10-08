@@ -469,8 +469,53 @@ window.openCouponManager = async function(empId) {
 /* ================= DELETE ================= */
 
 window.deleteEmployee = async function(id) {
-  if (!confirm("تأكيد الحذف؟")) return;
-  await supabase.from("employees").delete().eq("id", id);
+
+  const { data: emp } = await supabase
+    .from("employees")
+    .select("name, employee_code")
+    .eq("id", id)
+    .maybeSingle();
+
+  const label = emp ? `${emp.name} (${emp.employee_code})` : "هذا الموظف";
+
+  const typed = prompt(
+    `⚠️ حذف نهائي للموظف: ${label}\n\n` +
+    `سيُحذف الموظف وكل عمولاته ودفعاته ودوراته وكوبوناته وأصنافه المرتبطة، ولا يمكن التراجع.\n` +
+    `الطلبات والتقارير القديمة تبقى محفوظة بدون ربطها به.\n\n` +
+    `اكتب كلمة: حذف`
+  );
+  if (typed === null) return;
+  if (typed.trim() !== "حذف") {
+    alert("لم يتم الحذف: الكلمة غير مطابقة");
+    return;
+  }
+
+  const managerPin = prompt("🔐 أدخل الرقم السري للمدير لتأكيد الحذف");
+  if (!managerPin) return;
+
+  const { data: res, error } = await supabase.rpc("staff_delete_employee", {
+    p_id: id,
+    p_manager_pin: managerPin.trim()
+  });
+
+  if (error) {
+    alert("❌ فشل الحذف: " + error.message);
+    console.error(error);
+    return;
+  }
+
+  if (!res || res.ok !== true) {
+    const e = res?.error;
+    if (e === "INVALID_MANAGER_PIN") alert("❌ رقم المدير غير صحيح");
+    else if (e === "LOCKED") alert(`❌ محاولات خاطئة كثيرة، حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`);
+    else if (e === "LAST_MANAGER") alert("❌ لا يمكن حذف آخر مدير فعّال. أضف مدير ثاني أولاً");
+    else if (e === "NOT_FOUND") alert("الموظف غير موجود (ربما انحذف من قبل)");
+    else alert("❌ فشل الحذف");
+    loadEmployees();
+    return;
+  }
+
+  alert("✅ تم حذف الموظف نهائياً");
   loadEmployees();
 };
 
