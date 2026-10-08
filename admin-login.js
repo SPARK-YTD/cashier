@@ -2,6 +2,14 @@ import { supabase } from "./supabase.js";
 
 let deliveryAccounts = [];
 
+// ✅ لازم يكون الجهاز مسجّل دخول بحساب المحل (Supabase Auth) عشان تشتغل أي عملية إدارة
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.href = "login.html";
+  }
+})();
+
 /* ===============================
    تسجيل الدخول (كما هو - يتحقق من كود الموظف + صلاحية مدير)
 ================================ */
@@ -18,36 +26,34 @@ window.loginAdmin = async function () {
     return;
   }
 
-  const { data: employee } = await supabase
-    .from("employees")
-    .select("*")
-    .eq("employee_code", code)
-    .single();
+  // التحقق بالسيرفر (bcrypt + قفل بعد المحاولات الخاطئة + لازم يكون مدير)
+  const { data: res, error } = await supabase.rpc("staff_verify_manager", {
+    p_code: code,
+    p_pin: pin
+  });
 
-  if (!employee) {
-    errorMsg.textContent = "المستخدم غير موجود";
+  if (error || !res) {
+    errorMsg.textContent = "حصل خطأ، تأكد أن جهازك مسجّل دخول بحساب المحل";
     return;
   }
 
-  if (!employee.active) {
-    errorMsg.textContent = "الحساب موقوف";
-    return;
-  }
-
-  if (employee.role !== "manager") {
-    errorMsg.textContent = "ليس لديك صلاحية دخول الإدارة";
-    return;
-  }
-
-  if (employee.pin_hash !== pin) {
-    errorMsg.textContent = "كلمة المرور غير صحيحة";
+  if (!res.ok) {
+    if (res.error === "LOCKED") {
+      errorMsg.textContent = `محاولات خاطئة كثيرة. حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`;
+    } else if (res.error === "NOT_MANAGER") {
+      errorMsg.textContent = "ليس لديك صلاحية دخول الإدارة";
+    } else if (res.error === "INACTIVE") {
+      errorMsg.textContent = "الحساب موقوف";
+    } else {
+      errorMsg.textContent = "الرقم الوظيفي أو كلمة المرور غير صحيحة";
+    }
     return;
   }
 
   // إنشاء جلسة مدير
   sessionStorage.setItem("admin_session", JSON.stringify({
-    id: employee.id,
-    name: employee.name
+    id: res.id,
+    name: res.name
   }));
 
   showAdminPanel();
@@ -81,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadDeliveryAccounts() {
   const { data, error } = await supabase
     .from("delivery_accounts")
-    .select("*")
+    .select("id, name, username, active, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -146,9 +152,16 @@ window.saveDelivery = async function () {
     return;
   }
 
-  const { error } = await supabase
-    .from("delivery_accounts")
-    .insert({ name, username, pin_hash: pin, active: true });
+  if (pin.length < 6) {
+    alert("❌ كلمة مرور السائق لازم تكون 6 أحرف أو أرقام على الأقل");
+    return;
+  }
+
+  const { error } = await supabase.rpc("staff_create_driver", {
+    p_name: name,
+    p_username: username,
+    p_pin: pin
+  });
 
   if (error) {
     console.error(error);
@@ -179,13 +192,18 @@ window.toggleDeliveryActive = async function (id, currentlyActive) {
 };
 
 window.resetDeliveryPin = async function (id) {
-  const newPin = prompt("أدخل كلمة المرور الجديدة:");
+  const newPin = prompt("أدخل كلمة المرور الجديدة (6 أحرف أو أرقام على الأقل):");
   if (!newPin) return;
 
-  const { error } = await supabase
-    .from("delivery_accounts")
-    .update({ pin_hash: newPin.trim() })
-    .eq("id", id);
+  if (newPin.trim().length < 6) {
+    alert("❌ كلمة المرور قصيرة، لازم 6 على الأقل");
+    return;
+  }
+
+  const { error } = await supabase.rpc("staff_set_driver_pin", {
+    p_id: id,
+    p_pin: newPin.trim()
+  });
 
   if (error) {
     alert("❌ فشل تغيير كلمة المرور: " + error.message);
