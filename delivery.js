@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   subscribeToDeliveryOrders();
 
   // ✅ شبكة أمان: بولينج كل 15 ثانية بنفس فلسفة app.js
-  pollTimer = setInterval(loadDeliveryOrders, 15000);
+  pollTimer = setInterval(loadDeliveryOrders, 10000);
 
   // ✅ مشاركة موقع السائق اللحظي عشان المطعم يقدر يشوف وينه
   if (account && account.id) {
@@ -171,12 +171,18 @@ function updateWelcomeText() {
   }
 }
 
-window.logoutDelivery = function () {
+window.logoutDelivery = async function () {
   if (locationWatchId !== null && navigator.geolocation) {
     navigator.geolocation.clearWatch(locationWatchId);
   }
   releaseWakeLock();
   currentDriverAccountIdForWakeLock = null;
+  try {
+    await Promise.race([
+      Promise.resolve(supabase.rpc("driver_logout", { p_token: driverToken() })),
+      new Promise((r) => setTimeout(r, 1500))
+    ]);
+  } catch {}
   sessionStorage.removeItem("delivery_session");
   location.href = "delivery-login.html";
 };
@@ -208,16 +214,18 @@ function startLocationSharing(accountId) {
 }
 
 async function updateDriverLocation(accountId, lat, lng) {
-  const { error } = await supabase
-    .from("delivery_accounts")
-    .update({
-      current_lat: lat,
-      current_lng: lng,
-      location_updated_at: new Date().toISOString()
-    })
-    .eq("id", accountId);
+  const { data: res, error } = await supabase.rpc("driver_set_location", {
+    p_token: driverToken(),
+    p_lat: lat,
+    p_lng: lng
+  });
 
-  if (error) {
+  if (!error && res && res.ok === false && res.error === "NO_SESSION") {
+    forceDriverRelogin();
+    return;
+  }
+
+  if (error || (res && res.ok === false)) {
     console.error("❌ UPDATE LOCATION ERROR:", error);
     setLocationStatus("denied", t("location_send_fail"));
   } else {
@@ -235,38 +243,22 @@ function setLocationStatus(state, text) {
   el.className = "location-status" + (state ? ` ${state}` : "");
 }
 
+function driverToken() {
+  return currentDriverAccount?.token || "";
+}
+
+function forceDriverRelogin() {
+  sessionStorage.removeItem("delivery_session");
+  location.href = "delivery-login.html";
+}
+
 async function loadDeliveryOrders() {
-  const { data, error } = await supabase
-    .from("orders")
-    .select(`
-      id,
-      invoice_no,
-      created_at,
-      timer_started_at,
-      customer_name,
-      customer_phone,
-      delivery_block,
-      delivery_road,
-      delivery_building,
-      delivery_lat,
-      delivery_lng,
-      delivery_fee,
-      total,
-      notes,
-      kitchen_ready,
-      status,
-      is_delivery,
-      customer_order_confirmed,
-      is_delivered,
-      assigned_driver_id,
-      is_paid,
-      payment_method
-    `)
-    .eq("is_delivery", true)
-    .eq("customer_order_confirmed", true)
-    .eq("is_delivered", false)
-    .in("status", ["pending", "active"])
-    .order("created_at", { ascending: true });
+  const { data: rpcRes, error } = await supabase.rpc("driver_orders", { p_token: driverToken() });
+  if (!error && rpcRes && rpcRes.ok === false) {
+    forceDriverRelogin();
+    return;
+  }
+  const data = rpcRes?.orders;
 
   if (error) {
     console.error("❌ LOAD DELIVERY ORDERS ERROR:", error);
@@ -408,19 +400,22 @@ window.claimOrder = async function (orderId) {
   if (!currentDriverAccount?.id) return;
 
   // ✅ نستخدم .is("assigned_driver_id", null) عشان لو سائق ثاني ضغط بنفس اللحظة، بس أول وحد ينجح
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ assigned_driver_id: currentDriverAccount.id })
-    .eq("id", orderId)
-    .is("assigned_driver_id", null)
-    .select();
+  const { data: res, error } = await supabase.rpc("driver_claim", {
+    p_token: driverToken(),
+    p_order: orderId
+  });
 
   if (error) {
     alert(t("claim_fail") + error.message);
     return;
   }
 
-  if (!data || data.length === 0) {
+  if (res && res.ok === false) {
+    forceDriverRelogin();
+    return;
+  }
+
+  if (!res || res.claimed !== true) {
     alert(t("claim_race"));
   }
 
@@ -480,26 +475,20 @@ async function finalizeDelivery(orderId, paymentMethod) {
   }
 
   try {
-    const updatePayload = {
-      is_delivered: true,
-      delivered_at: new Date().toISOString()
-    };
-
-    if (paymentMethod) {
-      // ✅ FIX (حسب طلب المطعم): هذا مجرد إشعار من السايق للكاشير - مو تسجيل
-      // دفع رسمي. ما نلمس is_paid ولا cash_amount ولا benefit_amount إطلاقاً
-      // عشان ما يدخل غلط بالتقارير اليومية. الكاشير هو الوحيد اللي يسجل
-      // الدفع الرسمي بنفسه من شاشته زي ما كان دايماً (زر "💰 تم الدفع").
-      updatePayload.driver_payment_note = paymentMethod; // "cash" | "benefit" - إشعار بس
-      updatePayload.driver_payment_note_at = new Date().toISOString();
-    }
-
-    const { error } = await supabase
-      .from("orders")
-      .update(updatePayload)
-      .eq("id", orderId);
+    // ✅ paymentMethod ("cash" | "benefit") مجرد إشعار من السايق للكاشير - مو تسجيل
+    // دفع رسمي (الكاشير هو اللي يسجل الدفع بنفسه من شاشته).
+    const { data: res, error } = await supabase.rpc("driver_mark_delivered", {
+      p_token: driverToken(),
+      p_order: orderId,
+      p_payment_note: paymentMethod || null
+    });
 
     if (error) throw error;
+    if (res && res.ok === false && res.error === "NO_SESSION") {
+      forceDriverRelogin();
+      return;
+    }
+    if (!res || res.ok !== true) throw new Error(res?.error || "NOT_ALLOWED");
 
     await loadDeliveryOrders();
 
@@ -513,25 +502,6 @@ async function finalizeDelivery(orderId, paymentMethod) {
   }
 }
 
-function subscribeToDeliveryOrders() {
-  if (ordersChannel) {
-    supabase.removeChannel(ordersChannel);
-  }
-
-  ordersChannel = supabase
-    .channel("delivery-orders-channel")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "orders" },
-      () => {
-        loadDeliveryOrders();
-      }
-    )
-    .subscribe((status) => {
-      console.log("🔵 DELIVERY CHANNEL STATUS:", status);
-      if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        console.warn("⚠️ delivery channel dropped, reconnecting in 2s...");
-        setTimeout(() => subscribeToDeliveryOrders(), 2000);
-      }
-    });
-}
+// ✅ التحديث صار بالـpolling فقط (كل 10 ثواني): الـrealtime يحتاج صلاحية قراءة مباشرة
+// على جدول الطلبات، وقفلناها عن المفتاح العام لحماية بيانات الزبائن.
+function subscribeToDeliveryOrders() {}
