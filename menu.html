@@ -1092,6 +1092,21 @@
   // من فتح حساب زبون ثاني، وتخلي كل زبون يرجع يلقى طلباته المحفوظة بنفس جهازه
   // تلقائياً بدون ما يدخل الرمز كل مرة (localStorage بدل sessionStorage).
   const CUSTOMER_PHONE_KEY = "customer_account_phone";
+  const CUSTOMER_TOKEN_KEY = "customer_account_token";
+
+  function customerToken() {
+    try { return localStorage.getItem(CUSTOMER_TOKEN_KEY) || ""; } catch { return ""; }
+  }
+
+  function clearCustomerSession() {
+    localStorage.removeItem(CUSTOMER_PHONE_KEY);
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+  }
+
+  function lockedMessage(res) {
+    return `⛔ محاولات خاطئة كثيرة، حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`;
+  }
   let pendingGatePhone = null; // الرقم اللي قيد تسجيل الدخول/الإنشاء بالخطوة الحالية
 
   function normalizeGatePhone(raw) {
@@ -1195,17 +1210,17 @@
     pendingGatePhone = phone;
 
     try {
-      const { data: existing, error } = await supabase
-        .from("customers")
-        .select("phone, needs_pin_reset")
-        .eq("phone", phone)
-        .maybeSingle();
+      const { data: res, error } = await supabase.rpc("customer_lookup", { p_phone: phone });
 
       if (error) throw error;
+      if (!res || res.ok !== true) {
+        errorEl.textContent = "⚠️ أدخل رقم هاتف صحيح";
+        return;
+      }
 
-      if (existing && existing.needs_pin_reset) {
+      if (res.state === "reset") {
         renderGateStep("reset-pin", { phone });
-      } else if (existing) {
+      } else if (res.state === "login") {
         renderGateStep("login-pin", { phone });
       } else {
         renderGateStep("register-pin", { phone });
@@ -1227,24 +1242,28 @@
     }
 
     try {
-      const pinHash = await hashPin(pin);
-      const { data: match, error } = await supabase
-        .from("customers")
-        .select("phone")
-        .eq("phone", pendingGatePhone)
-        .eq("pin_hash", pinHash)
-        .maybeSingle();
+      const { data: res, error } = await supabase.rpc("customer_login", {
+        p_phone: pendingGatePhone,
+        p_pin: pin
+      });
 
       if (error) throw error;
 
-      if (!match) {
-        errorEl.textContent = "❌ رمز خاطئ، حاول مرة ثانية";
+      if (!res || res.ok !== true) {
+        if (res && res.error === "LOCKED") {
+          errorEl.textContent = lockedMessage(res);
+        } else if (res && res.error === "NEEDS_RESET") {
+          renderGateStep("reset-pin", { phone: pendingGatePhone });
+          return;
+        } else {
+          errorEl.textContent = "❌ رمز خاطئ، حاول مرة ثانية";
+        }
         pinInput.value = "";
         pinInput.focus();
         return;
       }
 
-      completeGateLogin(pendingGatePhone);
+      completeGateLogin(res.phone || pendingGatePhone, res.token);
     } catch (err) {
       console.error("❌ LOGIN PIN ERROR:", err);
       errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
@@ -1266,14 +1285,23 @@
     }
 
     try {
-      const pinHash = await hashPin(pin);
-      const { error } = await supabase
-        .from("customers")
-        .insert([{ phone: pendingGatePhone, pin_hash: pinHash }]);
+      const { data: res, error } = await supabase.rpc("customer_register", {
+        p_phone: pendingGatePhone,
+        p_pin: pin
+      });
 
       if (error) throw error;
 
-      completeGateLogin(pendingGatePhone);
+      if (!res || res.ok !== true) {
+        if (res && res.error === "EXISTS") {
+          errorEl.textContent = "⚠️ هذا الرقم عنده حساب، ارجع وادخل الرمز السري";
+        } else {
+          errorEl.textContent = "⚠️ تعذّر إنشاء الحساب، تأكد من الرقم والرمز";
+        }
+        return;
+      }
+
+      completeGateLogin(res.phone || pendingGatePhone, res.token);
     } catch (err) {
       console.error("❌ REGISTER PIN ERROR:", err);
       errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
@@ -1295,15 +1323,19 @@
     }
 
     try {
-      const pinHash = await hashPin(pin);
-      const { error } = await supabase
-        .from("customers")
-        .update({ pin_hash: pinHash, needs_pin_reset: false })
-        .eq("phone", pendingGatePhone);
+      const { data: res, error } = await supabase.rpc("customer_reset_pin", {
+        p_phone: pendingGatePhone,
+        p_pin: pin
+      });
 
       if (error) throw error;
 
-      completeGateLogin(pendingGatePhone);
+      if (!res || res.ok !== true) {
+        errorEl.textContent = "⚠️ تعذّر تغيير الرمز، تواصل مع المحل";
+        return;
+      }
+
+      completeGateLogin(res.phone || pendingGatePhone, res.token);
     } catch (err) {
       console.error("❌ RESET PIN ERROR:", err);
       errorEl.textContent = "⚠️ حصل خطأ، حاول مرة ثانية";
@@ -1330,8 +1362,9 @@
     window.open(waUrl, "_blank");
   };
 
-  function completeGateLogin(phone) {
+  function completeGateLogin(phone, token) {
     localStorage.setItem(CUSTOMER_PHONE_KEY, phone);
+    localStorage.setItem(CUSTOMER_TOKEN_KEY, token || "");
     touchCustomerActivity(true);
     document.getElementById("phoneGateOverlay").style.display = "none";
     document.getElementById("myOrdersBtn").style.display = "inline-block";
@@ -1339,10 +1372,10 @@
     startApp();
   }
 
-  window.logoutCustomerAccount = () => {
+  window.logoutCustomerAccount = async () => {
     if (!confirm("تسجيل خروج من حسابك؟")) return;
-    localStorage.removeItem(CUSTOMER_PHONE_KEY);
-    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+    try { await Promise.race([Promise.resolve(supabase.rpc("customer_logout", { p_token: customerToken() })), new Promise(r => setTimeout(r, 1500))]); } catch {}
+    clearCustomerSession();
     closeModal("myOrdersModal");
     location.reload();
   };
@@ -1389,21 +1422,14 @@
   }
 
   function logoutForIdle() {
-    localStorage.removeItem(CUSTOMER_PHONE_KEY);
-    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+    clearCustomerSession();
 
     if (idleCheckInterval) {
       clearInterval(idleCheckInterval);
       idleCheckInterval = null;
     }
-    if (accountSecurityChannel) {
-      supabase.removeChannel(accountSecurityChannel);
-      accountSecurityChannel = null;
-    }
-    if (myOrdersChannel) {
-      supabase.removeChannel(myOrdersChannel);
-      myOrdersChannel = null;
-    }
+    stopAccountWatch();
+    stopMyOrdersWatch();
 
     document.getElementById("myOrdersBtn").style.display = "none";
     document.getElementById("headerLogoutBtn").style.display = "none";
@@ -1419,12 +1445,16 @@
     // "نسيت الرمز السري؟" يشتغل حتى لو الزبون لسا عالق بخطوة الدخول (قبل startApp)
     checkOrderingEnabled();
 
-    const savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
+    let savedPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
+    // ✅ جلسات قديمة (قبل التحديث الأمني) ما فيها توكن - نطلب الدخول من جديد مرة وحدة
+    if (savedPhone && !customerToken()) {
+      clearCustomerSession();
+      savedPhone = null;
+    }
     if (savedPhone) {
       if (isCustomerIdleExpired()) {
         // ✅ خامل أكثر من 5 ساعات - نسجل خروجه بصمت ونرجعه لشاشة إدخال الرقم
-        localStorage.removeItem(CUSTOMER_PHONE_KEY);
-        localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+        clearCustomerSession();
         renderGateStep("phone");
         return;
       }
@@ -1448,19 +1478,25 @@
   // تعيين الرمز السري لهذا الرقم (مثلاً: منسي، أو طلب الزبون إعادة التعيين)
   async function checkAccountNotReset(phone) {
     try {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("needs_pin_reset")
-        .eq("phone", phone)
-        .maybeSingle();
-
+      const { data: res, error } = await supabase.rpc("customer_session_check", { p_token: customerToken() });
       if (error) throw error;
+      if (res && res.ok === true) return true;
 
-      if (data && data.needs_pin_reset) {
+      // الجلسة غير صالحة: إما الكاشير طلب إعادة تعيين الرمز، أو انتهت الجلسة
+      const { data: look } = await supabase.rpc("customer_lookup", { p_phone: phone });
+      if (look && look.state === "reset") {
         forceLogoutForSecurity(phone);
-        return false;
+      } else {
+        clearCustomerSession();
+        stopAccountWatch();
+        stopMyOrdersWatch();
+        document.getElementById("myOrdersBtn").style.display = "none";
+        document.getElementById("headerLogoutBtn").style.display = "none";
+        closeModal("myOrdersModal");
+        document.getElementById("phoneGateOverlay").style.display = "flex";
+        renderGateStep("phone");
       }
-      return true;
+      return false;
     } catch (err) {
       console.error("❌ ACCOUNT CHECK ERROR:", err);
       return true; // في حال خطأ بالاتصال، ما نمنع الزبون من الدخول
@@ -1470,21 +1506,14 @@
   // ✅ تسجيل خروج فوري وقسري من هذا الجهاز - يستخدم لما الكاشير يعيد تعيين
   // الرمز السري للحساب (من صفحة الإدارة، أو مباشرة بأمر الزبون نفسه)
   function forceLogoutForSecurity(phone) {
-    localStorage.removeItem(CUSTOMER_PHONE_KEY);
-    localStorage.removeItem(CUSTOMER_LAST_ACTIVITY_KEY);
+    clearCustomerSession();
 
     if (idleCheckInterval) {
       clearInterval(idleCheckInterval);
       idleCheckInterval = null;
     }
-    if (accountSecurityChannel) {
-      supabase.removeChannel(accountSecurityChannel);
-      accountSecurityChannel = null;
-    }
-    if (myOrdersChannel) {
-      supabase.removeChannel(myOrdersChannel);
-      myOrdersChannel = null;
-    }
+    stopAccountWatch();
+    stopMyOrdersWatch();
 
     document.getElementById("myOrdersBtn").style.display = "none";
     document.getElementById("headerLogoutBtn").style.display = "none";
@@ -1498,18 +1527,20 @@
 
   // ✅ متابعة حية لحساب الزبون - لو الكاشير ضغط "إعادة تعيين الرمز السري" وهو
   // داخل بنفس الحساب بجهاز آخر فاتح، يتسجل خروج منه فوراً بدون انتظار refresh
-  function subscribeToAccountSecurityUpdates() {
-    if (accountSecurityChannel) supabase.removeChannel(accountSecurityChannel);
+  function stopAccountWatch() {
+    if (accountSecurityChannel) {
+      clearInterval(accountSecurityChannel);
+      accountSecurityChannel = null;
+    }
+  }
 
-    accountSecurityChannel = supabase
-      .channel(`account-security-${loggedInCustomerPhone}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "customers" }, (payload) => {
-        const row = payload.new;
-        if (row && row.phone === loggedInCustomerPhone && row.needs_pin_reset) {
-          forceLogoutForSecurity(loggedInCustomerPhone);
-        }
-      })
-      .subscribe();
+  // ✅ فحص دوري (كل دقيقة) بدل الـrealtime: الجداول مقفولة عن القراءة المباشرة.
+  // لو الكاشير أعاد تعيين الرمز أو انتهت الجلسة يتسجل خروج الزبون تلقائياً.
+  function subscribeToAccountSecurityUpdates() {
+    stopAccountWatch();
+    accountSecurityChannel = setInterval(() => {
+      if (loggedInCustomerPhone) checkAccountNotReset(loggedInCustomerPhone);
+    }, 60 * 1000);
   }
 
   async function startApp() {
@@ -2345,70 +2376,70 @@
         console.log("🟢 order_items count:", orderData.order_items.length);
       }
 
-      const { data: insertedOrder, error } = await supabase
-        .from("pending_orders")
-        .insert([orderData])
-        .select();
+      // ✅ لو رقم التواصل بالفورم غير رقم الحساب، نضيفه للملاحظات (الطلب يرتبط برقم الحساب)
+      const norm = (v) => String(v || "").replace(/[^\d+]/g, "");
+      if (loggedInCustomerPhone && norm(phone) !== norm(loggedInCustomerPhone)) {
+        orderData.notes = `${orderData.notes ? orderData.notes + " | " : ""}رقم التواصل: ${phone}`;
+      }
+
+      const { data: submitRes, error } = await supabase.rpc("customer_submit_order", {
+        p_token: customerToken(),
+        p_order: orderData
+      });
 
       if (error) {
         if (window.DEBUG_MENU) console.error("🔴 INSERT ERROR:", error);
         throw error;
       }
 
-      const orderId = insertedOrder[0].id;
-      if (window.DEBUG_MENU) {
-        console.log("%c✅ ORDER CREATED IN PENDING", "background:#222;color:#0f0;font-size:14px;padding:4px");
-        console.log("✅ orderId:", orderId);
-        console.log("✅ insertedOrder full:", insertedOrder[0]);
-        console.log("🟢 SETTING UP REALTIME LISTENER FOR ORDER:", orderId);
+      if (!submitRes || submitRes.ok !== true) {
+        const code = submitRes && submitRes.error;
+        if (code === "NO_SESSION") {
+          if (loggedInCustomerPhone) checkAccountNotReset(loggedInCustomerPhone);
+          throw new Error("انتهت جلستك، سجّل دخولك من جديد");
+        }
+        if (code === "TOO_MANY") throw new Error("أرسلت طلبات كثيرة بوقت قصير، انتظر قليلاً");
+        throw new Error("تعذّر إرسال الطلب، تأكد من البيانات وحاول مرة ثانية");
       }
 
-      // ✅ انتظر على قبول الطلب من الكاشير
-      const statusListener = supabase
-        .channel(`pending-order-${orderId}`)
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "pending_orders" },
-          (payload) => {
-            if (window.DEBUG_MENU) {
-              console.log("%c🟢 PENDING ORDER UPDATE EVENT RECEIVED", "background:#222;color:#0f0;font-size:14px;padding:4px");
-              console.log("🟢 payload.new:", payload.new);
-              console.log("🟢 status:", payload.new.status);
-            }
-            if (payload.new.id === orderId && payload.new.status === "approved") {
-              if (window.DEBUG_MENU) console.log("🎉 ORDER APPROVED BY CASHIER!");
+      const orderId = submitRes.id;
 
-              // احذف الـ listener
-              supabase.removeChannel(statusListener);
+      // ✅ ننتظر قبول الكاشير بالفحص الدوري (كل 4 ثواني، لمدة 5 دقائق) بدل الـrealtime
+      const statusStartedAt = Date.now();
+      const statusListener = setInterval(async () => {
+        if (Date.now() - statusStartedAt > 5 * 60 * 1000) {
+          clearInterval(statusListener);
+          return;
+        }
 
-              // امسح السلة
-              cart = [];
-              saveCart();
-              updateBadge();
-
-              // ✅ حدّث نفس الشاشة لحالة الموافقة (بدون alert وبدون redirect)
-              showOrderStatusScreen("approved", {
-                name: name,
-                invoiceNo: payload.new.linked_invoice_no || null,
-                isDelivery: type === "delivery",
-                location: customerLocation
-              });
-            } else if (payload.new.id === orderId && payload.new.status === "rejected") {
-              if (window.DEBUG_MENU) console.log("❌ ORDER REJECTED BY CASHIER");
-              supabase.removeChannel(statusListener);
-              hideOrderStatusScreen();
-              alert("❌ عذراً، تم رفض طلبك من المحل. الرجاء التواصل معهم مباشرة.");
-            }
-          }
-        )
-        .subscribe((status) => {
-          if (window.DEBUG_MENU) console.log("🟢 STATUS LISTENER CHANNEL STATUS:", status);
+        const { data: st } = await supabase.rpc("customer_order_status", {
+          p_token: customerToken(),
+          p_id: orderId
         });
 
-      // timeout بعد 5 دقائق إذا ما تم القبول
-      setTimeout(() => {
-        supabase.removeChannel(statusListener);
-      }, 5 * 60 * 1000);
+        if (!st || st.ok !== true) return;
+
+        if (st.status === "approved") {
+          clearInterval(statusListener);
+
+          // امسح السلة
+          cart = [];
+          saveCart();
+          updateBadge();
+
+          // ✅ حدّث نفس الشاشة لحالة الموافقة (بدون alert وبدون redirect)
+          showOrderStatusScreen("approved", {
+            name: name,
+            invoiceNo: st.linked_invoice_no || null,
+            isDelivery: type === "delivery",
+            location: customerLocation
+          });
+        } else if (st.status === "rejected") {
+          clearInterval(statusListener);
+          hideOrderStatusScreen();
+          alert("❌ عذراً، تم رفض طلبك من المحل. الرجاء التواصل معهم مباشرة.");
+        }
+      }, 4000);
 
       // ✅ اظهر شاشة الانتظار (تفضل ظاهرة لحين الموافقة أو الرفض)
       closeModal("orderModal");
@@ -2523,27 +2554,17 @@
     const phone = loggedInCustomerPhone;
     if (!phone) return { active: [], history: [] };
 
-    const [ordersRes, pendingRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("id, invoice_no, created_at, total, order_items, is_delivery, is_delivered, customer_order_confirmed, kitchen_ready, status, is_employee_order, source")
-        .eq("customer_phone", phone)
-        .order("created_at", { ascending: false })
-        .limit(30),
-      supabase
-        .from("pending_orders")
-        .select("id, created_at, order_items, total_price, status")
-        .eq("customer_phone", phone)
-        .in("status", ["pending", "rejected"])
-        .order("created_at", { ascending: false })
-        .limit(10)
-    ]);
+    const { data: res, error } = await supabase.rpc("customer_my_orders", { p_token: customerToken() });
 
-    if (ordersRes.error) console.error("❌ MY ORDERS FETCH ERROR:", ordersRes.error);
-    if (pendingRes.error) console.error("❌ MY PENDING ORDERS FETCH ERROR:", pendingRes.error);
+    if (error) console.error("❌ MY ORDERS FETCH ERROR:", error);
 
-    const orders = ordersRes.data || [];
-    const pending = pendingRes.data || [];
+    if (res && res.ok === false) {
+      checkAccountNotReset(phone);
+      return { active: [], history: [] };
+    }
+
+    const orders = (res && res.orders) || [];
+    const pending = (res && res.pending) || [];
 
     const active = [];
     const history = [];
@@ -2618,26 +2639,20 @@
   };
 
   // ✅ تحديث حي لحالة الطلب أثناء فتح لوحة "طلباتي" - بدون تحديث الصفحة يدوياً
-  function subscribeToMyOrdersUpdates() {
-    if (myOrdersChannel) supabase.removeChannel(myOrdersChannel);
+  function stopMyOrdersWatch() {
+    if (myOrdersChannel) {
+      clearInterval(myOrdersChannel);
+      myOrdersChannel = null;
+    }
+  }
 
-    myOrdersChannel = supabase
-      .channel(`my-orders-${loggedInCustomerPhone}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
-        const row = payload.new || payload.old;
-        if (row && row.customer_phone === loggedInCustomerPhone) {
-          const modal = document.getElementById("myOrdersModal");
-          if (modal && modal.classList.contains("show")) loadAndRenderMyOrders();
-        }
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "pending_orders" }, (payload) => {
-        const row = payload.new || payload.old;
-        if (row && row.customer_phone === loggedInCustomerPhone) {
-          const modal = document.getElementById("myOrdersModal");
-          if (modal && modal.classList.contains("show")) loadAndRenderMyOrders();
-        }
-      })
-      .subscribe();
+  // ✅ تحديث دوري (كل 8 ثواني) بدل الـrealtime طالما نافذة "طلباتي" مفتوحة
+  function subscribeToMyOrdersUpdates() {
+    stopMyOrdersWatch();
+    myOrdersChannel = setInterval(() => {
+      const modal = document.getElementById("myOrdersModal");
+      if (modal && modal.classList.contains("show")) loadAndRenderMyOrders();
+    }, 8000);
   }
 
   // ========== MODAL FUNCTIONS ==========
