@@ -6,7 +6,7 @@ if (!session) {
   try {
     const account = JSON.parse(session);
 
-    if (!account.id || !account.username) {
+    if (!account.id || !account.username || !account.token) {
       sessionStorage.removeItem("delivery_session");
       window.location.href = "delivery-login.html";
     }
