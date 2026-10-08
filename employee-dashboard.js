@@ -13,18 +13,6 @@ document.getElementById("employeeName").textContent =
    Cycle Logic
 ================================ */
 
-async function getOpenCycle(employeeId) {
-
-  const { data: existingCycle } = await supabase
-    .from("employee_cycles")
-    .select("*")
-    .eq("employee_id", employeeId)
-    .eq("status", "open")
-    .maybeSingle();
-
-  return existingCycle || null;
-}
-
 /* ===============================
    UI Events
 ================================ */
@@ -35,6 +23,52 @@ document.getElementById("timeFilter").addEventListener("change", () => {
 
   loadStats();
 });
+
+/* ===============================
+   جلب بيانات اللوحة من السيرفر (دالة آمنة - تعرض بيانات هذا الموظف فقط)
+================================ */
+async function fetchDashboard() {
+  const filter = document.getElementById("timeFilter").value;
+  let from = null, to = null;
+
+  if (filter === "month") {
+    const now = new Date();
+    from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  }
+
+  if (filter === "custom") {
+    const fromDate = document.getElementById("dateFrom").value;
+    const toDate = document.getElementById("dateTo").value;
+    if (fromDate) from = new Date(fromDate).toISOString();
+    if (toDate) {
+      const endCustom = new Date(toDate);
+      endCustom.setHours(23, 59, 59, 999);
+      to = endCustom.toISOString();
+    }
+  }
+
+  const { data, error } = await supabase.rpc("employee_dashboard", {
+    p_token: session.token,
+    p_filter: filter,
+    p_from: from,
+    p_to: to
+  });
+
+  if (error) {
+    console.error(error);
+    return null;
+  }
+
+  if (!data || data.ok === false) {
+    sessionStorage.removeItem("employee_session");
+    window.location.href = "employee-login.html";
+    return null;
+  }
+
+  window.lastDash = data;
+  return data;
+}
 
 /* ===============================
    Main Function
@@ -52,7 +86,10 @@ let currentRequest = 0;
      تأكد من وجود دورة
   ================================ */
 
-const cycle = await getOpenCycle(session.id);
+const dash = await fetchDashboard();
+if (!dash) return;
+if (requestId !== currentRequest) return;
+const cycle = dash.cycle;
 
 if (!cycle) {
 
@@ -75,32 +112,8 @@ if (!cycle) {
      الحساب المالي للدورة
   ================================ */
 
-  const { data: sales } = await supabase
-    .from("employee_sales")
-    .select("payout_amount")
-    .eq("cycle_id", cycle.id);
-
-  let totalCommission = 0;
-  if (sales) {
-    totalCommission = sales.reduce(
-      (s,i)=> s + Number(i.payout_amount || 0),
-      0
-    );
-  }
-
-  const { data: payouts } = await supabase
-    .from("employee_payouts")
-    .select("amount, paid_at")
-    .eq("cycle_id", cycle.id)
-    .order("paid_at", { ascending: false });
-
-  let totalPaid = 0;
-  if (payouts) {
-    totalPaid = payouts.reduce(
-      (s,p)=> s + Number(p.amount || 0),
-      0
-    );
-  }
+  const totalCommission = Number(dash.total_commission || 0);
+  const totalPaid = Number(dash.total_paid || 0);
 
   const remaining = Math.max(0, totalCommission - totalPaid);
 
@@ -122,30 +135,7 @@ if (!cycle) {
      جلب أصناف الموظف
   ================================ */
 
- const { data: linked, error: productsError } = await supabase
-  .from("product_employees")
-  .select(`
-    product_id,
-    products (
-      id,
-      name,
-      category
-    )
-  `)
-  .eq("employee_id", session.id);
-
-if (productsError) {
-  console.error(productsError);
-  return;
-}
-
-const products = linked
-  ? [...new Map(linked
-      .map(l => l.products)
-      .filter(Boolean)
-      .map(p => [p.id, p])
-    ).values()]
-  : [];
+const products = dash.products || [];
 
   if (requestId !== currentRequest) return;
 
@@ -169,71 +159,7 @@ const products = linked
      الأداء العام (كما هو)
   ================================ */
 
-  const filter = document.getElementById("timeFilter").value;
-
-  let query = supabase
-    .from("order_items")
-    .select(`
-      product_id,
-      qty,
-      price,
-      order:orders!inner(
-        id,
-        status,
-        created_at,
-        is_employee_order,
-        business_day_id
-      )
-    `)
-    .in("product_id", productIds)
-    .eq("order.status", "completed")
-    .eq("order.is_employee_order", false);
-
-  if (filter === "today") {
-
-    const { data: businessDay } = await supabase
-      .from("business_days")
-      .select("id")
-      .eq("is_open", true)
-      .single();
-
-    if (!businessDay) return;
-
-    query = query.eq("order.business_day_id", businessDay.id);
-  }
-
-  if (filter === "month") {
-
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-    query = query
-      .gte("order.created_at", start.toISOString())
-      .lte("order.created_at", end.toISOString());
-  }
-
-  if (filter === "custom") {
-
-    const fromDate = document.getElementById("dateFrom").value;
-    const toDate = document.getElementById("dateTo").value;
-
-    if (fromDate)
-      query = query.gte("order.created_at", new Date(fromDate).toISOString());
-
-    if (toDate) {
-      const endCustom = new Date(toDate);
-      endCustom.setHours(23, 59, 59, 999);
-      query = query.lte("order.created_at", endCustom.toISOString());
-    }
-  }
-
-  const { data: items, error: itemsError } = await query;
-
-  if (itemsError) {
-    console.error(itemsError);
-    return;
-  }
+  const items = dash.items || [];
 
   if (requestId !== currentRequest) return;
 
@@ -249,7 +175,7 @@ const products = linked
 
     const value = item.qty * item.price;
     totalSales += value;
-    uniqueOrders.add(item.order.id);
+    uniqueOrders.add(item.order_id);
 
     if (!productStats[item.product_id]) {
       productStats[item.product_id] = {
@@ -331,25 +257,11 @@ window.loadStats();
   const cycle = window.currentCycle;
   const today = new Date();
 
-  // حساب البيانات
-  const { data: sales } = await supabase
-    .from("employee_sales")
-    .select("payout_amount")
-    .eq("cycle_id", cycle.id);
-
-  const totalCommission = sales?.reduce(
-    (s,i)=> s + Number(i.payout_amount || 0),0
-  ) || 0;
-
-  const { data: payouts } = await supabase
-    .from("employee_payouts")
-    .select("amount, paid_at")
-    .eq("cycle_id", cycle.id)
-    .order("paid_at",{ascending:false});
-
-  const totalPaid = payouts?.reduce(
-    (s,p)=> s + Number(p.amount || 0),0
-  ) || 0;
+  // حساب البيانات (من آخر تحميل للوحة)
+  const lastDash = window.lastDash || { total_commission: 0, total_paid: 0, payouts: [] };
+  const totalCommission = Number(lastDash.total_commission || 0);
+  const totalPaid = Number(lastDash.total_paid || 0);
+  const payouts = lastDash.payouts || [];
 
   const remaining = Math.max(0,totalCommission-totalPaid);
 
@@ -522,7 +434,13 @@ window.loadStats();
 /* ===============================
    Logout
 ================================ */
-window.logoutEmployee = function () {
+window.logoutEmployee = async function () {
+  try {
+    await Promise.race([
+      Promise.resolve(supabase.rpc("employee_logout", { p_token: session.token })),
+      new Promise((r) => setTimeout(r, 1500))
+    ]);
+  } catch {}
   sessionStorage.removeItem("employee_session");
   window.location.href = "employee-login.html";
 };
