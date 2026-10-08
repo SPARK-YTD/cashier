@@ -1,5 +1,13 @@
 import { supabase } from "./supabase.js";
 
+// ✅ لازم الجهاز مسجّل دخول بحساب المحل (Supabase Auth)
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.href = "login.html";
+  }
+})();
+
 const table = document.getElementById("employeesTable");
 const modal = document.getElementById("employeeModal");
 
@@ -14,7 +22,7 @@ async function loadEmployees() {
 
   const { data: employees, error } = await supabase
     .from("employees")
-    .select("*")
+    .select("id, name, employee_code, role, active, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -191,15 +199,17 @@ window.saveEmployee = async function () {
     return;
   }
 
-  const { error } = await supabase
-    .from("employees")
-    .insert({
-      name,
-      employee_code: code,
-      pin_hash: pin,
-      role,
-      active: true
-    });
+  if (pin.length < 4) {
+    alert("الرقم السري لازم 4 أرقام على الأقل");
+    return;
+  }
+
+  const { error } = await supabase.rpc("staff_create_employee", {
+    p_name: name,
+    p_code: code,
+    p_pin: pin,
+    p_role: role
+  });
 
   if (error) {
     if (error.code === "23505") {
@@ -301,7 +311,7 @@ window.openEditEmployee = async function(id) {
 
   const { data: emp } = await supabase
     .from("employees")
-    .select("*")
+    .select("id, name, employee_code, role")
     .eq("id", id)
     .single();
 
@@ -313,7 +323,7 @@ window.openEditEmployee = async function(id) {
       <h3>تعديل الموظف</h3>
       <input id="eName" value="${emp.name}">
       <input id="eCode" value="${emp.employee_code}">
-      <input id="ePin" value="${emp.pin_hash}">
+      <input id="ePin" type="password" placeholder="رقم سري جديد (اتركه فارغاً لعدم التغيير)" autocomplete="new-password">
       <select id="eRole">
         <option value="employee" ${emp.role==="employee"?"selected":""}>موظف</option>
         <option value="manager" ${emp.role==="manager"?"selected":""}>مدير</option>
@@ -334,10 +344,26 @@ window.openEditEmployee = async function(id) {
       .update({
         name: eName.value,
         employee_code: eCode.value,
-        pin_hash: ePin.value,
         role: eRole.value
       })
       .eq("id", id);
+
+    // الرقم السري يتغيّر فقط لو كتبت رقم جديد (يتشفّر بالسيرفر)
+    if (!error && ePin.value.trim()) {
+      if (ePin.value.trim().length < 4) {
+        alert("الرقم السري لازم 4 أرقام على الأقل");
+        return;
+      }
+      const { error: pinErr } = await supabase.rpc("staff_set_employee_pin", {
+        p_id: id,
+        p_pin: ePin.value.trim()
+      });
+      if (pinErr) {
+        alert("تم حفظ البيانات لكن فشل تغيير الرقم السري");
+        console.error(pinErr);
+        return;
+      }
+    }
 
     if (error) {
       alert("خطأ في التعديل");
@@ -482,28 +508,25 @@ window.closeCycle = async function(empId) {
   const managerPin = prompt("🔐 أدخل رقم المدير لإغلاق الدورة");
   if (!managerPin) return;
 
-  const { error } = await supabase
-    .rpc("secure_close_cycle", {
+  const { data: res, error } = await supabase
+    .rpc("staff_close_cycle", {
       p_employee_id: empId,
       p_manager_pin: managerPin
     });
 
   if (error) {
+    alert("حدث خطأ أثناء الإغلاق");
+    console.error(error);
+    return;
+  }
 
-    if (error.message.includes("INVALID_MANAGER_PIN")) {
-      alert("❌ رقم المدير غير صحيح");
-    }
-    else if (error.message.includes("CYCLE_HAS_REMAINING")) {
-      alert("❌ لا يمكن إغلاق الدورة — يوجد مبلغ متبقي");
-    }
-    else if (error.message.includes("NO_OPEN_CYCLE")) {
-      alert("لا توجد دورة مفتوحة");
-    }
-    else {
-      alert("حدث خطأ أثناء الإغلاق");
-      console.error(error);
-    }
-
+  if (!res || res.ok !== true) {
+    const e = res?.error;
+    if (e === "INVALID_MANAGER_PIN") alert("❌ رقم المدير غير صحيح");
+    else if (e === "LOCKED") alert(`❌ محاولات خاطئة كثيرة، حاول بعد ${Math.ceil((res.retry_after || 60) / 60)} دقيقة`);
+    else if (e === "CYCLE_HAS_REMAINING") alert("❌ لا يمكن إغلاق الدورة — يوجد مبلغ متبقي");
+    else if (e === "NO_OPEN_CYCLE") alert("لا توجد دورة مفتوحة");
+    else alert("حدث خطأ أثناء الإغلاق");
     return;
   }
 
@@ -556,10 +579,20 @@ window.openPayModal = async function(empId, cycleId, remaining){
 
 window.resetAllCoupons = async function () {
 
-  const pass = prompt("🔐 أدخل كلمة مرور المدير لتأكيد العملية");
+  const mgrCode = prompt("🔐 أدخل الرقم الوظيفي للمدير لتأكيد العملية");
+  if (!mgrCode) return;
+  const mgrPin = prompt("🔐 أدخل الرقم السري للمدير");
+  if (!mgrPin) return;
 
-  if (pass !== "1998") {   // غيرها لكلمة سر خاصة
-    alert("❌ كلمة المرور غير صحيحة");
+  const { data: mgr, error: mgrErr } = await supabase.rpc("staff_verify_manager", {
+    p_code: mgrCode.trim(),
+    p_pin: mgrPin.trim()
+  });
+
+  if (mgrErr || !mgr || mgr.ok !== true) {
+    alert(mgr?.error === "LOCKED"
+      ? "❌ محاولات خاطئة كثيرة، حاول لاحقاً"
+      : "❌ بيانات المدير غير صحيحة");
     return;
   }
 
