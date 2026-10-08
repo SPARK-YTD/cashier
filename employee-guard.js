@@ -7,7 +7,7 @@ if (!session) {
     const employee = JSON.parse(session);
 
     // حماية إضافية لو البيانات خربت
-    if (!employee.id || !employee.code) {
+    if (!employee.id || !employee.code || !employee.token) {
       sessionStorage.removeItem("employee_session");
       window.location.href = "employee-login.html";
     }
