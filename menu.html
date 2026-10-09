@@ -96,6 +96,27 @@
       direction: ltr;
     }
 
+    .phone-gate-card .legal-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: right;
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.7;
+      margin: 4px 0 10px 0;
+      cursor: pointer;
+    }
+    .phone-gate-card .legal-consent input[type="checkbox"] {
+      width: 22px;
+      min-width: 22px;
+      height: 22px;
+      padding: 0;
+      margin: 2px 0 0 0;
+      accent-color: #10B981;
+    }
+    .phone-gate-card .legal-consent a { color: #2563EB; text-decoration: underline; }
+
     .phone-gate-error {
       color: #DC2626;
       font-size: 13px;
@@ -1127,6 +1148,19 @@
   }
 
   function renderGateStep(step, data = {}) {
+    renderGateStepCore(step, data);
+    const gateCard = document.getElementById("phoneGateCard");
+    if (gateCard && !gateCard.querySelector(".legal-mini")) {
+      gateCard.insertAdjacentHTML("beforeend",
+        '<div class="legal-mini" style="margin-top:14px;font-size:12px;color:#6B7280;">' +
+        '<a href="#" onclick="openLegal(\'terms\'); return false;" style="color:#2563EB;">شروط الاستخدام</a> · ' +
+        '<a href="#" onclick="openLegal(\'privacy\'); return false;" style="color:#2563EB;">سياسة الخصوصية</a></div>');
+    }
+  }
+
+  window.renderGateStep = renderGateStep; // زر "رجوع" يناديها من HTML
+
+  function renderGateStepCore(step, data = {}) {
     const card = document.getElementById("phoneGateCard");
 
     if (step === "phone") {
@@ -1169,6 +1203,11 @@
         <input type="password" id="gateNewPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
         <label class="pin-field-label">2️⃣ أعد كتابة نفس الرمز للتأكيد</label>
         <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4">
+        <label class="legal-consent">
+          <input type="checkbox" id="gateAcceptTerms">
+          <span>أوافق على <a href="#" onclick="openLegal('terms'); return false;">شروط الاستخدام</a>
+          و<a href="#" onclick="openLegal('privacy'); return false;">سياسة الخصوصية</a></span>
+        </label>
         <div class="phone-gate-error" id="gateError"></div>
         <button class="phone-gate-btn" onclick="submitRegisterPin()">إنشاء الحساب والدخول</button>
       `;
@@ -1283,11 +1322,16 @@
       errorEl.textContent = "⚠️ الرمزين مو متطابقين";
       return;
     }
+    if (!document.getElementById("gateAcceptTerms")?.checked) {
+      errorEl.textContent = "⚠️ لازم توافق على شروط الاستخدام وسياسة الخصوصية عشان تكمّل";
+      return;
+    }
 
     try {
       const { data: res, error } = await supabase.rpc("customer_register", {
         p_phone: pendingGatePhone,
-        p_pin: pin
+        p_pin: pin,
+        p_accept: true
       });
 
       if (error) throw error;
@@ -1295,6 +1339,8 @@
       if (!res || res.ok !== true) {
         if (res && res.error === "EXISTS") {
           errorEl.textContent = "⚠️ هذا الرقم عنده حساب، ارجع وادخل الرمز السري";
+        } else if (res && res.error === "TERMS_REQUIRED") {
+          errorEl.textContent = "⚠️ لازم توافق على شروط الاستخدام وسياسة الخصوصية عشان تكمّل";
         } else {
           errorEl.textContent = "⚠️ تعذّر إنشاء الحساب، تأكد من الرقم والرمز";
         }
@@ -2673,5 +2719,6 @@
   window.supabase = supabase;
 </script>
 
+<script src="legal-popup.js" data-privacy="privacy.html" data-terms="terms.html" data-footer="flow"></script>
 </body>
 </html>
