@@ -31,7 +31,13 @@
     if (error) {
       alert("بيانات الدخول غير صحيحة");
     } else {
-      location.href = "index.html";
+      let next = "index.html";
+      try {
+        const n = sessionStorage.getItem("next_page");
+        sessionStorage.removeItem("next_page");
+        if (n && /^[a-z0-9_-]+\.html$/i.test(n) && n !== "login.html") next = n;
+      } catch (_) {}
+      location.href = next;
     }
   };
 </script>
