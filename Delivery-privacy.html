@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>سياسة الخصوصية - تطبيق الديلفري - خذ لك بريك</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      color: #1f2937;
+      line-height: 1.9;
+    }
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 30px 20px 60px;
+    }
+    .header {
+      background: #0F172A;
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+    .header p {
+      margin: 0;
+      opacity: 0.8;
+      font-size: 14px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    h2 {
+      font-size: 17px;
+      color: #0F172A;
+      border-right: 4px solid #F59E0B;
+      padding-right: 10px;
+      margin-top: 0;
+    }
+    ul {
+      padding-right: 20px;
+      margin: 10px 0;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .contact-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 10px;
+    }
+    .updated {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 30px;
+    }
+    a {
+      color: #D97706;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🔒 سياسة الخصوصية</h1>
+    <p>تطبيق Get-Break Delivery — تطبيق سائقي التوصيل الخاص بـ "خذ لك بريك"</p>
+  </div>
+
+  <div class="wrap">
+
+    <div class="card">
+      <h2>1. نطاق هذي السياسة</h2>
+      <p>
+        هذي الصفحة تخص <strong>حصرياً</strong> تطبيق <strong>Get-Break Delivery</strong>
+        (تطبيق سائقي التوصيل)، وهو تطبيق داخلي مخصص لسائقي التوصيل المعتمدين لدى
+        مطعم "خذ لك بريك" (Get-Break)، وغير متاح للتحميل أو الاستخدام العام.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>2. البيانات اللي يجمعها التطبيق</h2>
+      <ul>
+        <li><strong>اسم المستخدم والرمز السري:</strong> بيانات حساب السائق، يُنشئها المحل حصرياً ولا يسجّلها السائق بنفسه. الرمز السري يُخزَّن مُشفّراً (Hash) ولا يُخزَّن كنص صريح.</li>
+        <li><strong>بيانات الطلبات المسندة للسائق:</strong> يعرض التطبيق للسائق بيانات الطلب اللازمة للتوصيل فقط (مثل اسم الزبون ورقم جواله وعنوانه وملاحظات الطلب)، ولا تُستخدم لأي غرض آخر.</li>
+        <li><strong>الموقع الجغرافي (GPS):</strong> يُجمع فقط أثناء تسجيل الدخول النشط بالتطبيق أثناء فترة العمل، لغرض تتبع تنفيذ طلبات التوصيل الحالية ومعرفة موقع السائق من قبل إدارة المحل.</li>
+      </ul>
+      <p>
+        <strong>ما يجمعه التطبيق:</strong> لا يجمع التطبيق جهات اتصال، صور، رسائل، أو أي
+        بيانات شخصية أخرى من جهاز السائق. لا يستخدم أي إعلانات أو أدوات تتبع تسويقي
+        أو تحليلات طرف ثالث.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>3. ليش نجمع الموقع الجغرافي</h2>
+      <ul>
+        <li>لتمكين إدارة المحل من معرفة موقع السائق أثناء تنفيذ طلب توصيل فعلي.</li>
+        <li>لمساعدة السائق بالتوجيه لعنوان الزبون.</li>
+        <li>يتوقف جمع الموقع فوراً بمجرد تسجيل خروج السائق من التطبيق. نحتفظ بآخر موقع معروف فقط (يُستبدل مع كل تحديث جديد)، ولا نحتفظ بسجل تاريخي لمسار السائق. يمكن حذف آخر موقع محفوظ بطلب من السائق أو الإدارة.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. وين تنخزن البيانات</h2>
+      <p>
+        تُخزَّن بيانات الحساب وآخر موقع معروف على خوادم <strong>Supabase</strong>
+        (قاعدة بيانات سحابية مبنية على PostgreSQL)، وواجهة التطبيق مستضافة عبر
+        <strong>Cloudflare Pages</strong> و<strong>GitHub Pages</strong> (ملفات الواجهة فقط، بدون بيانات حسابك). لا تُخزَّن أي بيانات محلياً على خوادم خاصة
+        غير موثّقة.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>5. مشاركة البيانات مع أطراف ثالثة</h2>
+      <p>
+        <strong>لا تُشارك بيانات السائق أو موقعه مع أي طرف ثالث إطلاقاً</strong> —
+        لا لأغراض تسويقية ولا تحليلية. البيانات تُستخدم حصرياً بين السائق وإدارة
+        المحل لغرض تشغيلي بحت (تنسيق التوصيل).
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>6. مدة الاحتفاظ بالبيانات</h2>
+      <p>
+        تُحتفظ ببيانات حساب السائق طول ما يكون على رأس عمله بالمحل. عند انتهاء
+        عمل السائق بالمحل، يتم إلغاء تفعيل حسابه، ويمكن حذف بياناته بالكامل بناءً
+        على طلب السائق أو إدارة المحل.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>7. حقوق السائق</h2>
+      <ul>
+        <li>الحق بمعرفة وش البيانات المخزنة عنه.</li>
+        <li>الحق بطلب حذف بياناته عند انتهاء عمله بالمحل.</li>
+        <li>الحق بتسجيل الخروج من التطبيق بأي وقت لإيقاف مشاركة موقعه فوراً.</li>
+      </ul>
+      <div class="contact-box">
+        لأي استفسار أو طلب يخص هذي السياسة، تواصل مباشرة عبر واتساب:
+        <br />
+        <a id="waLink" href="#">جاري تحميل الرقم...</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>8. أمان البيانات</h2>
+      <p>
+        يُستخدم اتصال مشفّر (HTTPS) بين التطبيق وقاعدة البيانات، ويقتصر الوصول
+        لبيانات السائقين على إدارة المحل حصرياً عبر حسابات مصرّح لها، وجداول قاعدة البيانات
+        محمية بحيث لا يمكن لأي زائر قراءتها. تُخزَّن جلسات الدخول بصيغة مُشفّرة،
+        ويُوقَف الحساب مؤقتاً بعد عدة محاولات دخول خاطئة متتالية. رغم ذلك،
+        وكأي نظام متصل بالإنترنت، ما نقدر نضمن أمان مطلق 100%.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>9. خصوصية الأطفال</h2>
+      <p>
+        هذا التطبيق مخصص حصرياً لسائقي توصيل بالغين (18 سنة فأكثر) موظفين رسمياً
+        لدى المحل، وغير موجّه أو متاح للأطفال بأي شكل.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>10. التعديلات على هذي السياسة</h2>
+      <p>
+        ممكن نحدّث هذي السياسة من وقت لآخر. أي تحديث جوهري راح يُنشر بهذي الصفحة
+        نفسها مع تاريخ آخر تحديث.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>11. القانون المعمول به</h2>
+      <p>
+        تخضع هذي السياسة وتُفسَّر وفق قوانين <strong>مملكة البحرين</strong>،
+        بما يشمل قانون حماية البيانات الشخصية البحريني (PDPL) رقم 30 لسنة 2018.
+      </p>
+    </div>
+
+    <div class="updated">آخر تحديث: 10 أكتوبر 2026</div>
+
+  </div>
+
+  <script type="module">
+    import { supabase } from "./supabase.js";
+
+    async function loadSupportPhone() {
+      const link = document.getElementById("waLink");
+      try {
+        const { data, error } = await supabase
+          .from("restaurant_settings")
+          .select("support_whatsapp_phone, whatsapp_phone")
+          .eq("id", 1)
+          .single();
+
+        if (error || !data) {
+          link.textContent = "تواصل معنا عبر المحل مباشرة";
+          return;
+        }
+
+        const phone = data.support_whatsapp_phone || data.whatsapp_phone;
+        if (!phone) {
+          link.textContent = "تواصل معنا عبر المحل مباشرة";
+          return;
+        }
+
+        const digits = phone.replace(/[^\d]/g, "");
+        link.href = `https://wa.me/${digits}`;
+        link.textContent = `واتساب: ${phone}`;
+      } catch (e) {
+        link.textContent = "تواصل معنا عبر المحل مباشرة";
+      }
+    }
+
+    loadSupportPhone();
+  </script>
+
+</body>
+</html>
