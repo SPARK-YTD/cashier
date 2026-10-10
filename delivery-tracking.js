@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { getRoute } from "./route-map.js";
 window.supabase = supabase;
 
 /*********************************
@@ -6,9 +7,9 @@ window.supabase = supabase;
  * يعرض:
  *   1) آخر موقع معروف لكل سائق نشط (delivery_accounts.current_lat/lng)
  *   2) مواقع طلبات التوصيل المعتمدة اللي لسا ما اتوصلت (orders.delivery_lat/lng)
- *   3) خط + وقت وصول تقديري بين السائق والطلب - فقط للطلبات اللي سائق "استلمها"
- *      (orders.assigned_driver_id) - الوقت تقديري بالمسافة المستقيمة + هامش طريق،
- *      مو توجيه فعلي (ما فيه خرائط بمفتاح API بهذا المشروع)
+ *   3) مسار فعلي على الطرق + وقت وصول تقديري بين السائق والطلب - فقط للطلبات اللي سائق "استلمها"
+ *      (orders.assigned_driver_id). المسار من خدمة OSRM (route-map.js)، وإذا الخدمة وقفت
+ *      نرجع للخط المستقيم المتقطع + تقدير بالمسافة المستقيمة مع هامش طريق.
  *********************************/
 
 const BAHRAIN_CENTER = [26.0667, 50.5577];
@@ -22,6 +23,7 @@ let driverMarkers = {};    // account_id -> L.Marker
 let orderMarkers = {};     // order_id -> L.Marker
 let assignmentLines = {};  // order_id -> L.Polyline
 let etaLabels = {};        // order_id -> L.Marker (تسمية الوقت التقديري فوق الخط)
+let routeInfo = {};        // order_id -> { minutes, distanceKm, approx }
 let latestDrivers = [];
 let latestOrders = [];
 let pollTimer;
@@ -329,7 +331,9 @@ function renderOrders(orders, drivers) {
       if (hasCustomerLoc && hasDriverLoc) {
         const dist = haversineKm(driver.current_lat, driver.current_lng, o.delivery_lat, o.delivery_lng);
         const eta = estimateEtaMinutes(dist, driver.id);
-        etaHtml = `<span class="eta-pill">🚴 ${escapeHtml(driver.name)} - وصول تقديري ~${eta} د</span>`;
+        const ri = routeInfo[o.id];
+        const shownEta = ri ? ri.minutes : eta;
+        etaHtml = `<span class="eta-pill" data-eta-order="${o.id}">🚴 ${escapeHtml(driver.name)} - وصول تقديري ~${shownEta} د</span>`;
       } else {
         etaHtml = `<span class="eta-pill">🚴 مستلمة: ${escapeHtml(driver.name)}</span>`;
       }
@@ -372,7 +376,8 @@ function renderOrders(orders, drivers) {
     }
   });
 
-  // ✅ خطوط الربط بين السائق المستلم والزبون + تسمية الوقت التقديري فوق منتصف الخط
+  // ✅ مسار فعلي على الطرق بين السائق المستلم والزبون + تسمية الوقت التقديري
+  // نرسم فوراً خط مستقيم متقطع (بديل)، ولما يوصل المسار الفعلي من OSRM نبدله بخط واصل
   const seenLineIds = new Set();
   orders.forEach(o => {
     if (!o.assigned_driver_id) return;
@@ -381,36 +386,49 @@ function renderOrders(orders, drivers) {
     if (o.delivery_lat == null || o.delivery_lng == null) return;
 
     seenLineIds.add(o.id);
-    const pathCoords = [[driver.current_lat, driver.current_lng], [o.delivery_lat, o.delivery_lng]];
+    const from = { lat: driver.current_lat, lng: driver.current_lng };
+    const to = { lat: o.delivery_lat, lng: o.delivery_lng };
+    const straight = [[from.lat, from.lng], [to.lat, to.lng]];
 
-    if (assignmentLines[o.id]) {
-      assignmentLines[o.id].setLatLngs(pathCoords);
-    } else {
-      assignmentLines[o.id] = L.polyline(pathCoords, {
+    if (!assignmentLines[o.id]) {
+      assignmentLines[o.id] = L.polyline(straight, {
         color: "#2563EB",
         weight: 2,
         dashArray: "6, 8",
         opacity: 0.8
       }).addTo(map);
+    } else if (!routeInfo[o.id] || routeInfo[o.id].approx) {
+      assignmentLines[o.id].setLatLngs(straight);
     }
 
-    // ✅ تسمية الوقت التقديري تتحدث بسرعة السائق الحقيقية لو محسوبة، وإلا الافتراضي
-    const dist = haversineKm(driver.current_lat, driver.current_lng, o.delivery_lat, o.delivery_lng);
-    const eta = estimateEtaMinutes(dist, driver.id);
-    const midLat = (driver.current_lat + o.delivery_lat) / 2;
-    const midLng = (driver.current_lng + o.delivery_lng) / 2;
-    const labelIcon = L.divIcon({
-      className: "",
-      html: `<div class="eta-label">⏱ ~${eta} د</div>`,
-      iconSize: null
+    // تسمية الوقت: تقدير فوري بالمسافة المستقيمة (يتبدل لما المسار الفعلي يوصل)
+    const dist = haversineKm(from.lat, from.lng, to.lat, to.lng);
+    const quickEta = routeInfo[o.id] ? routeInfo[o.id].minutes : estimateEtaMinutes(dist, driver.id);
+    setEtaLabel(o.id, (from.lat + to.lat) / 2, (from.lng + to.lng) / 2, quickEta);
+
+    // المسار الفعلي (غير متزامن، وبكاش وحد معدل داخل route-map.js)
+    getRoute(o.id, from, to, driverEstimatedSpeed[driver.id]).then(route => {
+      if (!route || !assignmentLines[o.id] || !seenOrderStillActive(o.id)) return;
+
+      let minutes = route.minutes;
+      if (!route.approx) {
+        const speed = driverEstimatedSpeed[driver.id];
+        if (speed && speed > 0) minutes = Math.max(1, Math.round((route.distanceKm / speed) * 60));
+      }
+      routeInfo[o.id] = { minutes, distanceKm: route.distanceKm, approx: route.approx };
+
+      const line = assignmentLines[o.id];
+      line.setLatLngs(route.coords);
+      line.setStyle(route.approx
+        ? { color: "#2563EB", weight: 2, dashArray: "6, 8", opacity: 0.8 }
+        : { color: "#2563EB", weight: 5, dashArray: null, opacity: 0.85 });
+
+      const mid = route.coords[Math.floor(route.coords.length / 2)];
+      setEtaLabel(o.id, mid[0], mid[1], minutes);
+
+      const pill = document.querySelector(`[data-eta-order="${o.id}"]`);
+      if (pill && driver) pill.textContent = `🚴 ${driver.name} - وصول تقديري ~${minutes} د`;
     });
-
-    if (etaLabels[o.id]) {
-      etaLabels[o.id].setLatLng([midLat, midLng]);
-      etaLabels[o.id].setIcon(labelIcon);
-    } else {
-      etaLabels[o.id] = L.marker([midLat, midLng], { icon: labelIcon, interactive: false }).addTo(map);
-    }
   });
 
   Object.keys(assignmentLines).forEach(id => {
@@ -425,6 +443,27 @@ function renderOrders(orders, drivers) {
       delete etaLabels[id];
     }
   });
+  Object.keys(routeInfo).forEach(id => {
+    if (!seenLineIds.has(id)) delete routeInfo[id];
+  });
+}
+
+function seenOrderStillActive(orderId) {
+  return latestOrders.some(o => o.id === orderId && o.assigned_driver_id);
+}
+
+function setEtaLabel(orderId, lat, lng, minutes) {
+  const labelIcon = L.divIcon({
+    className: "",
+    html: `<div class="eta-label">⏱ ~${minutes} د</div>`,
+    iconSize: null
+  });
+  if (etaLabels[orderId]) {
+    etaLabels[orderId].setLatLng([lat, lng]);
+    etaLabels[orderId].setIcon(labelIcon);
+  } else {
+    etaLabels[orderId] = L.marker([lat, lng], { icon: labelIcon, interactive: false }).addTo(map);
+  }
 }
 
 function clearMarkers(store) {
