@@ -994,12 +994,13 @@
         <label>نوع الطلب *</label>
         <label class="radio-group">
           <input type="radio" name="orderType" value="pickup" checked onchange="updateDelivery()">
-          <span>🚶 استلام من المتجر</span>
+          <span>🚶 استلام من العربة</span>
         </label>
-        <label class="radio-group">
+        <label class="radio-group" id="deliveryOption">
           <input type="radio" name="orderType" value="delivery" onchange="updateDelivery()">
           <span>🚗 توصيل للعنوان</span>
         </label>
+        <div id="pickupOnlyNote" style="display:none;background:#FEF3C7;color:#92400E;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;margin-top:6px;">🚶 التوصيل متوقف حالياً — الاستلام من العربة فقط</div>
       </div>
 
       <div id="deliveryGroup" style="display: none;">
@@ -1431,6 +1432,7 @@
   let cart = [];
   let currentAddonsData = {};
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
+  let deliveryEnabled = true; // ✅ التوصيل شغّال افتراضياً (الإدارة تقدر تقفله = استلام من العربة فقط)
   let customerLocation = null; // { lat, lng }
   let whatsappPhone = null;
   let supportWhatsappPhone = null;
@@ -1605,15 +1607,24 @@
   // ========== ORDERING ENABLED CHECK ==========
   async function checkOrderingEnabled() {
     try {
-      const { data, error } = await supabase
+      // delivery_enabled عمود جديد (Stage 7). لو لسا ما انشغّل الـSQL نرجع للأعمدة القديمة بدل ما نخسر رقم واتساب
+      let { data, error } = await supabase
         .from("restaurant_settings")
-        .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone")
+        .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone, delivery_enabled")
         .eq("id", 1)
         .single();
+      if (error) {
+        ({ data, error } = await supabase
+          .from("restaurant_settings")
+          .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone")
+          .eq("id", 1)
+          .single());
+      }
 
       if (error) throw error;
 
       orderingEnabled = data.ordering_enabled !== false;
+      deliveryEnabled = data.delivery_enabled !== false;
       whatsappPhone = data.whatsapp_phone || null;
       supportWhatsappPhone = data.support_whatsapp_phone || null;
     } catch (error) {
@@ -1627,13 +1638,32 @@
 
     if (!orderingEnabled) {
       banner.style.display = "block";
-      banner.textContent = "📱 الطلبات حالياً تُرسل عبر واتساب - اضغط إرسال وأكمل من واتسابك";
+      banner.textContent = "📱 طلبك ينحفظ عندنا، وبعد الإرسال أكّد طلبك عبر واتساب (زر جاهز)";
       if (cartBtn) cartBtn.classList.add("above-banner");
-      if (submitBtn) submitBtn.textContent = "📱 إرسال عبر واتساب";
+      if (submitBtn) submitBtn.textContent = "📱 إرسال وتأكيد عبر واتساب";
     } else {
       banner.style.display = "none";
       if (cartBtn) cartBtn.classList.remove("above-banner");
       if (submitBtn) submitBtn.textContent = "إرسال الطلب";
+    }
+
+    applyDeliveryAvailability();
+  }
+
+  // 🚶 لو الإدارة قفلت التوصيل: نخفي خيار التوصيل ونثبّت الاستلام من العربة
+  function applyDeliveryAvailability() {
+    const opt = document.getElementById("deliveryOption");
+    const note = document.getElementById("pickupOnlyNote");
+    const pickupRadio = document.querySelector('input[name="orderType"][value="pickup"]');
+    if (!opt || !note || !pickupRadio) return;
+    if (!deliveryEnabled) {
+      opt.style.display = "none";
+      note.style.display = "block";
+      pickupRadio.checked = true;
+      if (window.updateDelivery) window.updateDelivery();
+    } else {
+      opt.style.display = "";
+      note.style.display = "none";
     }
   }
 
@@ -2177,7 +2207,7 @@
     let msg = `🧾 *طلب جديد من المنيو*\n\n`;
     msg += `👤 الاسم: ${name || "عميل"}\n`;
     msg += `📱 الهاتف: ${phone}\n`;
-    msg += `🏪 النوع: ${type === "pickup" ? "استقبال من المحل" : "توصيل"}\n`;
+    msg += `🏪 النوع: ${type === "pickup" ? "استلام من العربة" : "توصيل"}\n`;
     if (type === "delivery") {
       msg += `📍 المنطقة: ${area || "—"}\n`;
       msg += `🏘️ مجمع ${block || "—"} - طريق ${road || "—"} - منزل ${building || "—"}\n`;
@@ -2235,6 +2265,13 @@
         <h2 style="margin:0 0 8px; color:#111827;">تم إرسال طلبك</h2>
         <p style="color:#6B7280; margin:0 0 4px; font-size:14px;">⏳ ينتظر الموافقة من المحل...</p>
         <p style="color:#9CA3AF; margin:0; font-size:12px;">راح تتغيّر الصفحة تلقائياً عند القبول</p>
+        ${data.confirmWaUrl ? `
+        <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:8px; padding:12px; margin:14px 0 10px; text-align:right;">
+          <p style="margin:0; color:#92400E; font-size:14px; font-weight:700;">📱 أكّد طلبك عبر واتساب</p>
+          <p style="margin:6px 0 0; color:#92400E; font-size:13px;">طلبك انحفظ عندنا. اضغط الزر وأرسل الرسالة الجاهزة عشان المحل يشوفه فوراً</p>
+        </div>
+        <a class="btn-whatsapp" href="${data.confirmWaUrl}" target="_blank" rel="noopener">📱 تأكيد الطلب عبر واتساب</a>
+        ` : ""}
         <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">إخفاء (بيستمر الانتظار بالخلفية)</button>
       `;
     } else if (state === "approved") {
@@ -2320,6 +2357,11 @@
       return;
     }
 
+    if (type === "delivery" && !deliveryEnabled) {
+      alert("🚶 التوصيل متوقف حالياً — الاستلام من العربة فقط");
+      return;
+    }
+
     if (type === "delivery") {
       const area = document.getElementById("deliveryArea").value;
       const block = document.getElementById("deliveryBlock").value.trim();
@@ -2348,34 +2390,6 @@
     const grandTotal = itemsTotal + fee;
 
     if (!confirm(`✓ تأكيد الطلب؟\nالإجمالي: ${grandTotal.toFixed(3)} د.ب`)) return;
-
-    // ✅ لو استقبال الطلبات من النظام معطّل → أرسل عبر واتساب فقط
-    if (!orderingEnabled) {
-      if (!whatsappPhone) {
-        alert("❌ ما فيه رقم واتساب مسجّل للمطعم، تواصل معهم مباشرة");
-        return;
-      }
-
-      const area = type === "delivery" ? document.getElementById("deliveryArea").value : null;
-      const block = type === "delivery" ? document.getElementById("deliveryBlock").value.trim() : null;
-      const road = type === "delivery" ? document.getElementById("deliveryRoad").value.trim() : null;
-      const building = type === "delivery" ? document.getElementById("deliveryBuilding").value.trim() : null;
-      const address = type === "delivery" ? document.getElementById("deliveryAddress").value.trim() : null;
-
-      const message = buildWhatsAppMessage({ name, phone, type, area, block, road, building, address, notes, grandTotal, location: customerLocation });
-      const waPhone = normalizePhoneForWhatsApp(whatsappPhone);
-      const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
-
-      if (window.DEBUG_MENU) console.log("📱 Opening WhatsApp:", waUrl);
-
-      window.open(waUrl, "_blank");
-
-      closeModal("orderModal");
-      cart = [];
-      saveCart();
-      updateBadge();
-      return;
-    }
 
     // ✅ هيكل البيانات موحد تماماً مع الكاشير - نفس شكل app.js
     const orderData = {
@@ -2445,6 +2459,11 @@
           throw new Error("انتهت جلستك، سجّل دخولك من جديد");
         }
         if (code === "TOO_MANY") throw new Error("أرسلت طلبات كثيرة بوقت قصير، انتظر قليلاً");
+        if (code === "DELIVERY_DISABLED") {
+          deliveryEnabled = false;
+          applyDeliveryAvailability();
+          throw new Error("التوصيل متوقف حالياً — الاستلام من العربة فقط");
+        }
         throw new Error("تعذّر إرسال الطلب، تأكد من البيانات وحاول مرة ثانية");
       }
 
@@ -2487,11 +2506,25 @@
         }
       }, 4000);
 
+      // ✅ وضع واتساب: الطلب انحفظ بالنظام، ونجهز رسالة تأكيد كاملة برقم مرجعي (الزبون يضغط الزر بنفسه عشان ما يتحجب)
+      let confirmWaUrl = null;
+      if (!orderingEnabled && whatsappPhone) {
+        const ref = String(orderId || "").replace(/-/g, "").slice(0, 6).toUpperCase();
+        const area = type === "delivery" ? document.getElementById("deliveryArea").value : null;
+        const block = type === "delivery" ? document.getElementById("deliveryBlock").value.trim() : null;
+        const road = type === "delivery" ? document.getElementById("deliveryRoad").value.trim() : null;
+        const building = type === "delivery" ? document.getElementById("deliveryBuilding").value.trim() : null;
+        const address = type === "delivery" ? document.getElementById("deliveryAddress").value.trim() : null;
+        const message = `✅ *تأكيد طلب*\n🔖 مرجع الطلب: ${ref}\n\n` +
+          buildWhatsAppMessage({ name, phone, type, area, block, road, building, address, notes, grandTotal, location: customerLocation });
+        confirmWaUrl = `https://wa.me/${normalizePhoneForWhatsApp(whatsappPhone)}?text=${encodeURIComponent(message)}`;
+      }
+
       // ✅ اظهر شاشة الانتظار (تفضل ظاهرة لحين الموافقة أو الرفض)
       closeModal("orderModal");
-      showOrderStatusScreen("pending", { name });
+      showOrderStatusScreen("pending", { name, confirmWaUrl });
       submitBtn.disabled = false;
-      submitBtn.textContent = orderingEnabled ? "إرسال الطلب" : "📱 إرسال عبر واتساب";
+      submitBtn.textContent = orderingEnabled ? "إرسال الطلب" : "📱 إرسال وتأكيد عبر واتساب";
 
     } catch (error) {
       console.error("Error submitting order:", error);
