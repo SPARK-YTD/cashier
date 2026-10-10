@@ -12,6 +12,18 @@ window.supabase = supabase;
   let currentBusinessDay = null;
   let editingOrderId = null;
   let currentInvoiceNo = null;
+  let currentInvoiceCreatedAt = null;
+
+  // 🕒 وقت الطلب بتوقيت البحرين (أرقام إنجليزية عشان تنطبع واضحة)
+  function fmtOrderTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleString("en-GB", {
+      timeZone: "Asia/Bahrain", day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: true
+    }).replace(",", "");
+  }
   let ordersChannel;
   let pendingOrdersChannel;
   let newOrdersChannel;
@@ -675,6 +687,7 @@ const { data: order, error } = await supabase
   currentBusinessDay.invoice_counter = invoiceNo;
   
   currentInvoiceNo = order.invoice_no;
+  currentInvoiceCreatedAt = order.created_at || null;
   
         if (error || !order) {
           throw new Error("فشل إنشاء الطلب");
@@ -1297,6 +1310,7 @@ function playNotificationSound() {
   
 div.innerHTML = `
   <strong>فاتورة رقم ${order.invoice_no || "—"}</strong>
+  ${order.created_at ? `<div style="font-size:12px;color:#475569;font-weight:700;margin-top:2px;">🕒 ${fmtOrderTime(order.created_at)}</div>` : ""}
   <br>
   ${
     order.source === 'qr_menu'
@@ -1476,11 +1490,12 @@ div.innerHTML = `
     // ✅ جلب رقم الفاتورة (مهم للطباعة)
     const { data: order } = await supabase
       .from("orders")
-      .select("invoice_no")
+      .select("invoice_no, created_at")
       .eq("id", orderId)
       .single();
   
     currentInvoiceNo = order?.invoice_no || null;
+    currentInvoiceCreatedAt = order?.created_at || null;
     const { data } = await supabase
       .from("order_items")
       .select("qty, price, item_name, product_id, variant_id, extras_removed, addons")
@@ -1947,6 +1962,14 @@ await supabase.from("orders").update({
     let orderTotal = null;
     let invoiceNo = null;
 
+    // 🕒 وقت الطلب (للعرض داخل الفاتورة)
+    const { data: timeMeta } = await supabase
+      .from("orders")
+      .select("created_at")
+      .eq("id", orderId)
+      .single();
+    const orderTimeText = fmtOrderTime(timeMeta && timeMeta.created_at);
+
     if (separateItems && separateItems.length > 0) {
       // ✅ طلب كاشير عادي - البيانات من جدول order_items المنفصل
       itemsHtml = separateItems.map(i => `
@@ -2030,6 +2053,7 @@ await supabase.from("orders").update({
     overlay.innerHTML = `
       <div class="variant-box" id="invoiceContent" style="max-width:500px">
         <h3>🧾 تفاصيل الفاتورة${invoiceNo ? ` #${invoiceNo}` : ""}</h3>
+        ${orderTimeText ? `<div style="font-weight:700;color:#475569;margin-bottom:6px;">🕒 ${orderTimeText}</div>` : ""}
 
         <div style="text-align:right;max-height:300px;overflow:auto">
           ${itemsHtml}
@@ -2221,6 +2245,7 @@ await supabase.from("orders").update({
   function clearForNewOrder() {
     cart = [];
     currentInvoiceNo = null;
+    currentInvoiceCreatedAt = null;
     editingOrderId = null;
     renderCart();
   
@@ -2274,6 +2299,10 @@ await supabase.from("orders").update({
     }
     .invoice-no {
       font-size: 15px;
+      margin-bottom: 4px;
+    }
+    .invoice-time {
+      font-size: 13px;
       margin-bottom: 10px;
     }
     hr {
@@ -2309,6 +2338,7 @@ await supabase.from("orders").update({
   
   <h1>خذلك بريك</h1>
   <div class="invoice-no">فاتورة رقم: ${invoiceNo}</div>
+  <div class="invoice-time">🕒 ${fmtOrderTime(currentInvoiceCreatedAt || new Date().toISOString())}</div>
   
   <hr>
   
