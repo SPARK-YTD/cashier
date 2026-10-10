@@ -379,6 +379,15 @@
         <div class="toggle-knob"></div>
       </button>
     </div>
+    <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 0; padding-top:14px; border-top:1px solid #E5E7EB;">
+      <div>
+        <label class="setting-label" style="margin-bottom:4px;">تفعيل التوصيل</label>
+        <div class="setting-hint" id="deliveryHint">جاري التحميل...</div>
+      </div>
+      <button class="toggle-switch" id="deliveryToggle" onclick="toggleDelivery()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
   </div>
 
   <!-- QR CODE SECTION -->
@@ -433,6 +442,7 @@
     generateQR();
     await loadMenu();
     await loadOrderingStatus();
+    await loadDeliveryStatus();
   });
 
   // ========== ORDERING TOGGLE ==========
@@ -452,12 +462,62 @@
       toggle.classList.toggle("active", enabled);
       hint.textContent = enabled
         ? "🛒 الطلبات تُرسل مباشرة للكاشير (النظام)"
-        : "📱 الطلبات تُرسل عبر واتساب فقط (العميل يضغط إرسال بنفسه)";
+        : "📱 الطلب ينحفظ بالنظام ويظهر للزبون زر تأكيد عبر واتساب (جاهز بالرسالة)";
     } catch (error) {
       console.error("Error loading ordering status:", error);
       hint.textContent = "❌ تعذر تحميل الحالة (تأكد من إضافة جدول restaurant_settings)";
     }
   }
+
+  // ========== DELIVERY TOGGLE (استلام من العربة فقط) ==========
+  function deliveryHintText(enabled) {
+    return enabled
+      ? "🚗 التوصيل شغّال (الزبون يختار توصيل أو استلام من العربة)"
+      : "🚶 التوصيل مقفل — الاستلام من العربة فقط";
+  }
+
+  async function loadDeliveryStatus() {
+    const toggle = document.getElementById("deliveryToggle");
+    const hint = document.getElementById("deliveryHint");
+    try {
+      const { data, error } = await supabase
+        .from("restaurant_settings")
+        .select("delivery_enabled")
+        .eq("id", 1)
+        .single();
+      if (error) throw error;
+      const enabled = data.delivery_enabled !== false;
+      toggle.classList.toggle("active", enabled);
+      hint.textContent = deliveryHintText(enabled);
+    } catch (error) {
+      console.error("Error loading delivery status:", error);
+      toggle.disabled = true;
+      hint.textContent = "❌ شغّل ملف sql_stage7_pickup_only.sql في Supabase أولاً";
+    }
+  }
+
+  window.toggleDelivery = async () => {
+    const toggle = document.getElementById("deliveryToggle");
+    const hint = document.getElementById("deliveryHint");
+    const newValue = !toggle.classList.contains("active");
+    if (!newValue && !confirm("قفل التوصيل؟ الزبائن راح يشوفون الاستلام من العربة فقط.")) return;
+
+    toggle.disabled = true;
+    try {
+      const { error } = await supabase
+        .from("restaurant_settings")
+        .update({ delivery_enabled: newValue, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (error) throw error;
+      toggle.classList.toggle("active", newValue);
+      hint.textContent = deliveryHintText(newValue);
+    } catch (error) {
+      console.error("Error updating delivery status:", error);
+      alert("❌ خطأ في تحديث حالة التوصيل");
+    } finally {
+      toggle.disabled = false;
+    }
+  };
 
   window.toggleOrdering = async () => {
     const toggle = document.getElementById("orderingToggle");
@@ -476,7 +536,7 @@
       toggle.classList.toggle("active", newValue);
       hint.textContent = newValue
         ? "🛒 الطلبات تُرسل مباشرة للكاشير (النظام)"
-        : "📱 الطلبات تُرسل عبر واتساب فقط (العميل يضغط إرسال بنفسه)";
+        : "📱 الطلب ينحفظ بالنظام ويظهر للزبون زر تأكيد عبر واتساب (جاهز بالرسالة)";
     } catch (error) {
       console.error("Error updating ordering status:", error);
       alert("❌ خطأ في تحديث الحالة");
