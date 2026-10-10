@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { t, applyStaticTranslations, renderLanguageSwitcher } from "./delivery-i18n.js";
+import { getRoute, formatDistance } from "./route-map.js";
 window.supabase = supabase;
 
 /*********************************
@@ -102,6 +103,7 @@ document.addEventListener("visibilitychange", () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
+            setMyPosition(pos.coords.latitude, pos.coords.longitude);
             lastLocationSentAt = Date.now();
             updateDriverLocation(currentDriverAccountIdForWakeLock, pos.coords.latitude, pos.coords.longitude);
           },
@@ -162,6 +164,7 @@ window.__onLangChange = function () {
   renderLanguageSwitcher("langSwitcher");
   updateWelcomeText();
   renderDeliveryOrders();
+  if (routeState.open) refreshRouteOverlay();
 };
 
 function updateWelcomeText() {
@@ -200,6 +203,7 @@ function startLocationSharing(accountId) {
 
   locationWatchId = navigator.geolocation.watchPosition(
     (pos) => {
+      setMyPosition(pos.coords.latitude, pos.coords.longitude);
       const now = Date.now();
       if (now - lastLocationSentAt < LOCATION_UPDATE_INTERVAL) return;
       lastLocationSentAt = now;
@@ -267,6 +271,7 @@ async function loadDeliveryOrders() {
 
   deliveryOrders = data || [];
   renderDeliveryOrders();
+  if (routeState.open) refreshRouteOverlay();
 }
 
 function renderDeliveryOrders() {
@@ -288,9 +293,6 @@ function renderDeliveryOrders() {
     const minutesAgo = Math.max(0, Math.floor((Date.now() - new Date(baseTime).getTime()) / 60000));
 
     const hasLocation = order.delivery_lat != null && order.delivery_lng != null;
-    const mapLink = hasLocation
-      ? `https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}`
-      : null;
 
     const addressParts = [
       order.delivery_block ? `#${order.delivery_block}` : null,
@@ -320,8 +322,8 @@ function renderDeliveryOrders() {
       ${addressParts ? `<div class="delivery-row">📍 ${escapeHtml(addressParts)}</div>` : ""}
 
       ${
-        mapLink
-          ? `<a href="${mapLink}" target="_blank" rel="noopener" class="map-btn">${t("open_map")}</a>`
+        hasLocation
+          ? `<button type="button" class="map-btn" onclick="openRouteMap('${order.id}')">${t("route_btn")}</button>`
           : `<div class="delivery-row" style="color:#DC2626;">${t("no_location")}</div>`
       }
 
@@ -505,3 +507,165 @@ async function finalizeDelivery(orderId, paymentMethod) {
 // ✅ التحديث صار بالـpolling فقط (كل 10 ثواني): الـrealtime يحتاج صلاحية قراءة مباشرة
 // على جدول الطلبات، وقفلناها عن المفتاح العام لحماية بيانات الزبائن.
 function subscribeToDeliveryOrders() {}
+
+
+/* ===============================
+   خريطة المسار داخل الصفحة (بدل التحويل لقوقل ماب)
+   - خريطة Leaflet + مسار فعلي على الطرق من OSRM (route-map.js)
+   - موقع السائق من نفس watchPosition اللي يرسل موقعه للمطعم
+   - النافذة خارج قائمة الطلبات، فتحديث القائمة كل 10 ثواني ما يدمرها
+================================ */
+let myPos = null;
+const routeState = { open: false, orderId: null, map: null, driverMarker: null, customerMarker: null, line: null, seq: 0, info: null, fitted: false };
+
+function setMyPosition(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  myPos = { lat, lng, at: Date.now() };
+  if (routeState.open) refreshRouteOverlay();
+}
+
+function googleNavUrl(order) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}&travelmode=driving`;
+}
+
+window.openRouteMap = function (orderId) {
+  const order = deliveryOrders.find(o => o.id === orderId);
+  if (!order || order.delivery_lat == null || order.delivery_lng == null) {
+    alert(t("no_location_alert"));
+    return;
+  }
+  // لو مكتبة الخريطة ما تحمّلت (ضعف نت) ما نترك السائق بدون وسيلة: نفتح قوقل مباشرة
+  if (typeof L === "undefined") {
+    window.open(googleNavUrl(order), "_blank", "noopener");
+    return;
+  }
+  if (routeState.open) teardownRouteMap();
+
+  const lat = Number(order.delivery_lat), lng = Number(order.delivery_lng);
+  const overlay = document.getElementById("routeOverlay");
+  overlay.classList.add("open");
+  routeState.open = true;
+  routeState.orderId = orderId;
+  routeState.fitted = false;
+  routeState.info = null;
+
+  const gBtn = document.getElementById("routeGoogleBtn");
+  if (gBtn) gBtn.href = googleNavUrl(order);
+
+  routeState.map = L.map("routeMapBox").setView([lat, lng], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(routeState.map);
+
+  const custIcon = L.divIcon({
+    className: "",
+    html: `<div style="background:#DC2626;color:white;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 0 6px rgba(0,0,0,0.4);"><span style="transform:rotate(45deg);font-size:13px;">📦</span></div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 26]
+  });
+  routeState.customerMarker = L.marker([lat, lng], { icon: custIcon }).addTo(routeState.map);
+  routeState.customerMarker.bindPopup(t("route_customer"));
+
+  // لازم نخبر Leaflet بالحجم الفعلي بعد ما النافذة تظهر
+  setTimeout(() => { routeState.map && routeState.map.invalidateSize(); }, 50);
+
+  // زر رجوع الجوال/المتصفح يقفل الخريطة بدل ما يطلع من الصفحة
+  try { history.pushState({ routeMap: true }, ""); } catch {}
+
+  setRouteInfo(t("route_loading"));
+  refreshRouteOverlay();
+};
+
+function setRouteInfo(text, approxNote) {
+  const el = document.getElementById("routeInfo");
+  if (!el) return;
+  el.textContent = text;
+  if (approxNote) {
+    const span = document.createElement("span");
+    span.className = "approx";
+    span.textContent = approxNote;
+    el.appendChild(span);
+  }
+}
+
+async function refreshRouteOverlay() {
+  if (!routeState.open || !routeState.map) return;
+  const order = deliveryOrders.find(o => o.id === routeState.orderId);
+  if (!order) { teardownRouteMap(); return; }   // انوصل أو انشال من القائمة
+
+  const to = { lat: Number(order.delivery_lat), lng: Number(order.delivery_lng) };
+  routeState.customerMarker.setLatLng([to.lat, to.lng]);
+
+  if (!myPos) {
+    setRouteInfo(t("route_waiting_gps"));
+    return;
+  }
+
+  if (!routeState.driverMarker) {
+    const youIcon = L.divIcon({
+      className: "",
+      html: `<div style="background:#2563EB;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(37,99,235,0.25),0 0 6px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+    routeState.driverMarker = L.marker([myPos.lat, myPos.lng], { icon: youIcon }).addTo(routeState.map);
+    routeState.driverMarker.bindPopup(t("route_you"));
+  } else {
+    routeState.driverMarker.setLatLng([myPos.lat, myPos.lng]);
+  }
+
+  const seq = ++routeState.seq;
+  const route = await getRoute("drv-" + order.id, { lat: myPos.lat, lng: myPos.lng }, to);
+  if (!routeState.open || seq !== routeState.seq || !route || !routeState.map) return; // طلب أقدم، نتجاهله
+
+  routeState.info = route;
+  if (routeState.line) routeState.map.removeLayer(routeState.line);
+  routeState.line = L.polyline(route.coords, route.approx
+    ? { color: "#2563EB", weight: 3, dashArray: "6, 8", opacity: 0.85 }
+    : { color: "#2563EB", weight: 6, opacity: 0.85 }
+  ).addTo(routeState.map);
+
+  if (!routeState.fitted) {
+    routeState.fitted = true;
+    routeState.map.fitBounds(L.latLngBounds(route.coords).extend([myPos.lat, myPos.lng]).extend([to.lat, to.lng]), { padding: [50, 50], maxZoom: 17, animate: false });
+  }
+
+  setRouteInfo(
+    `${t("route_eta", { m: route.minutes })} · ${formatDistance(route.distanceKm)}`,
+    route.approx ? t("route_approx") : null
+  );
+}
+
+window.recenterRouteMap = function () {
+  if (!routeState.open || !routeState.map) return;
+  const order = deliveryOrders.find(o => o.id === routeState.orderId);
+  if (!order) return;
+  const pts = [[Number(order.delivery_lat), Number(order.delivery_lng)]];
+  if (myPos) pts.push([myPos.lat, myPos.lng]);
+  if (pts.length === 1) routeState.map.setView(pts[0], 16, { animate: false });
+  else routeState.map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 17, animate: false });
+};
+
+function teardownRouteMap() {
+  routeState.seq++;
+  routeState.open = false;
+  routeState.orderId = null;
+  if (routeState.map) { try { routeState.map.stop(); routeState.map.off(); routeState.map.remove(); } catch {} }
+  routeState.map = null;
+  routeState.driverMarker = null;
+  routeState.customerMarker = null;
+  routeState.line = null;
+  routeState.info = null;
+  const overlay = document.getElementById("routeOverlay");
+  if (overlay) overlay.classList.remove("open");
+}
+
+window.closeRouteMap = function () {
+  if (history.state && history.state.routeMap) history.back();   // popstate يقفلها
+  else teardownRouteMap();
+};
+
+window.addEventListener("popstate", () => {
+  if (routeState.open) teardownRouteMap();
+});
