@@ -15,6 +15,7 @@
   <link rel="apple-touch-icon" href="logo.png">
 
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <style>
     body {
       background: #F8FAFC;
@@ -253,6 +254,73 @@
     .map-btn:hover {
       background: #2563EB;
     }
+
+    button.map-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== نافذة الخريطة داخل صفحة السائق ===== */
+    .route-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #0F172A;
+      flex-direction: column;
+    }
+    .route-overlay.open { display: flex; }
+    .route-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .route-topbar button {
+      background: #1E293B;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #routeMapBox { flex: 1; direction: ltr; min-height: 200px; }
+    .route-info {
+      background: white;
+      padding: 12px 14px;
+      font-weight: 800;
+      font-size: 15px;
+      color: #0F172A;
+      text-align: center;
+    }
+    .route-info .approx { display: block; color: #B45309; font-size: 12px; font-weight: 700; margin-top: 4px; }
+    .route-actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: white;
+      border-top: 1px solid #E5E7EB;
+    }
+    .route-actions button, .route-actions a {
+      flex: 1;
+      text-align: center;
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+    }
+    .route-actions .recenter { background: #E2E8F0; color: #0F172A; }
+    .route-actions .gnav { background: #3B82F6; color: white; }
 
     .notes {
       background: #FFFBEB;
@@ -508,6 +576,21 @@
   </div>
 </div>
 
+<!-- ROUTE MAP OVERLAY (داخل الصفحة بدل التحويل لقوقل) -->
+<div class="route-overlay" id="routeOverlay" role="dialog" aria-modal="true">
+  <div class="route-topbar">
+    <button type="button" id="routeCloseBtn" onclick="closeRouteMap()" aria-label="close">✕</button>
+    <span id="routeTitle" data-i18n="route_title">المسار إلى الزبون</span>
+  </div>
+  <div id="routeMapBox"></div>
+  <div class="route-info" id="routeInfo"></div>
+  <div class="route-actions">
+    <button type="button" class="recenter" id="routeRecenterBtn" data-i18n="route_recenter" onclick="recenterRouteMap()">🎯 توسيط</button>
+    <a class="gnav" id="routeGoogleBtn" data-i18n="route_google" href="#" target="_blank" rel="noopener">🧭 ملاحة صوتية (قوقل)</a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="delivery-guard.js"></script>
 <script type="module" src="delivery.js"></script>
 
