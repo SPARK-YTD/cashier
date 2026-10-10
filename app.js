@@ -14,15 +14,35 @@ window.supabase = supabase;
   let currentInvoiceNo = null;
   let currentInvoiceCreatedAt = null;
 
+  // 🕒 تحويل نص الوقت لـ ms. لو العمود بدون منطقة زمنية (يرجع بدون Z) نعتبره UTC صراحةً
+  function tsMs(iso) {
+    if (!iso) return NaN;
+    let str = String(iso);
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(str) && !/(Z|[+-]\d{2}(:?\d{2})?)$/i.test(str)) {
+      str = str.replace(" ", "T") + "Z";
+    }
+    return new Date(str).getTime();
+  }
+
   // 🕒 وقت الطلب بتوقيت البحرين (أرقام إنجليزية عشان تنطبع واضحة)
   function fmtOrderTime(iso) {
-    if (!iso) return "";
-    const d = new Date(iso);
-    if (isNaN(d)) return "";
-    return d.toLocaleString("en-GB", {
+    const ms = tsMs(iso);
+    if (isNaN(ms)) return "";
+    return new Date(ms).toLocaleString("en-GB", {
       timeZone: "Asia/Bahrain", day: "2-digit", month: "2-digit", year: "numeric",
       hour: "2-digit", minute: "2-digit", hour12: true
     }).replace(",", "");
+  }
+
+  // ⏱ كم صار للطلب (دقائق، أو ساعات ودقائق)
+  function fmtElapsed(iso) {
+    const ms = tsMs(iso);
+    if (isNaN(ms)) return "";
+    const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+    if (m < 1) return "أقل من دقيقة";
+    if (m < 60) return `${m} د`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} س و ${r} د` : `${h} س`;
   }
   let ordersChannel;
   let pendingOrdersChannel;
@@ -1268,7 +1288,7 @@ function playNotificationSound() {
       console.log(`📦 Order ${idx} order_items:`, order.order_items);
       
       const baseTime = order.timer_started_at || order.created_at;
-  const createdAt = new Date(baseTime).getTime();
+  const createdAt = tsMs(baseTime);
       const diffMin = Math.floor((now - createdAt) / 60000);
   
       let bgColor = "";
@@ -1310,7 +1330,7 @@ function playNotificationSound() {
   
 div.innerHTML = `
   <strong>فاتورة رقم ${order.invoice_no || "—"}</strong>
-  ${order.created_at ? `<div style="font-size:12px;color:#475569;font-weight:700;margin-top:2px;">🕒 ${fmtOrderTime(order.created_at)}</div>` : ""}
+  ${order.created_at ? `<div style="font-size:12px;color:#475569;font-weight:700;margin-top:2px;">🕒 ${fmtOrderTime(order.created_at)} · ⏱ مضى ${fmtElapsed(order.created_at)}</div>` : ""}
   <br>
   ${
     order.source === 'qr_menu'
