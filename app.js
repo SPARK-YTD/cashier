@@ -1323,7 +1323,7 @@ div.innerHTML = `
             order.source === 'qr_menu'
               ? (
                   order.is_delivered
-                    ? `<div style="background:#16A34A;color:white;font-weight:900;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">🚚✅ وصل التوصيل${order.delivered_at ? ` - ${new Date(order.delivered_at).toLocaleTimeString('ar-BH', { hour: '2-digit', minute: '2-digit' })}` : ''}</div>`
+                    ? `<div style="background:#16A34A;color:white;font-weight:900;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">🚚✅ وصل التوصيل${order.delivered_at ? ` - ${new Date(order.delivered_at).toLocaleTimeString('ar-BH', { hour: '2-digit', minute: '2-digit' })}` : ''}</div><button onclick="undoDelivered('${order.id}')" style="width:100%;margin-bottom:6px;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:5px;font-weight:800;cursor:pointer;">↩️ إرجاع لحالة "بانتظار السائق" (غلط من السائق)</button>`
                     : `<div style="background:#FEF3C7;color:#92400E;font-weight:700;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">⏳ بانتظار السائق</div>`
                 )
               : ""
@@ -1900,6 +1900,32 @@ await supabase.from("orders").update({
 };
 
    /* 🗑 حذف */
+  // ↩️ تراجع عن "تم التوصيل" لو السائق ضغطها بالغلط (الطلب يرجع للسائق ويبقى بالقائمة)
+  window.undoDelivered = async id => {
+    if (!confirm("إرجاع الطلب لحالة «بانتظار السائق»؟\nيُمسح تسجيل التوصيل وملاحظة الدفع اللي كتبها السائق، ويرجع الطلب يظهر عنده.")) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        is_delivered: false,
+        delivered_at: null,
+        driver_payment_note: null,
+        driver_payment_note_at: null
+      })
+      .eq("id", id)
+      .eq("is_delivery", true)
+      .eq("is_delivered", true)
+      .select("id");
+    if (error) {
+      console.error("❌ UNDO DELIVERED ERROR:", error);
+      alert("❌ ما انرجع الطلب: " + (error.message || "خطأ"));
+      return;
+    }
+    if (!data || data.length === 0) {
+      alert("⚠️ الطلب مو معلّم كموصّل (يمكن انرجع قبل)");
+    }
+    loadActiveOrders();
+  };
+
   window.deleteOrder = async id => {
     if (!confirm("حذف الفاتورة نهائيًا؟")) return;
     await supabase.from("order_items").delete().eq("order_id", id);
@@ -2088,31 +2114,21 @@ await supabase.from("orders").update({
       return;
     }
 
-    const { data: verified, error } = await supabase.rpc("staff_verify_employee", {
-      p_code: employeeCode,
-      p_pin: password
-    });
+    const { data: employee, error } = await supabase
+  .from("employees")
+  .select("id, employee_code, name, pin_hash")
+  .eq("employee_code", employeeCode)
+  .single();
 
-    if (error || !verified) {
-      errorBox.textContent = "❌ حصل خطأ، حاول مرة ثانية";
+    if (error || !employee) {
+      errorBox.textContent = "❌ رقم الموظف غير صحيح";
       return;
     }
 
-    if (!verified.ok) {
-      errorBox.textContent =
-        verified.error === "LOCKED"
-          ? `❌ محاولات كثيرة، حاول بعد ${Math.ceil((verified.retry_after || 60) / 60)} دقيقة`
-          : verified.error === "INACTIVE"
-            ? "❌ الحساب موقوف"
-            : "❌ الرقم الوظيفي أو الرقم السري غير صحيح";
+    if (employee.pin_hash !== password) {
+      errorBox.textContent = "❌ الرقم السري غير صحيح";
       return;
     }
-
-    const employee = {
-      id: verified.id,
-      employee_code: verified.code,
-      name: verified.name
-    };
 
     const month = new Date().toISOString().slice(0, 7);
 
