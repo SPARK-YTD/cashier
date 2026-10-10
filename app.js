@@ -584,10 +584,16 @@ addToCart({
       ================================ */
       if (editingOrderId) {
   
-    // تحديث الإجمالي
+    // تحديث الإجمالي (طلبات التوصيل: نحافظ على رسوم التوصيل ضمن الإجمالي)
+    const { data: curOrder } = await supabase
+      .from("orders")
+      .select("is_delivery, delivery_fee")
+      .eq("id", editingOrderId)
+      .single();
+    const keepFee = curOrder && curOrder.is_delivery ? Number(curOrder.delivery_fee || 0) : 0;
     await supabase
       .from("orders")
-      .update({ total })
+      .update({ total: total + keepFee })
       .eq("id", editingOrderId);
   
     // 🔥 استبدال الأصناف بالكامل (آمن)
@@ -640,28 +646,13 @@ if (!employeeMode && !deliveryMode) {
   const isDelivery = confirm("هل الطلب توصيل؟");
 
   if (isDelivery) {
-    const name = prompt("اسم العميل:");
-    if (!name) {
+    const details = await askDeliveryDetails();
+    if (!details) {                       // ألغى الكاشير نموذج التوصيل
       isSavingOrder = false;
       if (completeBtn) completeBtn.disabled = false;
       return;
     }
-
-    const phone = prompt("رقم التلفون:");
-    if (!phone) {
-      isSavingOrder = false;
-      if (completeBtn) completeBtn.disabled = false;
-      return;
-    }
-
-    const area = prompt("المنطقة:");
-    if (!area) {
-      isSavingOrder = false;
-      if (completeBtn) completeBtn.disabled = false;
-      return;
-    }
-
-    deliveryMode = { name, phone, area };
+    deliveryMode = details;
   }
 }
 
@@ -671,7 +662,8 @@ if (!employeeMode && !deliveryMode) {
 const { data: order, error } = await supabase
   .from("orders")
   .insert({
-    total,
+    // 🚚 total = الأصناف + رسوم التوصيل (نفس طريقة طلبات المنيو، وصفحة السائق تطرح الرسوم)
+    total: total + (deliveryMode?.fee || 0),
     status: "active",
     business_day_id: currentBusinessDay.id,
     invoice_no: invoiceNo,
@@ -689,7 +681,19 @@ const { data: order, error } = await supabase
     is_delivery: deliveryMode ? true : false,
     customer_name: deliveryMode?.name || null,
     customer_phone: deliveryMode?.phone || null,
-    customer_area: deliveryMode?.area || null
+    customer_area: deliveryMode?.area || null,
+
+    // 🚚 العنوان التفصيلي + تأكيد تلقائي (الكاشير هو اللي أدخل الطلب) عشان يظهر لصفحة السائق والتتبع
+    ...(deliveryMode ? {
+      customer_order_confirmed: true,
+      delivery_block: deliveryMode.block,
+      delivery_road: deliveryMode.road,
+      delivery_building: deliveryMode.building,
+      delivery_fee: deliveryMode.fee || 0,
+      delivery_lat: deliveryMode.lat,
+      delivery_lng: deliveryMode.lng,
+      notes: deliveryMode.notes || null
+    } : {})
   })
   .select("id, invoice_no")
   .single();
@@ -936,7 +940,7 @@ function showPendingOrderModal(order) {
       <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
         <p><strong>👤 الاسم:</strong> ${order.customer_name || 'عميل'}</p>
         <p><strong>📱 الرقم:</strong> ${order.customer_phone}</p>
-        <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استقبال من المحل' : '🚗 توصيل'}</p>
+        <p><strong>🏪 النوع:</strong> ${order.delivery_type === 'pickup' ? '🚶 استلام من العربة' : '🚗 توصيل'}</p>
         ${order.delivery_type === 'delivery' ? `
           <p><strong>📍 المنطقة:</strong> ${order.delivery_area || 'N/A'}</p>
           <p><strong>🏘️ العنوان:</strong> مجمع ${order.delivery_block || '—'} - طريق ${order.delivery_road || '—'} - منزل ${order.delivery_building || '—'}</p>
@@ -1354,7 +1358,7 @@ div.innerHTML = `
         ">
           <div style="font-weight:900;color:#2563EB">🚚 طلب توصيل</div>
           ${
-            order.source === 'qr_menu'
+            (order.source === 'qr_menu' || order.customer_order_confirmed)
               ? (
                   order.is_delivered
                     ? `<div style="background:#16A34A;color:white;font-weight:900;padding:5px 8px;border-radius:6px;margin-bottom:6px;text-align:center;">🚚✅ وصل التوصيل${order.delivered_at ? ` - ${new Date(order.delivered_at).toLocaleTimeString('ar-BH', { hour: '2-digit', minute: '2-digit' })}` : ''}</div><button onclick="undoDelivered('${order.id}')" style="width:100%;margin-bottom:6px;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:5px;font-weight:800;cursor:pointer;">↩️ إرجاع لحالة "بانتظار السائق" (غلط من السائق)</button>`
@@ -1935,6 +1939,99 @@ await supabase.from("orders").update({
 };
 
    /* 🗑 حذف */
+  // 📍 قراءة إحداثيات من نص: "26.2285, 50.586" أو رابط قوقل ماب الكامل (@lat,lng أو q=lat,lng أو !3d..!4d..)
+  // الروابط المختصرة (maps.app.goo.gl) ما نقدر نفتحها من المتصفح، فنرجع null
+  function parseLatLng(text) {
+    const t = String(text || "").trim();
+    if (!t) return null;
+    const pats = [
+      /@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+      /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+      /[?&](?:q|ll|query|destination|center)=(-?\d{1,3}\.\d+)(?:,|%2C)\s*(-?\d{1,3}\.\d+)/i,
+      /^(-?\d{1,3}\.\d+)\s*[, ]\s*(-?\d{1,3}\.\d+)$/
+    ];
+    for (const re of pats) {
+      const m = t.match(re);
+      if (m) {
+        const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+        if (lat >= 24 && lat <= 28 && lng >= 49 && lng <= 52) return { lat, lng };   // داخل نطاق الخليج فقط
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // 🚚 نموذج بيانات التوصيل في الكاشير. يرجع كائن البيانات أو null لو انلغى
+  function askDeliveryDetails() {
+    return new Promise(resolve => {
+      const overlay = document.createElement("div");
+      overlay.className = "variant-overlay";
+      const inp = "width:100%;padding:9px;margin:3px 0 8px;box-sizing:border-box;text-align:right;";
+      overlay.innerHTML = `
+        <div class="variant-box" style="max-width:380px;max-height:92vh;overflow:auto;text-align:right;" dir="rtl">
+          <h3 style="margin-top:0;text-align:center;">🚚 بيانات التوصيل</h3>
+          <label>اسم العميل *</label>
+          <input id="dlvName" style="${inp}" autocomplete="off">
+          <label>رقم التلفون *</label>
+          <input id="dlvPhone" type="tel" inputmode="tel" style="${inp}" autocomplete="off">
+          <div style="display:flex;gap:6px;">
+            <div style="flex:1"><label>مجمع *</label><input id="dlvBlock" inputmode="numeric" style="${inp}"></div>
+            <div style="flex:1"><label>طريق *</label><input id="dlvRoad" inputmode="numeric" style="${inp}"></div>
+            <div style="flex:1"><label>مبنى *</label><input id="dlvBuilding" style="${inp}"></div>
+          </div>
+          <label>المنطقة (اختياري)</label>
+          <input id="dlvArea" style="${inp}">
+          <label>رسوم التوصيل (د.ب)</label>
+          <input id="dlvFee" type="number" inputmode="decimal" min="0" step="0.100" value="0" style="${inp}">
+          <label>موقع الزبون على الخريطة (اختياري)</label>
+          <input id="dlvLoc" dir="ltr" placeholder="الصق رابط قوقل ماب الكامل أو 26.2285, 50.5860" style="${inp}">
+          <label>ملاحظات للسائق (اختياري)</label>
+          <input id="dlvNotes" style="${inp}">
+          <div id="dlvErr" style="color:#B91C1C;font-weight:700;font-size:13px;min-height:18px;"></div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button type="button" id="dlvOk" class="variant-btn" style="flex:2;">✅ حفظ وإرسال للسائق</button>
+            <button type="button" id="dlvCancel" class="variant-btn variant-cancel" style="flex:1;">إلغاء</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const $ = id => overlay.querySelector("#" + id);
+      const done = v => { overlay.remove(); resolve(v); };
+      const err = m => { $("dlvErr").textContent = m; };
+
+      $("dlvCancel").onclick = () => done(null);
+      $("dlvOk").onclick = () => {
+        const name = $("dlvName").value.trim();
+        const phone = $("dlvPhone").value.trim();
+        const block = $("dlvBlock").value.trim();
+        const road = $("dlvRoad").value.trim();
+        const building = $("dlvBuilding").value.trim();
+        const feeRaw = $("dlvFee").value.trim();
+        const fee = feeRaw === "" ? 0 : Number(feeRaw);
+        const locText = $("dlvLoc").value.trim();
+
+        if (!name) return err("اكتب اسم العميل");
+        if (phone.replace(/\D/g, "").length < 8) return err("رقم التلفون غير صحيح");
+        if (!block || !road || !building) return err("اكتب المجمع والطريق والمبنى");
+        if (!Number.isFinite(fee) || fee < 0 || fee > 50) return err("رسوم التوصيل غير صحيحة");
+
+        let lat = null, lng = null;
+        if (locText) {
+          const pt = parseLatLng(locText);
+          if (!pt) return err("ما قدرت أقرأ الموقع. الصق الرابط الكامل (مو المختصر) أو الإحداثيات، أو امسح الخانة");
+          lat = pt.lat; lng = pt.lng;
+        }
+        done({
+          name, phone, block, road, building,
+          area: $("dlvArea").value.trim() || null,
+          fee: Math.round(fee * 1000) / 1000,
+          lat, lng,
+          notes: $("dlvNotes").value.trim()
+        });
+      };
+      setTimeout(() => $("dlvName").focus(), 50);
+    });
+  }
+
   // ↩️ تراجع عن "تم التوصيل" لو السائق ضغطها بالغلط (الطلب يرجع للسائق ويبقى بالقائمة)
   window.undoDelivered = async id => {
     if (!confirm("إرجاع الطلب لحالة «بانتظار السائق»؟\nيُمسح تسجيل التوصيل وملاحظة الدفع اللي كتبها السائق، ويرجع الطلب يظهر عنده.")) return;
