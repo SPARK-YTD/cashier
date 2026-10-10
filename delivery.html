@@ -319,6 +319,35 @@
       text-decoration: none;
       font-family: inherit;
     }
+    .route-warn {
+      display: none;
+      background: #FEF3C7;
+      color: #92400E;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 13px;
+      text-align: center;
+    }
+    .route-warn.show { display: block; }
+    .route-saved { display: none; background: #DCFCE7; color: #166534; padding: 6px 12px; font-weight: 800; font-size: 12px; text-align: center; }
+    .route-saved.show { display: block; }
+    .route-saved.fail { background: #FEE2E2; color: #991B1B; }
+    .route-alts { display: none; background: white; padding: 8px 12px 2px; border-top: 1px solid #E5E7EB; }
+    .route-alts.show { display: block; }
+    .route-alts .alts-title { font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; }
+    .route-alts .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .route-alts .chip {
+      flex: 1 1 140px; padding: 10px 8px; border-radius: 10px; border: 2px solid #CBD5E1;
+      background: white; color: #0F172A; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .route-alts .chip.sel { border-color: #2563EB; background: #DBEAFE; }
+    .route-actions .refresh { background: #FEF3C7; color: #92400E; }
+    .gps-warn {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 2000;
+      background: #DC2626; color: white; font-weight: 800; font-size: 14px;
+      padding: 12px 14px; text-align: center;
+    }
+    .gps-warn.show { display: block; }
     .route-actions .recenter { background: #E2E8F0; color: #0F172A; }
     .route-actions .gnav { background: #3B82F6; color: white; }
 
@@ -577,14 +606,20 @@
 </div>
 
 <!-- ROUTE MAP OVERLAY (داخل الصفحة بدل التحويل لقوقل) -->
+<div class="gps-warn" id="gpsWarn" role="alert"></div>
+
 <div class="route-overlay" id="routeOverlay" role="dialog" aria-modal="true">
   <div class="route-topbar">
     <button type="button" id="routeCloseBtn" onclick="closeRouteMap()" aria-label="close">✕</button>
     <span id="routeTitle" data-i18n="route_title">المسار إلى الزبون</span>
   </div>
   <div id="routeMapBox"></div>
+  <div class="route-warn" id="routeWarn"></div>
   <div class="route-info" id="routeInfo"></div>
+  <div class="route-saved" id="routeSaved"></div>
+  <div class="route-alts" id="routeAlts"><div class="alts-title" data-i18n="route_alts_title">اختر مسارك:</div><div class="chips" id="routeChips"></div></div>
   <div class="route-actions">
+    <button type="button" class="refresh" id="routeRefreshBtn" data-i18n="route_refresh" onclick="refreshRouteChoices()">🔄 تحديث المسارات</button>
     <button type="button" class="recenter" id="routeRecenterBtn" data-i18n="route_recenter" onclick="recenterRouteMap()">🎯 توسيط</button>
     <a class="gnav" id="routeGoogleBtn" data-i18n="route_google" href="#" target="_blank" rel="noopener">🧭 ملاحة صوتية (قوقل)</a>
   </div>
