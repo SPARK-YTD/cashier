@@ -202,8 +202,29 @@
     "ما فيه طلب نشط حالياً": "No active order right now",
     "📜 سجل الطلبات السابقة": "📜 Previous orders",
     "ما فيه طلبات سابقة": "No previous orders",
-    "🚪 تسجيل خروج من الحساب": "🚪 Log out of account"
+    "🚪 تسجيل خروج من الحساب": "🚪 Log out of account",
+
+    // ===== Stage 10: حالة المطعم =====
+    "المنيو للعرض فقط حالياً": "Menu is view-only right now",
+    "استقبال الطلبات من المنيو متوقف مؤقتاً. تقدر تتصفح الأصناف والأسعار، وللطلب تواصل معنا أو زرنا في العربة.": "Ordering from the menu is temporarily paused. You can browse items and prices; to order, contact us or visit the cart.",
+    "المنيو للعرض فقط حالياً — استقبال الطلبات متوقف مؤقتاً": "The menu is view-only right now — ordering is temporarily paused",
+    "👁️ الطلب متوقف حالياً": "👁️ Ordering paused",
+    "🔥 العربة مشغولة": "🔥 We're busy",
+    "العربة مشغولة حالياً": "We're busy right now",
+    "عندنا ضغط طلبات ومو قادرين نستقبل طلبات جديدة الحين.": "We're swamped and can't take new orders right now.",
+    "شكراً لتفهمك 🙏": "Thanks for understanding 🙏",
+    "الطلب عبر واتساب": "Ordering via WhatsApp",
+    "طلبك ينحفظ عندنا، وبعد الإرسال أكّد طلبك عبر واتساب (زر جاهز).": "Your order is saved with us - after sending, confirm it on WhatsApp (ready-made button).",
+    "ضغط طلبات حالياً": "High order volume right now",
+    "عندنا طلبات كثيرة الحين، فممكن طلبك يتأخر شوي عن المعتاد. تقدر تطلب عادي، وشكراً لصبرك 🙏": "We have many orders right now, so yours may take a bit longer than usual. You can still order as normal - thanks for your patience 🙏",
+    "⏳ عندنا طلبات كثيرة حالياً، فممكن يتأخر طلبك شوي. شكراً لصبرك 🙏": "⏳ We have many orders right now, so your order may be slightly delayed. Thanks for your patience 🙏"
   };
+
+  // أنماط فيها أرقام (تُطبّق قبل القاموس)
+  var DYN = [
+    [/نتوقع نفتح الطلبات خلال حوالي (\d+) دقيقة\./g, function (_, n) { return "We expect to reopen orders in about " + n + " min."; }],
+    [/العربة مشغولة حالياً، حاول بعد حوالي (\d+) دقيقة/g, function (_, n) { return "We're busy right now, please try again in about " + n + " min"; }]
+  ];
 
   // ===== ترجمة نص =====
   var KEYS = Object.keys(D).sort(function (a, b) { return b.length - a.length; });
@@ -215,11 +236,22 @@
   });
 
   var productNames = [];   // [{re, en}] أسماء الأصناف من name_en
-  function setProducts(list) {
+  var extraNames = [];     // أسماء خيارات الأصناف (variants) والإضافات المدفوعة
+  var baseProducts = [];
+  function setProducts(list) { baseProducts = list || []; rebuildNames(); }
+  // pairs: [{ar, en}] — أسماء الخيارات/الإضافات اللي لها ترجمة إنجليزية
+  function setExtraNames(pairs) { extraNames = pairs || []; rebuildNames(); }
+  function rebuildNames() {
     var seen = {};
     productNames = [];
-    (list || []).forEach(function (p) {
+    baseProducts.forEach(function (p) {
       var ar = (p && p.name || "").trim(), en = (p && p.name_en || "").trim();
+      if (!ar || !en || seen[ar]) return;
+      seen[ar] = 1;
+      productNames.push({ ar: ar, en: en });
+    });
+    extraNames.forEach(function (p) {
+      var ar = (p && p.ar || "").trim(), en = (p && p.en || "").trim();
       if (!ar || !en || seen[ar]) return;
       seen[ar] = 1;
       productNames.push({ ar: ar, en: en });
@@ -242,6 +274,7 @@
     function hold(re, en) {
       out = out.replace(re, function () { held.push(en); return "\u0001" + (held.length - 1) + "\u0002"; });
     }
+    for (i = 0; i < DYN.length; i++) out = out.replace(DYN[i][0], function () { var r = DYN[i][1].apply(null, arguments); held.push(r); return "\u0001" + (held.length - 1) + "\u0002"; });
     // 1) جمل القاموس (أكثر من كلمة) — عشان ما يلتهمها اسم صنف قصير مثل "مشروب"
     for (i = 0; i < PHRASE_RES.length; i++) hold(PHRASE_RES[i][0], PHRASE_RES[i][1]);
     // 2) أسماء الأصناف
@@ -382,5 +415,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 
-  window.MenuI18n = { tr: tr, setLang: setLang, getLang: function () { return lang; }, setProducts: setProducts, _dict: D };
+  window.MenuI18n = { tr: tr, setLang: setLang, getLang: function () { return lang; }, setProducts: setProducts, setExtraNames: setExtraNames, _dict: D };
 })();
