@@ -81,17 +81,20 @@ window.addConsumableRow = function () {
 /* ===============================
    قائمة الخيارات (أنواع المشروبات وغيرها)
 ================================ */
-window.addChoiceRow = function (label = "", price = "") {
+window.addChoiceRow = function (label = "", price = "", labelEn = "") {
   const box = document.getElementById("choicesRows");
   if (!box) return;
   const row = document.createElement("div");
   row.className = "variant-row choice-row";
+  row.style.flexWrap = "wrap";
   row.innerHTML = `
     <input type="text" class="choice-label" placeholder="اسم الخيار (مثلاً بيبسي)">
     <input type="number" step="0.001" min="0" class="choice-price" placeholder="السعر">
     <button type="button" onclick="this.parentElement.remove()">❌</button>
+    <input type="text" class="choice-label-en" placeholder="English name (اختياري)" maxlength="80" dir="ltr" style="flex:1 1 100%; text-align:left">
   `;
   row.querySelector(".choice-label").value = label;
+  row.querySelector(".choice-label-en").value = labelEn || "";
   row.querySelector(".choice-price").value = price;
   box.appendChild(row);
 };
@@ -106,7 +109,8 @@ function readChoices() {
     if (!label || isNaN(price) || price < 0) throw new Error("CHOICE_INVALID");
     if (seen.has(label)) throw new Error("CHOICE_DUP");
     seen.add(label);
-    out.push({ label, price });
+    const label_en = row.querySelector(".choice-label-en").value.trim().replace(/['"`\\]/g, "’") || null;
+    out.push({ label, price, label_en });
   });
   return out;
 }
@@ -121,11 +125,13 @@ window.addAddonRow = function () {
 
   const row = document.createElement("div");
   row.className = "variant-row addon-row";
+  row.style.flexWrap = "wrap";
 
   row.innerHTML = `
     <input type="text" class="addon-name" placeholder="اسم الإضافة">
     <input type="number" step="0.001" min="0" class="addon-price" placeholder="السعر">
     <button type="button" onclick="this.parentElement.remove()">❌</button>
+    <input type="text" class="addon-name-en" placeholder="English name (اختياري)" maxlength="80" dir="ltr" style="flex:1 1 100%; text-align:left">
   `;
 
   box.appendChild(row);
@@ -469,7 +475,9 @@ if (consumableRows.length) {
       const price = parseFloat(row.querySelector(".addon-price")?.value);
 
       if (name && !isNaN(price)) {
-        addonRows.push({ product_id: product.id, name, price, active: true });
+        const nameEn = row.querySelector(".addon-name-en")?.value.trim() || "";
+        addonRows.push({ product_id: product.id, name, price, active: true,
+          ...((nameEn || window.__hasVarEn) ? { name_en: nameEn || null } : {}) });
       }
     });
 
@@ -499,7 +507,8 @@ if (itemType === "burger") {
       product_id: product.id,
       label: "عادي",
       price: priceSmall,
-      active: true
+      active: true,
+      ...(window.__hasVarEn ? { label_en: "Regular" } : {})
     });
   }
 
@@ -508,7 +517,8 @@ if (itemType === "burger") {
       product_id: product.id,
       label: "وجبة",
       price: priceMedium,
-      active: true
+      active: true,
+      ...(window.__hasVarEn ? { label_en: "Meal" } : {})
     });
   }
 }
@@ -518,7 +528,8 @@ if (itemType === "burger") {
           product_id: product.id,
           label: c.label,
           price: c.price,
-          active: true
+          active: true,
+          ...((c.label_en || window.__hasVarEn) ? { label_en: c.label_en } : {})
         }));
       }
 
@@ -596,6 +607,14 @@ async function loadItems() {
   }
 
   window.__hasNameEn = !!(data && data.length && "name_en" in data[0]);
+  // أعمدة Stage 11 (الاسم الإنجليزي للخيارات والإضافات): نكتب فيها فقط لو موجودة
+  try {
+    const probe = await Promise.all([
+      supabase.from("product_variants").select("label_en").limit(1),
+      supabase.from("product_addons").select("name_en").limit(1)
+    ]);
+    window.__hasVarEn = !probe[0].error && !probe[1].error;
+  } catch (e) { window.__hasVarEn = false; }
 
   if (!data || data.length === 0) {
     box.innerHTML = "<p>لا توجد أصناف</p>";
@@ -804,7 +823,7 @@ if (multiEmployees?.length) {
       .eq("product_id", item.id);
 
     if (itemType === "choices") {
-      variants.forEach(v => addChoiceRow(v.label, v.price));
+      variants.forEach(v => addChoiceRow(v.label, v.price, v.label_en));
     }
     if (itemType !== "choices") variants?.forEach(v => {
       if (v.label === "عادي" || v.label === "Small") {
@@ -835,6 +854,7 @@ await loadEmployees();
     const lastRow = document.querySelector("#addonsBox .addon-row:last-child");
     lastRow.querySelector(".addon-name").value = a.name;
     lastRow.querySelector(".addon-price").value = a.price;
+    const en = lastRow.querySelector(".addon-name-en"); if (en) en.value = a.name_en || "";
   });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
