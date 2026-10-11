@@ -79,6 +79,8 @@
     "1️⃣ اختر رمز جديد (4 أرقام)": "1️⃣ Choose a new PIN (4 digits)",
     "2️⃣ أعد كتابة نفس الرمز للتأكيد": "2️⃣ Re-enter the same PIN to confirm",
     "أوافق على": "I agree to the",
+    "✅ وافقت على": "✅ You accepted the",
+    "عرض": "View",
     "و": "and",
     "إنشاء الحساب والدخول": "Create account & log in",
     "🔄 إعادة تعيين الرمز السري": "🔄 Reset your PIN",
@@ -263,7 +265,8 @@
   }
   function inSkip(node) {
     var p = node.parentNode;
-    return p && p.nodeType === 1 && /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName);
+    if (!p || p.nodeType !== 1) return false;
+    return /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName) || !!(p.closest && p.closest("[data-no-i18n]"));
   }
 
   function applyText(n) {
@@ -283,6 +286,7 @@
   }
   function applyAttrs(el) {
     if (el.nodeType !== 1) return;
+    if (el.closest && el.closest("[data-no-i18n]")) return;
     ATTRS.forEach(function (a) {
       if (!el.hasAttribute(a)) return;
       var v = el.getAttribute(a);
