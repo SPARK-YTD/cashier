@@ -4,84 +4,43 @@
   <meta charset="UTF-8" />
   <title>اتفاقية الاستخدام - خذ لك بريك</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="legal-version" content="2026-10-11" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
-      color: #1f2937;
-      line-height: 1.9;
-    }
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 30px 20px 60px;
-    }
-    .header {
-      background: #0F172A;
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
-    }
-    .header p {
-      margin: 0;
-      opacity: 0.8;
-      font-size: 14px;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 20px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-    }
-    h2 {
-      font-size: 17px;
-      color: #0F172A;
-      border-right: 4px solid #F59E0B;
-      padding-right: 10px;
-      margin-top: 0;
-    }
-    ul {
-      padding-right: 20px;
-      margin: 10px 0;
-    }
-    li {
-      margin-bottom: 8px;
-    }
-    .contact-box {
-      background: #FFFBEB;
-      border: 1px solid #FDE68A;
-      border-radius: 10px;
-      padding: 16px;
-      margin-top: 10px;
-    }
-    .updated {
-      text-align: center;
-      font-size: 13px;
-      color: #6b7280;
-      margin-top: 30px;
-    }
-    a {
-      color: #D97706;
-      font-weight: 700;
-    }
-  </style>
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;background:#f3f4f6;margin:0;color:#1f2937;line-height:1.9}
+    .wrap{max-width:760px;margin:0 auto;padding:20px 20px 60px}
+    .header{background:#0F172A;color:#fff;padding:26px 20px 22px;text-align:center}
+    .header h1{margin:0 0 6px;font-size:22px}
+    .header p{margin:0;opacity:.8;font-size:14px}
+    .langbar{display:flex;gap:8px;justify-content:center;margin-top:14px}
+    .langbar button{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:20px;padding:6px 16px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
+    .langbar button.on{background:#F59E0B;border-color:#F59E0B;color:#111827}
+    .card{background:#fff;border-radius:12px;padding:24px;margin-top:20px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+    h2{font-size:17px;color:#0F172A;margin-top:0}
+    [dir=rtl] h2{border-right:4px solid #F59E0B;padding-right:10px}
+    [dir=ltr] h2{border-left:4px solid #F59E0B;padding-left:10px}
+    [dir=rtl] ul{padding-right:20px}
+    [dir=ltr] ul{padding-left:20px}
+    ul{margin:10px 0}li{margin-bottom:8px}
+    .contact-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:16px;margin-top:10px}
+    .updated{text-align:center;font-size:13px;color:#6b7280;margin-top:30px}
+    a{color:#D97706;font-weight:700}
+    .lang-block[hidden]{display:none}
+</style>
 </head>
 <body>
 
   <div class="header">
-    <h1>📄 اتفاقية الاستخدام</h1>
-    <p>خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل</p>
+    <h1 id="hTitle">📄 اتفاقية الاستخدام</h1>
+    <p id="hSub">خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل</p>
+    <div class="langbar" id="langbar" hidden>
+      <button type="button" data-l="ar">العربية</button>
+      <button type="button" data-l="en">English</button>
+    </div>
   </div>
 
   <div class="wrap">
-
+  <section class="lang-block" data-doc="terms" data-version="2026-10-11" lang="ar" dir="rtl">
     <div class="card">
       <h2>1. القبول بالاتفاقية</h2>
       <p>
@@ -103,7 +62,7 @@
       <h2>3. حسابات الزبائن (منيو الـ QR)</h2>
       <ul>
         <li>تسجيل الحساب يتطلب رقم جوال حقيقي ساري، ورمز سري (PIN) من 4 أرقام تختاره بنفسك.</li>
-        <li>عند إنشاء الحساب لأول مرة تُطلب منك الموافقة على هذي الاتفاقية وعلى سياسة الخصوصية، ولا يكتمل إنشاء الحساب بدونها. نسجّل تاريخ موافقتك ونسخة الشروط اللي وافقت عليها.</li>
+        <li>قبل إنشاء الحساب لأول مرة تظهر لك هذي الاتفاقية وسياسة الخصوصية كاملتين، ويجب قراءتهما حتى النهاية ثم الموافقة عليهما قبل متابعة التسجيل، ولا يكتمل إنشاء الحساب بدونها. نسجّل تاريخ موافقتك ونسخة الشروط اللي وافقت عليها.</li>
         <li>أنت المسؤول الوحيد عن سرية رمزك السري وعدم مشاركته مع أي شخص آخر.</li>
         <li>أي طلب يُرسل من حسابك يُعتبر طلباً صادراً منك، ما لم تثبت خلاف ذلك (مثل اختراق الحساب).</li>
         <li>إذا نسيت رمزك السري، تقدر تطلب من المحل إعادة تعيينه عبر واتساب، وبيُطلب منك وضع رمز جديد عند أول دخول تالي.</li>
@@ -174,8 +133,9 @@
     <div class="card">
       <h2>10. التعديلات على الاتفاقية</h2>
       <p>
-        ممكن نحدّث هذي الاتفاقية من وقت لآخر. استمرارك باستخدام النظام بعد أي تحديث
-        يُعتبر موافقة ضمنية على الشروط المحدّثة.
+        ممكن نحدّث هذي الاتفاقية من وقت لآخر. عند أي تحديث جوهري نعرض عليك النسخة الجديدة
+        ونطلب موافقتك عليها قبل ما تكمّل استخدام المنيو. أما التعديلات الشكلية البسيطة فاستمرارك
+        باستخدام النظام بعدها يُعتبر موافقة ضمنية على الشروط المحدّثة.
       </p>
     </div>
 
@@ -189,45 +149,171 @@
       <div class="contact-box">
         للتواصل أو الاستفسار بخصوص هذي الاتفاقية:
         <br />
-        <a id="waLink" href="#">جاري تحميل الرقم...</a>
+        <a class="waLink" href="#">جاري تحميل الرقم...</a>
       </div>
     </div>
 
-    <div class="updated">آخر تحديث: 10 أكتوبر 2026</div>
+    <div class="updated">آخر تحديث: 11 أكتوبر 2026</div>
+  </section>
+
+  <section class="lang-block" data-doc="terms" data-version="2026-10-11" lang="en" dir="ltr">
+    <div class="card">
+      <h2>1. Acceptance of this Agreement</h2>
+      <p>
+        By using the QR menu ordering page, the driver (delivery) app, or any of the digital
+        systems of <strong>"Get-Break" (خذ لك بريك)</strong>, you agree to the terms on this page.
+        If you do not agree with any of them, please do not use the service.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>2. Nature of the Service</h2>
+      <p>
+        This system is a digital tool that makes it easier to order food and drinks from "Get-Break"
+        and have them delivered. It supports the shop's day-to-day operations — it is not an independent
+        third-party platform.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>3. Customer Accounts (QR Menu)</h2>
+      <ul>
+        <li>Creating an account requires a real, active mobile number and a 4-digit PIN that you choose yourself.</li>
+        <li>Before you create an account for the first time, you are shown this Agreement and the Privacy Policy in full. You must read them to the end and accept them before registration continues, and the account cannot be created without it. We record the date you accepted and the version of the terms you accepted.</li>
+        <li>You are solely responsible for keeping your PIN secret and not sharing it with anyone.</li>
+        <li>Any order sent from your account is considered an order made by you, unless you show otherwise (for example, if the account was compromised).</li>
+        <li>If you forget your PIN, you can ask the shop to reset it via WhatsApp, and you will be asked to set a new PIN the next time you log in.</li>
+        <li>The shop may suspend or delete any account that is used improperly (fake orders, repeated harassment, abuse).</li>
+        <li>To protect your account, login is temporarily blocked after several consecutive wrong PIN attempts, and login sessions end automatically after a period of inactivity.</li>
+        <li>For delivery orders, you are responsible for the accuracy of the name, mobile number and address you enter. The shop is not responsible for delays or failed delivery caused by incorrect details.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Orders, Prices and Payment</h2>
+      <ul>
+        <li>Prices shown in the menu may change at any time without prior notice. The prices in effect at the time the order is confirmed apply.</li>
+        <li>Acceptance of an order depends on the shop's actual confirmation (item availability, opening hours, ability to deliver to your area).</li>
+        <li>Payment is made by the method available at the shop at the time of pickup or delivery. No payment card data is processed through this system.</li>
+        <li>For cancellation and refund matters, please contact the shop directly via WhatsApp for each case.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>5. Cashier Staff</h2>
+      <ul>
+        <li>Cashier accounts are exclusively for staff authorised by the shop's management.</li>
+        <li>Staff are responsible for keeping their login details secret and for any operation carried out through their account.</li>
+        <li>Access to the cashier and admin systems is limited to authorised shop accounts. Any unauthorised access attempt or bypassing of security measures is prohibited.</li>
+        <li>Use of the system is conditional on the staff member complying with the shop's internal policies (governed by the employment contract, not by this page).</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>6. Delivery Drivers</h2>
+      <ul>
+        <li>A driver account is created exclusively by the shop and is used only to carry out the delivery tasks assigned to the driver.</li>
+        <li>By logging in to the delivery app, the driver agrees to share their geographic location (GPS) with the shop during the active login period only, for the purpose of tracking the orders currently being delivered.</li>
+        <li>The driver must log out of the app when their shift ends or when they are not carrying out actual delivery tasks.</li>
+        <li>The driver is responsible for keeping their app login details secret and not sharing them.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>7. Limitation of Liability</h2>
+      <p>
+        We do our best to keep the system accurate and available, but the service is provided
+        "as is" without any guarantee that it will be completely free of technical faults or
+        temporary interruptions (such as internet or hosting-server problems). "Get-Break" is not
+        liable for any indirect damages resulting from a temporary interruption of the service,
+        within the limits permitted by Bahraini law.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>8. Termination of Accounts</h2>
+      <p>
+        The shop may suspend or terminate any account (customer, staff, driver) at any time if
+        misuse or a breach of these terms is suspected. Any user may also ask for their account
+        to be deleted at any time by contacting the shop directly.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>9. Privacy</h2>
+      <p>
+        The collection and use of your data is governed by our <strong>Privacy Policy</strong>,
+        which is an integral part of this Agreement.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>10. Changes to this Agreement</h2>
+      <p>
+        We may update this Agreement from time to time. For any material update we will show you
+        the new version and ask for your acceptance before you continue using the menu. For minor
+        formatting changes, your continued use of the system afterwards is considered implied
+        acceptance of the updated terms.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>11. Governing Law and Dispute Resolution</h2>
+      <p>
+        This Agreement is governed by and construed in accordance with the laws of the
+        <strong>Kingdom of Bahrain</strong>, and any dispute arising from it is subject to the
+        jurisdiction of the courts of the Kingdom of Bahrain. Before taking any formal action,
+        we encourage you to contact us directly to resolve any issue amicably.
+      </p>
+      <div class="contact-box">
+        To contact us or ask about this Agreement:
+        <br />
+        <a class="waLink" href="#">Loading number...</a>
+      </div>
+    </div>
+
+    <div class="updated">Last updated: October 11, 2026</div>
+  </section>
 
   </div>
 
+  <script>
+    // اللغة: ?lang=en|ar، وإلا لغة المنيو المحفوظة، وإلا عربي. بدون جافاسكربت تظهر اللغتين.
+    (function () {
+      var T = { ar: ["📄 اتفاقية الاستخدام", "خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل", "اتفاقية الاستخدام - خذ لك بريك"], en: ["📄 Terms of Use", "Get-Break — cashier system, menu ordering and delivery", "Terms of Use - Get Break"] };
+      var q = (location.search.match(/[?&]lang=(ar|en)/) || [])[1];
+      var saved = ""; try { saved = localStorage.getItem("menu_lang") || ""; } catch (e) {}
+      var lang = q || (saved === "en" ? "en" : "ar");
+      function apply(l) {
+        lang = l;
+        document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl";
+        [].forEach.call(document.querySelectorAll(".lang-block"), function (b) { b.hidden = b.lang !== l; });
+        [].forEach.call(document.querySelectorAll("#langbar button"), function (b) { b.classList.toggle("on", b.dataset.l === l); });
+        document.getElementById("hTitle").textContent = T[l][0];
+        document.getElementById("hSub").textContent = T[l][1];
+        document.title = T[l][2];
+      }
+      document.getElementById("langbar").hidden = false;
+      [].forEach.call(document.querySelectorAll("#langbar button"), function (b) { b.onclick = function () { apply(b.dataset.l); }; });
+      apply(lang);
+    })();
+  </script>
+
   <script type="module">
     import { supabase } from "./supabase.js";
-
     async function loadSupportPhone() {
-      const link = document.getElementById("waLink");
+      const links = document.querySelectorAll(".waLink");
+      const fallback = { ar: "تواصل معنا عبر المحل مباشرة", en: "Contact us through the shop directly" };
+      const set = (txt) => links.forEach(l => { l.textContent = txt[l.closest(".lang-block").lang]; });
       try {
-        const { data, error } = await supabase
-          .from("restaurant_settings")
-          .select("support_whatsapp_phone, whatsapp_phone")
-          .eq("id", 1)
-          .single();
-
-        if (error || !data) {
-          link.textContent = "تواصل معنا عبر المحل مباشرة";
-          return;
-        }
-
-        const phone = data.support_whatsapp_phone || data.whatsapp_phone;
-        if (!phone) {
-          link.textContent = "تواصل معنا عبر المحل مباشرة";
-          return;
-        }
-
+        const { data, error } = await supabase.from("restaurant_settings")
+          .select("support_whatsapp_phone, whatsapp_phone").eq("id", 1).single();
+        const phone = !error && data && (data.support_whatsapp_phone || data.whatsapp_phone);
+        if (!phone) return set(fallback);
         const digits = phone.replace(/[^\d]/g, "");
-        link.href = `https://wa.me/${digits}`;
-        link.textContent = `واتساب: ${phone}`;
-      } catch (e) {
-        link.textContent = "تواصل معنا عبر المحل مباشرة";
-      }
+        links.forEach(l => { l.href = "https://wa.me/" + digits; l.textContent = (l.closest(".lang-block").lang === "en" ? "WhatsApp: " : "واتساب: ") + phone; });
+      } catch (e) { set(fallback); }
     }
-
     loadSupportPhone();
   </script>
 
