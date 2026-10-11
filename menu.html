@@ -1116,6 +1116,7 @@
 </div>
 
 <script src="menu-i18n.js"></script>
+<script src="legal-gate.js"></script>
 <script type="module">
   import { supabase } from "./supabase.js";
 
@@ -1232,11 +1233,10 @@
         <input type="password" id="gateNewPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4" autofocus>
         <label class="pin-field-label">2️⃣ أعد كتابة نفس الرمز للتأكيد</label>
         <input type="password" id="gateConfirmPinInput" class="pin-input" placeholder="••••" inputmode="numeric" maxlength="4">
-        <label class="legal-consent">
-          <input type="checkbox" id="gateAcceptTerms">
-          <span>أوافق على <a href="#" onclick="openLegal('terms'); return false;">شروط الاستخدام</a>
+        <div class="legal-consent" style="display:block;">
+          <span>✅ وافقت على <a href="#" onclick="openLegal('terms'); return false;">شروط الاستخدام</a>
           و<a href="#" onclick="openLegal('privacy'); return false;">سياسة الخصوصية</a></span>
-        </label>
+        </div>
         <div class="phone-gate-error" id="gateError"></div>
         <button class="phone-gate-btn" onclick="submitRegisterPin()">إنشاء الحساب والدخول</button>
       `;
@@ -1291,7 +1291,7 @@
       } else if (res.state === "login") {
         renderGateStep("login-pin", { phone });
       } else {
-        renderGateStep("register-pin", { phone });
+        askRegisterConsent(phone);
       }
     } catch (err) {
       console.error("❌ CUSTOMER LOOKUP ERROR:", err);
@@ -1338,6 +1338,18 @@
     }
   };
 
+  // ✅ موافقة إلزامية (قراءة كاملة) قبل إنشاء أي حساب جديد
+  let registerConsent = null; // { phone }
+  function askRegisterConsent(phone) {
+    registerConsent = null;
+    LegalGate.require({
+      mode: "register",
+      supportPhone: supportWhatsappPhone || whatsappPhone,
+      onAccept: () => { registerConsent = { phone }; renderGateStep("register-pin", { phone }); },
+      onDecline: () => { renderGateStep("phone"); }
+    });
+  }
+
   window.submitRegisterPin = async () => {
     const pin = (document.getElementById("gateNewPinInput").value || "").trim();
     const confirmPin = (document.getElementById("gateConfirmPinInput").value || "").trim();
@@ -1351,8 +1363,8 @@
       errorEl.textContent = "⚠️ الرمزين مو متطابقين";
       return;
     }
-    if (!document.getElementById("gateAcceptTerms")?.checked) {
-      errorEl.textContent = "⚠️ لازم توافق على شروط الاستخدام وسياسة الخصوصية عشان تكمّل";
+    if (!registerConsent || registerConsent.phone !== pendingGatePhone) {
+      askRegisterConsent(pendingGatePhone);   // ما مرّ بشاشة الموافقة → نرجّعه لها
       return;
     }
 
@@ -1619,8 +1631,35 @@
     }, 60 * 1000);
   }
 
+  // ✅ نسخة الشروط تغيّرت؟ الزبون القديم يوافق عليها مرة وحدة قبل ما يكمّل (السيرفر يسجّل الموافقة)
+  async function ensureTermsAccepted() {
+    let status = null;
+    try {
+      const { data, error } = await supabase.rpc("customer_terms_status", { p_token: customerToken() });
+      if (!error) status = data;
+    } catch (e) { /* قبل تشغيل SQL المرحلة 9 ما نمنع أحد */ }
+    if (!status || status.ok !== true || status.needs_accept !== true) return;
+    await new Promise((resolve) => {
+      LegalGate.require({
+        mode: "update",
+        supportPhone: supportWhatsappPhone || whatsappPhone,
+        onAccept: async () => {
+          const { data, error } = await supabase.rpc("customer_accept_terms", { p_token: customerToken() });
+          if (error || !data || data.ok !== true) throw new Error("ACCEPT_FAILED");
+          resolve();
+        },
+        onDecline: async () => {
+          try { await Promise.race([Promise.resolve(supabase.rpc("customer_logout", { p_token: customerToken() })), new Promise(r => setTimeout(r, 1500))]); } catch {}
+          clearCustomerSession();
+          location.reload();
+        }
+      });
+    });
+  }
+
   async function startApp() {
     initializeSession();
+    await ensureTermsAccepted();
     loggedInCustomerPhone = localStorage.getItem(CUSTOMER_PHONE_KEY);
     await checkOrderingEnabled();
     await loadProducts();
