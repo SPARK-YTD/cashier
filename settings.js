@@ -714,32 +714,25 @@ window.toggleItem = async function (id, state) {
    حذف صنف
 ================================ */
   window.deleteItem = async function (id) {
-  if (!confirm("هل أنت متأكد من الحذف؟")) return;
+  if (!confirm("هل أنت متأكد من الحذف؟ (يتحذف الصنف نهائياً، وسجل المبيعات القديمة يبقى كما هو)")) return;
 
-  await supabase
-    .from("product_variants")
-    .delete()
-    .eq("product_id", id);
-
-  await supabase
-    .from("product_consumables")
-    .delete()
-    .eq("product_id", id);
-
-  await supabase
-    .from("product_employees")
-    .delete()
-    .eq("product_id", id);
-
-  await supabase
-    .from("product_addons")
-    .delete()
-    .eq("product_id", id);
-
-  await supabase
-    .from("products")
-    .delete()
-    .eq("id", id);
+  // نحذف التوابع ثم الصنف، ونوقف عند أول خطأ ونعرض سببه بدل ما يفشل بصمت
+  const steps = ["product_variants", "product_consumables", "product_employees", "product_addons"];
+  for (const t of steps) {
+    const { error } = await supabase.from(t).delete().eq("product_id", id);
+    if (error) {
+      console.error("DELETE", t, error);
+      return alert("❌ تعذر الحذف (" + t + "): " + error.message);
+    }
+  }
+  const { error: pErr } = await supabase.from("products").delete().eq("id", id);
+  if (pErr) {
+    console.error("DELETE products", pErr);
+    const fk = /foreign key|order_items/i.test(pErr.message || "");
+    return alert(fk
+      ? "❌ الصنف مرتبط بطلبات قديمة. شغّل ملف sql_stage13_safe_product_delete.sql في Supabase مرة وحدة وبعدها الحذف يشتغل."
+      : "❌ تعذر الحذف: " + pErr.message);
+  }
 
   loadItems();
 };
