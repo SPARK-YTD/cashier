@@ -336,7 +336,10 @@
       padding: 60px 20px;
       color: #94A3B8;
     }
-  </style>
+    .btn-busy { background:#F59E0B; color:#fff; border:0; border-radius:8px; padding:10px 14px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+  .btn-busy:disabled { opacity:.5; cursor:default; }
+  .btn-busy-off { background:#10B981; }
+</style>
 <script type="module" src="auth-guard.js"></script>
 </head>
 <body>
@@ -381,12 +384,51 @@
     </div>
     <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 0; padding-top:14px; border-top:1px solid #E5E7EB;">
       <div>
+        <label class="setting-label" style="margin-bottom:4px;">👁️ المنيو للعرض فقط</label>
+        <div class="setting-hint" id="viewOnlyHint">جاري التحميل...</div>
+      </div>
+      <button class="toggle-switch" id="viewOnlyToggle" onclick="toggleViewOnly()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+    <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 0; padding-top:14px; border-top:1px solid #E5E7EB;">
+      <div>
         <label class="setting-label" style="margin-bottom:4px;">تفعيل التوصيل</label>
         <div class="setting-hint" id="deliveryHint">جاري التحميل...</div>
       </div>
       <button class="toggle-switch" id="deliveryToggle" onclick="toggleDelivery()">
         <div class="toggle-knob"></div>
       </button>
+    </div>
+  </div>
+
+  <!-- BUSY / LOAD SECTION -->
+  <div class="settings-section" id="busySection">
+    <h2>🔥 العربة مشغولة</h2>
+    <div class="setting-hint" id="busyStatus" style="font-size:14px; margin-bottom:10px;">جاري التحميل...</div>
+    <div id="busyButtons" style="display:flex; flex-wrap:wrap; gap:8px;">
+      <button class="btn-busy" onclick="setBusy(15)">15 دقيقة</button>
+      <button class="btn-busy" onclick="setBusy(30)">30 دقيقة</button>
+      <button class="btn-busy" onclick="setBusy(60)">ساعة</button>
+      <button class="btn-busy" onclick="setBusy(120)">ساعتين</button>
+      <button class="btn-busy" onclick="setBusy(720)">حتى أرفعه (12 ساعة كحد أقصى)</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn-busy" id="busyPlus" onclick="setBusy(15, true)" style="display:none;">➕ زد 15 دقيقة</button>
+      <button class="btn-busy btn-busy-off" id="busyLift" onclick="setBusy(0)" style="display:none;">✅ ارفع وضع المشغول</button>
+    </div>
+    <div class="setting-hint" style="margin-top:8px;">لما تفعّله الزبون يشوف إشعار «العربة مشغولة» ويتوقف الإرسال لين تنتهي المدة أو ترفعه.</div>
+
+    <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E7EB;">
+      <label class="setting-label" style="margin-bottom:4px;">⏳ تنبيه الضغط التلقائي</label>
+      <div class="setting-hint" id="loadHint">جاري التحميل...</div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+        <button class="btn-busy" onclick="stepThreshold(-1)">−</button>
+        <b id="thresholdVal" style="min-width:28px; text-align:center; font-size:18px;">3</b>
+        <button class="btn-busy" onclick="stepThreshold(1)">+</button>
+        <span class="setting-hint" id="thresholdSaved"></span>
+      </div>
+      <div class="setting-hint" style="margin-top:6px;">لما تصير الطلبات النشطة (تحت التحضير + بانتظار القبول) أكثر من هذا العدد يطلع للزبون «ممكن يتأخر طلبك». الصفر = إيقاف التنبيه.</div>
     </div>
   </div>
 
@@ -443,6 +485,9 @@
     await loadMenu();
     await loadOrderingStatus();
     await loadDeliveryStatus();
+    await loadViewOnlyStatus();
+    await loadBusyStatus();
+    setInterval(loadBusyStatus, 20000);
   });
 
   // ========== ORDERING TOGGLE ==========
@@ -543,6 +588,114 @@
     } finally {
       toggle.disabled = false;
     }
+  };
+
+  // ========== VIEW ONLY (المنيو للعرض فقط) ==========
+  function viewOnlyHintText(on) {
+    return on
+      ? "👁️ المنيو للعرض فقط — الزبون يتصفح بس وما يقدر يضيف للسلة أو يرسل (له الأولوية على باقي الأوضاع)"
+      : "الزبون يقدر يطلب حسب باقي الإعدادات";
+  }
+  async function loadViewOnlyStatus() {
+    const toggle = document.getElementById("viewOnlyToggle");
+    const hint = document.getElementById("viewOnlyHint");
+    try {
+      const { data, error } = await supabase.from("restaurant_settings").select("view_only").eq("id", 1).single();
+      if (error) throw error;
+      const on = data.view_only === true;
+      toggle.classList.toggle("active", on);
+      hint.textContent = viewOnlyHintText(on);
+    } catch (e) {
+      console.error("view_only:", e);
+      toggle.disabled = true;
+      hint.textContent = "❌ شغّل ملف sql_stage10_busy_viewonly.sql في Supabase أولاً";
+    }
+  }
+  window.toggleViewOnly = async () => {
+    const toggle = document.getElementById("viewOnlyToggle");
+    const hint = document.getElementById("viewOnlyHint");
+    const newValue = !toggle.classList.contains("active");
+    if (newValue && !confirm("تحويل المنيو للعرض فقط؟ الزبائن ما راح يقدرون يطلبون نهائياً لين ترجّعه.")) return;
+    toggle.disabled = true;
+    try {
+      const { error } = await supabase.from("restaurant_settings")
+        .update({ view_only: newValue, updated_at: new Date().toISOString() }).eq("id", 1);
+      if (error) throw error;
+      toggle.classList.toggle("active", newValue);
+      hint.textContent = viewOnlyHintText(newValue);
+    } catch (e) {
+      console.error("view_only update:", e);
+      alert("❌ خطأ في تحديث الوضع");
+    } finally { toggle.disabled = false; }
+  };
+
+  // ========== BUSY + LOAD ==========
+  let busyUntilAdmin = 0, thresholdAdmin = 3, busySaveTimer = null;
+  function renderBusy(st) {
+    const status = document.getElementById("busyStatus");
+    const plus = document.getElementById("busyPlus");
+    const lift = document.getElementById("busyLift");
+    const mins = Number(st.busy_minutes || 0);
+    busyUntilAdmin = st.busy ? Date.now() + mins * 60000 : 0;
+    if (st.busy) {
+      status.innerHTML = "🔥 <b>مفعّل</b> — باقي حوالي " + mins + " دقيقة";
+      plus.style.display = ""; lift.style.display = "";
+    } else {
+      status.textContent = "⚪ غير مفعّل — الطلبات مفتوحة";
+      plus.style.display = "none"; lift.style.display = "none";
+    }
+    thresholdAdmin = Number(st.threshold == null ? 3 : st.threshold);
+    document.getElementById("thresholdVal").textContent = thresholdAdmin;
+    const active = st.active_count;
+    document.getElementById("loadHint").textContent =
+      (active == null ? "" : "الطلبات النشطة الحين: " + active + " — ") +
+      (thresholdAdmin === 0 ? "التنبيه موقف" : (st.high_load ? "🟠 التنبيه ظاهر للزبائن الحين" : "التنبيه يظهر عند أكثر من " + thresholdAdmin));
+  }
+  async function loadBusyStatus() {
+    try {
+      const { data, error } = await supabase.rpc("menu_status");
+      if (error || !data || data.ok !== true) throw error || new Error("bad");
+      renderBusy(data);
+    } catch (e) {
+      console.error("menu_status:", e);
+      document.getElementById("busyStatus").textContent = "❌ شغّل ملف sql_stage10_busy_viewonly.sql في Supabase أولاً";
+      document.querySelectorAll("#busySection .btn-busy").forEach(b => b.disabled = true);
+    }
+  }
+  window.setBusy = async (minutes, add) => {
+    let m = minutes;
+    if (add && busyUntilAdmin > Date.now()) m = Math.ceil((busyUntilAdmin - Date.now()) / 60000) + minutes;
+    if (m > 720) m = 720;
+    try {
+      const { error } = await supabase.rpc("shop_set_busy", { p_minutes: m });
+      if (error) throw error;
+      await loadBusyStatus();
+    } catch (e) {
+      console.error("shop_set_busy:", e);
+      alert("❌ تعذر تحديث وضع المشغول");
+    }
+  };
+  window.stepThreshold = (d) => {
+    const v = Math.min(20, Math.max(0, thresholdAdmin + d));
+    if (v === thresholdAdmin) return;
+    thresholdAdmin = v;
+    document.getElementById("thresholdVal").textContent = v;
+    const saved = document.getElementById("thresholdSaved");
+    saved.textContent = "…";
+    clearTimeout(busySaveTimer);
+    busySaveTimer = setTimeout(async () => {
+      try {
+        const { error } = await supabase.from("restaurant_settings")
+          .update({ load_threshold: v, updated_at: new Date().toISOString() }).eq("id", 1);
+        if (error) throw error;
+        saved.textContent = "✅ انحفظ";
+        await loadBusyStatus();
+        setTimeout(() => { saved.textContent = ""; }, 2000);
+      } catch (e) {
+        console.error("threshold:", e);
+        saved.textContent = "❌ ما انحفظ";
+      }
+    }, 600);
   };
 
   // ========== SETTINGS ==========
