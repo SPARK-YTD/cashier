@@ -247,6 +247,9 @@ window.addItem = async function () {
       
     const isSpicy = document.getElementById("itemSpicy")?.checked || false;
     const name = document.getElementById("itemName").value.trim();
+    const nameEn = (document.getElementById("itemNameEn")?.value || "").trim();
+    // name_en عمود جديد: نرسله فقط لو في قيمة أو لو العمود موجود فعلاً (عشان ما ينكسر الحفظ قبل تشغيل SQL)
+    const nameEnField = (nameEn || window.__hasNameEn) ? { name_en: nameEn || null } : {};
     const category = document.getElementById("itemCategory").value;
     const imageFile = document.getElementById("itemImage")?.files[0];
 
@@ -309,6 +312,7 @@ if (editingItemId) {
     .from("products")
     .update({
   name,
+  ...nameEnField,
   category,
   price: hasVariants ? null : cleanNumber(priceNormal),
   has_variants: hasVariants,
@@ -327,6 +331,7 @@ query = supabase
   .from("products")
   .insert({
     name,
+    ...nameEnField,
     category,
     price: hasVariants ? null : cleanNumber(priceNormal),
     has_variants: hasVariants,
@@ -590,6 +595,8 @@ async function loadItems() {
     return;
   }
 
+  window.__hasNameEn = !!(data && data.length && "name_en" in data[0]);
+
   if (!data || data.length === 0) {
     box.innerHTML = "<p>لا توجد أصناف</p>";
     return;
@@ -743,6 +750,7 @@ if (multiEmployees?.length) {
 
   // تعبئة البيانات الأساسية
   document.getElementById("itemName").value = item.name;
+  const _enEl = document.getElementById("itemNameEn"); if (_enEl) _enEl.value = item.name_en || "";
   document.getElementById("itemCategory").value = item.category;
   document.getElementById("itemPrice").value = item.price || "";
   document.getElementById("itemExtras").value =
@@ -872,6 +880,7 @@ window.addMultiEmployeeRow = function () {
 function clearForm() {
   document.querySelector('input[name="itemType"][value="normal"]').checked = true;
   document.getElementById("itemName").value = "";
+  const _en = document.getElementById("itemNameEn"); if (_en) _en.value = "";
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemImage").value = "";
   document.getElementById("variantsBox").style.display = "none";
