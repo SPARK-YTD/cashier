@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js";
+=import { supabase } from "./supabase.js";
 import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 window.supabase = supabase;
 
@@ -195,6 +195,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     items.forEach(item => {
       item.addons = addonsData?.filter(a => a.product_id === item.id) || [];
     });
+
+    // 🏷️ نوع الخيارات: لو الصنف خياراته أسماء (مثل أنواع المشروبات) نكتب "اختر النوع" بدل "اختر الحجم"
+    try {
+      const { data: vLabels } = await supabase
+        .from("product_variants")
+        .select("product_id, label")
+        .in("product_id", ids)
+        .eq("active", true);
+      const sizeLabels = ["Small", "Medium", "Large", "عادي", "وجبة"];
+      items.forEach(item => {
+        const labs = (vLabels || []).filter(v => v.product_id === item.id).map(v => v.label);
+        item.variantPrompt = labs.some(l => !sizeLabels.includes(l)) ? "اختر النوع" : "اختر الحجم";
+      });
+    } catch (e) { /* نبقى على النص القديم */ }
   }
 
   renderItems();
@@ -216,7 +230,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       div.innerHTML = `
   ${item.image_url ? `<img src="${cleanImageUrl(item.image_url)}" class="cashier-item-img">` : ""}
         <strong>${item.name}</strong>
-        <span>${item.has_variants ? "اختر الحجم" : item.price.toFixed(3) + " د.ب"}</span>
+        <span>${item.has_variants ? (item.variantPrompt || "اختر الحجم") : item.price.toFixed(3) + " د.ب"}</span>
       `;
       div.onclick = () => handleItemClick(item);
       container.appendChild(div);
