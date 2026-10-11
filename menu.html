@@ -466,9 +466,21 @@
       transition: all 0.3s, bottom 0.3s;
     }
 
-    .cart-btn.above-banner {
-      bottom: 74px;
-    }
+    /* إشعارات حالة المطعم: داخل الصفحة (مو ثابتة) عشان ما تغطي أي كتابة أو روابط */
+    .status-notices:empty, .notices-slot:empty { display: none; }
+    .status-notices { max-width: 1100px; margin: 10px auto 0; padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+    .notices-slot { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .notice { display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.6; border: 1px solid; text-align: right; }
+    .notice .n-ico { font-size: 18px; line-height: 1.3; flex: none; }
+    .notice .n-title { font-weight: 800; display: block; }
+    .notice .n-txt { display: block; opacity: .95; }
+    .notice.n-view { background: #F3F4F6; border-color: #D1D5DB; color: #374151; }
+    .notice.n-busy { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; }
+    .notice.n-wa   { background: #ECFDF5; border-color: #6EE7B7; color: #065F46; }
+    .notice.n-load { background: #FFFBEB; border-color: #FCD34D; color: #92400E; }
+    body.view-only .product-card { cursor: default; }
+    body.view-only #cartBtn { display: none !important; }
+    #legalFooterPad { height: 90px; }
 
     .cart-btn:active {
       background: #C4955B;
@@ -888,6 +900,8 @@
   </div>
 </div>
 
+<div class="status-notices" id="statusNotices" aria-live="polite"></div>
+
 <!-- CONTAINER -->
 <div class="container">
   <!-- FILTERS -->
@@ -902,10 +916,6 @@
   <div class="empty" id="empty" style="display: none;">📭 لا توجد منتجات</div>
 </div>
 
-<!-- ORDERING DISABLED BANNER -->
-<div id="viewOnlyBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#111827; color:#F59E0B; padding:14px 16px; text-align:center; font-weight:700; font-size:14px; z-index:500; box-shadow:0 -2px 10px rgba(0,0,0,0.2);">
-  ⚠️ المنيو للعرض فقط حالياً - استقبال الطلبات متوقف مؤقتاً
-</div>
 
 <!-- CART BUTTON -->
 <button class="cart-btn" onclick="showCart()" id="cartBtn">
@@ -991,10 +1001,10 @@
       <button class="close-modal" onclick="closeModal('cartModal')">✕</button>
       <h2>🛒 السلة</h2>
     </div>
-    <div class="modal-body" id="cartBody"></div>
+    <div class="modal-body"><div class="notices-slot" id="cartNotices"></div><div id="cartBody"></div></div>
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="clearCart()">مسح</button>
-      <button class="btn btn-confirm" onclick="goToOrder()">المتابعة</button>
+      <button class="btn btn-confirm" id="goOrderBtn" onclick="goToOrder()">المتابعة</button>
     </div>
   </div>
 </div>
@@ -1007,6 +1017,7 @@
       <h2>📋 بيانات الطلب</h2>
     </div>
     <div class="modal-body">
+      <div class="notices-slot" id="orderNotices"></div>
       <div class="form-group">
         <label>الاسم *</label>
         <input type="text" id="customerName" placeholder="اسمك" maxlength="80" required>
@@ -1472,6 +1483,10 @@
   let cart = [];
   let currentAddonsData = {};
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
+  let viewOnly = false;      // 👁️ المنيو للعرض فقط
+  let busyUntilMs = 0;       // 🔥 العربة مشغولة لين هذا الوقت (وقت السيرفر محوّل لساعة الجهاز)
+  let highLoad = false;      // ⏳ ضغط طلبات (إشعار تلقائي)
+  let busyTicker = null;
   let deliveryEnabled = true; // ✅ التوصيل شغّال افتراضياً (الإدارة تقدر تقفله = استلام من العربة فقط)
   let customerLocation = null; // { lat, lng }
   let whatsappPhone = null;
@@ -1673,49 +1688,120 @@
 
   // ========== ORDERING ENABLED CHECK ==========
   async function checkOrderingEnabled() {
+    let ok = false;
     try {
-      // delivery_enabled عمود جديد (Stage 7). لو لسا ما انشغّل الـSQL نرجع للأعمدة القديمة بدل ما نخسر رقم واتساب
-      let { data, error } = await supabase
-        .from("restaurant_settings")
-        .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone, delivery_enabled")
-        .eq("id", 1)
-        .single();
-      if (error) {
-        ({ data, error } = await supabase
-          .from("restaurant_settings")
-          .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone")
-          .eq("id", 1)
-          .single());
+      // المصدر الأساسي: menu_status (Stage 10) — يحسب وضع الانشغال والضغط بوقت السيرفر
+      const { data: st, error: stErr } = await supabase.rpc("menu_status");
+      if (!stErr && st && st.ok === true) {
+        orderingEnabled = st.ordering_enabled !== false;
+        deliveryEnabled = st.delivery_enabled !== false;
+        viewOnly = st.view_only === true;
+        highLoad = st.high_load === true;
+        const mins = Number(st.busy_minutes || 0);
+        busyUntilMs = st.busy === true && mins > 0 ? Date.now() + mins * 60000 : 0;
+        whatsappPhone = st.whatsapp_phone || null;
+        supportWhatsappPhone = st.support_whatsapp_phone || null;
+        ok = true;
       }
+    } catch (e) { console.warn("menu_status:", e); }
 
-      if (error) throw error;
-
-      orderingEnabled = data.ordering_enabled !== false;
-      deliveryEnabled = data.delivery_enabled !== false;
-      whatsappPhone = data.whatsapp_phone || null;
-      supportWhatsappPhone = data.support_whatsapp_phone || null;
-    } catch (error) {
-      console.error("Error checking ordering status:", error);
-      orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
+    if (!ok) {
+      // احتياط: لو الـSQL حق Stage 10 ما انشغّل نرجع للأعمدة القديمة
+      try {
+        let { data, error } = await supabase
+          .from("restaurant_settings")
+          .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone, delivery_enabled")
+          .eq("id", 1)
+          .single();
+        if (error) {
+          ({ data, error } = await supabase
+            .from("restaurant_settings")
+            .select("ordering_enabled, whatsapp_phone, support_whatsapp_phone")
+            .eq("id", 1)
+            .single());
+        }
+        if (error) throw error;
+        orderingEnabled = data.ordering_enabled !== false;
+        deliveryEnabled = data.delivery_enabled !== false;
+        whatsappPhone = data.whatsapp_phone || null;
+        supportWhatsappPhone = data.support_whatsapp_phone || null;
+        viewOnly = false; busyUntilMs = 0; highLoad = false;
+      } catch (error) {
+        console.error("Error checking ordering status:", error);
+        orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
+      }
     }
+    renderStatus();
+  }
+  window.refreshMenuStatus = checkOrderingEnabled;
 
-    const banner = document.getElementById("viewOnlyBanner");
-    const submitBtn = document.getElementById("submitBtn");
-    const cartBtn = document.getElementById("cartBtn");
+  function isBusy() { return busyUntilMs > Date.now(); }
+  function busyMinutesLeft() { return Math.max(1, Math.ceil((busyUntilMs - Date.now()) / 60000)); }
+  // يقدر الزبون يرسل؟ (الأولوية: عرض فقط > مشغول > واتساب > عادي)
+  function canOrder() { return !viewOnly && !isBusy(); }
 
+  function noticeHtml(cls, ico, title, txt) {
+    return `<div class="notice ${cls}" role="status"><span class="n-ico">${ico}</span><span><span class="n-title">${title}</span><span class="n-txt">${txt}</span></span></div>`;
+  }
+
+  // إشعار واحد حسب الأولوية — يظهر داخل الصفحة بدل الشريط الثابت اللي كان يغطي الكتابة
+  function currentNoticeHtml() {
+    if (viewOnly) {
+      return noticeHtml("n-view", "👁️", "المنيو للعرض فقط حالياً",
+        "استقبال الطلبات من المنيو متوقف مؤقتاً. تقدر تتصفح الأصناف والأسعار، وللطلب تواصل معنا أو زرنا في العربة.");
+    }
+    if (isBusy()) {
+      const m = busyMinutesLeft();
+      return noticeHtml("n-busy", "🔥", "العربة مشغولة حالياً",
+        `عندنا ضغط طلبات ومو قادرين نستقبل طلبات جديدة الحين. نتوقع نفتح الطلبات خلال حوالي ${m} دقيقة. شكراً لتفهمك 🙏`);
+    }
+    const parts = [];
     if (!orderingEnabled) {
-      banner.style.display = "block";
-      banner.textContent = "📱 طلبك ينحفظ عندنا، وبعد الإرسال أكّد طلبك عبر واتساب (زر جاهز)";
-      if (cartBtn) cartBtn.classList.add("above-banner");
-      if (submitBtn) submitBtn.textContent = "📱 إرسال وتأكيد عبر واتساب";
-    } else {
-      banner.style.display = "none";
-      if (cartBtn) cartBtn.classList.remove("above-banner");
-      if (submitBtn) submitBtn.textContent = "إرسال الطلب";
+      parts.push(noticeHtml("n-wa", "📱", "الطلب عبر واتساب",
+        "طلبك ينحفظ عندنا، وبعد الإرسال أكّد طلبك عبر واتساب (زر جاهز)."));
     }
+    if (highLoad) {
+      parts.push(noticeHtml("n-load", "⏳", "ضغط طلبات حالياً",
+        "عندنا طلبات كثيرة الحين، فممكن طلبك يتأخر شوي عن المعتاد. تقدر تطلب عادي، وشكراً لصبرك 🙏"));
+    }
+    return parts.join("");
+  }
 
+  function renderStatus() {
+    const html = currentNoticeHtml();
+    ["statusNotices", "cartNotices", "orderNotices"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+    document.body.classList.toggle("view-only", viewOnly);
+
+    const submitBtn = document.getElementById("submitBtn");
+    if (submitBtn && !submitBtn.dataset.sending) {
+      if (!canOrder()) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = viewOnly ? "👁️ الطلب متوقف حالياً" : "🔥 العربة مشغولة";
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.textContent = orderingEnabled ? "إرسال الطلب" : "📱 إرسال وتأكيد عبر واتساب";
+      }
+    }
+    const goBtn = document.getElementById("goOrderBtn");
+    if (goBtn) { goBtn.disabled = !canOrder(); goBtn.style.opacity = canOrder() ? "" : "0.5"; }
+    // العداد: يحدّث الدقائق كل 15 ثانية، وعند الصفر نجيب الحالة من السيرفر
+    clearInterval(busyTicker);
+    busyTicker = null;
+    if (isBusy()) {
+      busyTicker = setInterval(() => {
+        if (!isBusy()) { clearInterval(busyTicker); busyTicker = null; checkOrderingEnabled(); }
+        else renderStatus();
+      }, 15000);
+    }
     applyDeliveryAvailability();
   }
+
+  // فحص دوري خفيف + عند الرجوع للتبويب
+  setInterval(() => { if (!document.hidden) checkOrderingEnabled(); }, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkOrderingEnabled(); });
 
   // 🚶 لو الإدارة قفلت التوصيل: نخفي خيار التوصيل ونثبّت الاستلام من العربة
   function applyDeliveryAvailability() {
@@ -1749,10 +1835,25 @@
       if (window.MenuI18n) window.MenuI18n.setProducts(allProducts);
       renderFilters();
       renderProducts("all");
+      loadExtraNames();
     } catch (error) {
       console.error("Error:", error);
       document.getElementById("grid").innerHTML = '<div class="empty">❌ خطأ في التحميل</div>';
     }
+  }
+
+  // 🌐 الأسماء الإنجليزية لخيارات الأصناف والإضافات (عمود اختياري - Stage 11). فشلها ما يأثر على المنيو
+  async function loadExtraNames() {
+    try {
+      const [v, a] = await Promise.all([
+        supabase.from("product_variants").select("label, label_en").not("label_en", "is", null),
+        supabase.from("product_addons").select("name, name_en").not("name_en", "is", null)
+      ]);
+      const pairs = [];
+      (v.data || []).forEach(r => { if (r.label && r.label_en) pairs.push({ ar: r.label, en: r.label_en }); });
+      (a.data || []).forEach(r => { if (r.name && r.name_en) pairs.push({ ar: r.name, en: r.name_en }); });
+      if (window.MenuI18n && window.MenuI18n.setExtraNames) window.MenuI18n.setExtraNames(pairs);
+    } catch (e) { console.warn("extra names:", e); }
   }
 
   // RENDER FILTERS
@@ -1839,6 +1940,7 @@
 
   // ADD TO CART - نفس الطريقة في app.js
   window.addToCart = async (productId, productName, price) => {
+    if (viewOnly) return;   // المنيو للعرض فقط: ما نضيف للسلة
     productName = productName || "صنف بدون اسم";
     try {
       const { data: product } = await supabase
@@ -2183,6 +2285,7 @@
   };
 
   window.goToOrder = () => {
+    if (!canOrder()) { renderStatus(); return; }
     closeModal("cartModal");
     updateOrderTotal();
     // ✅ نعبي رقم الهاتف تلقائياً من رقم بوابة الدخول (الزبون ما يكتبه مرتين)
@@ -2369,6 +2472,7 @@
         <h2 style="margin:0 0 8px; color:#111827;">تم إرسال طلبك</h2>
         <p style="color:#6B7280; margin:0 0 4px; font-size:14px;">⏳ ينتظر الموافقة من المحل...</p>
         <p style="color:#9CA3AF; margin:0; font-size:12px;">راح تتغيّر الصفحة تلقائياً عند القبول</p>
+        ${data.highLoad ? `<p style="background:#FFFBEB; border:1px solid #FCD34D; color:#92400E; border-radius:8px; padding:8px 10px; margin:12px 0 0; font-size:13px;">⏳ عندنا طلبات كثيرة حالياً، فممكن يتأخر طلبك شوي. شكراً لصبرك 🙏</p>` : ""}
         ${data.confirmWaUrl ? `
         <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:8px; padding:12px; margin:14px 0 10px; text-align:right;">
           <p style="margin:0; color:#92400E; font-size:14px; font-weight:700;">📱 أكّد طلبك عبر واتساب</p>
@@ -2450,6 +2554,7 @@
   };
 
   window.submitOrder = async () => {
+    if (!canOrder()) { await checkOrderingEnabled(); return; }
     const submitBtn = document.getElementById("submitBtn");
     const name = document.getElementById("customerName").value.trim();
     const phone = document.getElementById("customerPhone").value.trim();
@@ -2574,8 +2679,17 @@
           applyDeliveryAvailability();
           throw new Error("التوصيل متوقف حالياً — الاستلام من العربة فقط");
         }
+        if (code === "VIEW_ONLY") {
+          viewOnly = true; renderStatus();
+          throw new Error("المنيو للعرض فقط حالياً — استقبال الطلبات متوقف مؤقتاً");
+        }
+        if (code === "BUSY") {
+          busyUntilMs = Date.now() + Number(submitRes.busy_minutes || 10) * 60000; renderStatus();
+          throw new Error("العربة مشغولة حالياً، حاول بعد حوالي " + Number(submitRes.busy_minutes || 10) + " دقيقة");
+        }
         throw new Error("تعذّر إرسال الطلب، تأكد من البيانات وحاول مرة ثانية");
       }
+      if (submitRes.high_load === true) { highLoad = true; }
 
       const orderId = submitRes.id;
 
@@ -2632,15 +2746,15 @@
 
       // ✅ اظهر شاشة الانتظار (تفضل ظاهرة لحين الموافقة أو الرفض)
       closeModal("orderModal");
-      showOrderStatusScreen("pending", { name, confirmWaUrl });
+      showOrderStatusScreen("pending", { name, confirmWaUrl, highLoad: submitRes.high_load === true });
       submitBtn.disabled = false;
-      submitBtn.textContent = orderingEnabled ? "إرسال الطلب" : "📱 إرسال وتأكيد عبر واتساب";
+      renderStatus();
 
     } catch (error) {
       console.error("Error submitting order:", error);
       alert("❌ خطأ في إرسال الطلب: " + error.message);
       submitBtn.disabled = false;
-      submitBtn.textContent = "إرسال الطلب";
+      renderStatus();
     }
   };
 
@@ -2862,6 +2976,7 @@
   window.supabase = supabase;
 </script>
 
+<div id="legalFooterPad" aria-hidden="true"></div>
 <script src="legal-popup.js" data-privacy="privacy.html" data-terms="terms.html" data-footer="flow"></script>
 </body>
 </html>
