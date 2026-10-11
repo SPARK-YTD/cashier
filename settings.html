@@ -63,6 +63,11 @@
   <input type="radio" name="itemType" value="burger">
   🍔 برقر (عادي / وجبة)
 </label>
+
+<label style="margin-right:15px">
+  <input type="radio" name="itemType" value="choices">
+  🥤 قائمة خيارات (مثلاً أنواع المشروبات)
+</label>
 </div>
 <!-- ===== سبايسي ===== -->
 <div style="margin-top:15px;padding:10px;border:1px dashed #f87171;border-radius:8px">
@@ -93,6 +98,13 @@
       </div>
     </div>
     
+    <!-- ===== قائمة الخيارات (مشروبات وغيرها) ===== -->
+    <div id="choicesBox" style="display:none;margin-top:15px;padding:10px;border:1px dashed #0ea5e9;border-radius:8px">
+      <strong>🥤 الخيارات (العميل يختار واحد منها)</strong>
+      <div id="choicesRows" style="margin-top:10px"></div>
+      <button type="button" onclick="addChoiceRow()">➕ إضافة خيار</button>
+    </div>
+
     <!-- ===== المواد الاستهلاكية ===== -->
 <div style="margin-top:15px;padding:10px;border:1px dashed #0ea5e9;border-radius:8px">
   <strong>📦 المواد الاستهلاكية لهذا الصنف</strong>
@@ -195,12 +207,20 @@ const labels = document.querySelectorAll(".variant-label");
 const rows = document.querySelectorAll(".variant-row");
 
 function updateUI(type) {
+  const choicesBox = document.getElementById("choicesBox");
   if (type === "normal") {
     variantsBox.style.display = "none";
     itemPrice.style.display = "block";
+  } else if (type === "choices") {
+    variantsBox.style.display = "none";
+    itemPrice.style.display = "none";
   } else {
     variantsBox.style.display = "block";
     itemPrice.style.display = "none";
+  }
+  choicesBox.style.display = type === "choices" ? "block" : "none";
+  if (type === "choices" && !document.querySelector("#choicesRows .choice-row")) {
+    addChoiceRow(); addChoiceRow();
   }
 
   if (type === "burger") {
