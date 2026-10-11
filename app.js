@@ -1,4 +1,4 @@
-=import { supabase } from "./supabase.js";
+import { supabase } from "./supabase.js";
 import { saveOfflineOrder, syncOfflineOrders } from "./offline.js";
 window.supabase = supabase;
 
