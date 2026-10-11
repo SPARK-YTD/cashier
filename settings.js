@@ -270,6 +270,18 @@ window.addItem = async function () {
       .map(e => e.trim())
       .filter(Boolean);
 
+    // 🌐 ترجمة الإضافات الداخلية: نقارن سطر بسطر مع العربي (قبل حذف الأسطر الفاضية)
+    const arLines = extrasRaw.split("\n").map(e => e.trim());
+    const enLines = (document.getElementById("itemExtrasEn")?.value || "").split("\n").map(e => e.trim().replace(/['"`\\]/g, "’"));
+    while (enLines.length && enLines[enLines.length - 1] === "") enLines.pop();
+    if (enLines.length > arLines.length) {
+      return alert("❌ الترجمة الإنجليزية أكثر أسطر من الإضافات العربية — لازم نفس الترتيب سطر بسطر");
+    }
+    const extrasEn = [];
+    arLines.forEach((ar, i) => { if (ar) extrasEn.push(enLines[i] || ""); });
+    const hasExtrasEn = extrasEn.some(Boolean);
+    const extrasEnField = (hasExtrasEn || window.__hasExtrasEn) ? { extras_list_en: hasExtrasEn ? extrasEn.join("\n") : null } : {};
+
     if (!name) return alert("أدخل اسم الصنف");
 
     // === تحديد نوع الصنف ===
@@ -325,6 +337,7 @@ if (editingItemId) {
   image_url: image_url || oldItem?.image_url,
   sort_order: oldItem?.sort_order,
   extras_list: extras.join("\n"),
+  ...extrasEnField,
   is_spicy: isSpicy,
 
 
@@ -343,6 +356,7 @@ query = supabase
     has_variants: hasVariants,
     image_url,
     extras_list: extras.join("\n"),
+    ...extrasEnField,
     is_spicy: isSpicy,
     active: true,
     sort_order: Date.now(),
@@ -607,6 +621,7 @@ async function loadItems() {
   }
 
   window.__hasNameEn = !!(data && data.length && "name_en" in data[0]);
+  window.__hasExtrasEn = !!(data && data.length && "extras_list_en" in data[0]);
   // أعمدة Stage 11 (الاسم الإنجليزي للخيارات والإضافات): نكتب فيها فقط لو موجودة
   try {
     const probe = await Promise.all([
@@ -774,6 +789,8 @@ if (multiEmployees?.length) {
   document.getElementById("itemPrice").value = item.price || "";
   document.getElementById("itemExtras").value =
   item.extras_list || "";
+  { const el = document.getElementById("itemExtrasEn"); if (el) el.value = item.extras_list_en || ""; }
+  if ("extras_list_en" in item) window.__hasExtrasEn = true;
   document.getElementById("itemSpicy").checked = !!item.is_spicy;
 
   // ===== تحديد نوع الصنف (normal / burger / sizes) =====
@@ -911,6 +928,7 @@ function clearForm() {
   document.getElementById("priceMedium").value = "";
   document.getElementById("priceLarge").value = "";
   document.getElementById("itemExtras").value = "";
+  { const el = document.getElementById("itemExtrasEn"); if (el) el.value = ""; }
   document.getElementById("itemSpicy").checked = false;
   
   const multiBox = document.getElementById("multiEmployeesBox");
