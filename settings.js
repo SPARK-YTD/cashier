@@ -79,6 +79,39 @@ window.addConsumableRow = function () {
 };
 
 /* ===============================
+   قائمة الخيارات (أنواع المشروبات وغيرها)
+================================ */
+window.addChoiceRow = function (label = "", price = "") {
+  const box = document.getElementById("choicesRows");
+  if (!box) return;
+  const row = document.createElement("div");
+  row.className = "variant-row choice-row";
+  row.innerHTML = `
+    <input type="text" class="choice-label" placeholder="اسم الخيار (مثلاً بيبسي)">
+    <input type="number" step="0.001" min="0" class="choice-price" placeholder="السعر">
+    <button type="button" onclick="this.parentElement.remove()">❌</button>
+  `;
+  row.querySelector(".choice-label").value = label;
+  row.querySelector(".choice-price").value = price;
+  box.appendChild(row);
+};
+
+function readChoices() {
+  const out = [];
+  const seen = new Set();
+  document.querySelectorAll("#choicesRows .choice-row").forEach(row => {
+    const label = row.querySelector(".choice-label").value.trim().replace(/['"`\\]/g, "’");
+    const price = parseFloat(row.querySelector(".choice-price").value);
+    if (!label && isNaN(price)) return;
+    if (!label || isNaN(price) || price < 0) throw new Error("CHOICE_INVALID");
+    if (seen.has(label)) throw new Error("CHOICE_DUP");
+    seen.add(label);
+    out.push({ label, price });
+  });
+  return out;
+}
+
+/* ===============================
    الإضافات المدفوعة (Add-ons)
 ================================ */
 
@@ -113,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     radio.addEventListener("change", () => {
       const type = radio.value;
 
-      if (type === "normal") {
+      if (type === "normal" || type === "choices") {
         variantsBox.style.display = "none";
       } else {
         variantsBox.style.display = "block";
@@ -214,8 +247,17 @@ window.addItem = async function () {
       return alert("أدخل السعر");
     }
 
+    let choices = [];
+    if (itemType === "choices") {
+      try { choices = readChoices(); }
+      catch (e) {
+        return alert(e.message === "CHOICE_DUP" ? "❌ اسم خيار مكرر" : "❌ كل خيار لازم يكون له اسم وسعر صحيح");
+      }
+      if (choices.length === 0) return alert("أضف خيار واحد على الأقل");
+    }
+
     if (
-  hasVariants &&
+  hasVariants && itemType !== "choices" &&
   cleanNumber(priceSmall) === null &&
   cleanNumber(priceMedium) === null &&
   cleanNumber(priceLarge) === null
@@ -442,6 +484,16 @@ if (itemType === "burger") {
     });
   }
 }
+      // 🥤 قائمة خيارات
+      if (itemType === "choices") {
+        choices.forEach(c => variants.push({
+          product_id: product.id,
+          label: c.label,
+          price: c.price,
+          active: true
+        }));
+      }
+
       // 📦 أحجام
       if (itemType === "sizes") {
   if (cleanNumber(priceSmall) !== null) {
@@ -683,7 +735,10 @@ if (multiEmployees?.length) {
       .select("label")
       .eq("product_id", item.id);
 
-    if (variants?.some(v => v.label === "وجبة" || v.label === "عادي")) {
+    const known = ["وجبة", "عادي", "Small", "Medium", "Large"];
+    if (variants?.some(v => !known.includes(v.label))) {
+      itemType = "choices";
+    } else if (variants?.some(v => v.label === "وجبة" || v.label === "عادي")) {
       itemType = "burger";
     } else {
       itemType = "sizes";
@@ -698,7 +753,12 @@ if (multiEmployees?.length) {
 
   // إظهار / إخفاء الأحجام
   document.getElementById("variantsBox").style.display =
-    item.has_variants ? "block" : "none";
+    item.has_variants && itemType !== "choices" ? "block" : "none";
+  document.getElementById("choicesBox").style.display =
+    itemType === "choices" ? "block" : "none";
+  document.getElementById("itemPrice").style.display =
+    itemType === "normal" ? "block" : "none";
+  document.getElementById("choicesRows").innerHTML = "";
 
   // تنظيف أسعار الأحجام (لمنع بقايا قديمة)
   document.getElementById("priceSmall").value = "";
@@ -712,7 +772,10 @@ if (multiEmployees?.length) {
       .select("*")
       .eq("product_id", item.id);
 
-    variants?.forEach(v => {
+    if (itemType === "choices") {
+      variants.forEach(v => addChoiceRow(v.label, v.price));
+    }
+    if (itemType !== "choices") variants?.forEach(v => {
       if (v.label === "عادي" || v.label === "Small") {
         document.getElementById("priceSmall").value = v.price;
       }
@@ -789,6 +852,9 @@ function clearForm() {
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemImage").value = "";
   document.getElementById("variantsBox").style.display = "none";
+  document.getElementById("choicesBox").style.display = "none";
+  document.getElementById("choicesRows").innerHTML = "";
+  document.getElementById("itemPrice").style.display = "block";
   document.getElementById("priceSmall").value = "";
   document.getElementById("priceMedium").value = "";
   document.getElementById("priceLarge").value = "";
