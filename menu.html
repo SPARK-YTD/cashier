@@ -348,6 +348,11 @@
     .drink-name { flex:1; font-weight:700; color:#111827; font-size:15px; }
     .drink-price { color:#16A34A; font-weight:700; font-size:13px; white-space:nowrap; }
 
+    .lang-toggle { background:#EEF2FF; color:#3730A3; border:none; border-radius:16px; padding:6px 12px; font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; }
+    .lang-toggle-gate { position:absolute; top:14px; left:14px; z-index:2; background:#fff; }
+    body.lang-en { direction: ltr; }
+    body.lang-en .drink-opt { text-align:left; }
+
     /* ========== FILTERS ========== */
     .filters {
       display: flex;
@@ -870,12 +875,14 @@
 <!-- HEADER -->
 <div class="header">
   <span class="header-title">🍽️ القائمة</span>
+  <button class="lang-toggle" id="langBtn" type="button" aria-label="Switch to English">EN</button>
   <button class="my-orders-btn" id="myOrdersBtn" style="display:none;" onclick="openMyOrders()">📋 طلباتي</button>
   <button class="header-logout-btn" id="headerLogoutBtn" style="display:none;" onclick="logoutCustomerAccount()" title="تسجيل خروج">🚪</button>
 </div>
 
 <!-- PHONE GATE / حساب الزبون (رقم + رمز سري) -->
 <div class="phone-gate-overlay" id="phoneGateOverlay">
+  <button class="lang-toggle lang-toggle-gate" id="langBtnGate" type="button">EN</button>
   <div class="phone-gate-card" id="phoneGateCard">
     <!-- المحتوى ينحقن ديناميكياً حسب الخطوة (phone / login-pin / register-pin) -->
   </div>
@@ -1108,6 +1115,7 @@
   </div>
 </div>
 
+<script src="menu-i18n.js"></script>
 <script type="module">
   import { supabase } from "./supabase.js";
 
@@ -1699,6 +1707,7 @@
 
       if (error) throw error;
       allProducts = data || [];
+      if (window.MenuI18n) window.MenuI18n.setProducts(allProducts);
       renderFilters();
       renderProducts("all");
     } catch (error) {
