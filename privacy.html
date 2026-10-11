@@ -4,84 +4,43 @@
   <meta charset="UTF-8" />
   <title>سياسة الخصوصية - خذ لك بريك</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="legal-version" content="2026-10-11" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
-      color: #1f2937;
-      line-height: 1.9;
-    }
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 30px 20px 60px;
-    }
-    .header {
-      background: #0F172A;
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
-    }
-    .header p {
-      margin: 0;
-      opacity: 0.8;
-      font-size: 14px;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 20px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-    }
-    h2 {
-      font-size: 17px;
-      color: #0F172A;
-      border-right: 4px solid #F59E0B;
-      padding-right: 10px;
-      margin-top: 0;
-    }
-    ul {
-      padding-right: 20px;
-      margin: 10px 0;
-    }
-    li {
-      margin-bottom: 8px;
-    }
-    .contact-box {
-      background: #FFFBEB;
-      border: 1px solid #FDE68A;
-      border-radius: 10px;
-      padding: 16px;
-      margin-top: 10px;
-    }
-    .updated {
-      text-align: center;
-      font-size: 13px;
-      color: #6b7280;
-      margin-top: 30px;
-    }
-    a {
-      color: #D97706;
-      font-weight: 700;
-    }
-  </style>
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;background:#f3f4f6;margin:0;color:#1f2937;line-height:1.9}
+    .wrap{max-width:760px;margin:0 auto;padding:20px 20px 60px}
+    .header{background:#0F172A;color:#fff;padding:26px 20px 22px;text-align:center}
+    .header h1{margin:0 0 6px;font-size:22px}
+    .header p{margin:0;opacity:.8;font-size:14px}
+    .langbar{display:flex;gap:8px;justify-content:center;margin-top:14px}
+    .langbar button{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:20px;padding:6px 16px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
+    .langbar button.on{background:#F59E0B;border-color:#F59E0B;color:#111827}
+    .card{background:#fff;border-radius:12px;padding:24px;margin-top:20px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+    h2{font-size:17px;color:#0F172A;margin-top:0}
+    [dir=rtl] h2{border-right:4px solid #F59E0B;padding-right:10px}
+    [dir=ltr] h2{border-left:4px solid #F59E0B;padding-left:10px}
+    [dir=rtl] ul{padding-right:20px}
+    [dir=ltr] ul{padding-left:20px}
+    ul{margin:10px 0}li{margin-bottom:8px}
+    .contact-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:16px;margin-top:10px}
+    .updated{text-align:center;font-size:13px;color:#6b7280;margin-top:30px}
+    a{color:#D97706;font-weight:700}
+    .lang-block[hidden]{display:none}
+</style>
 </head>
 <body>
 
   <div class="header">
-    <h1>🔒 سياسة الخصوصية</h1>
-    <p>خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل</p>
+    <h1 id="hTitle">🔒 سياسة الخصوصية</h1>
+    <p id="hSub">خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل</p>
+    <div class="langbar" id="langbar" hidden>
+      <button type="button" data-l="ar">العربية</button>
+      <button type="button" data-l="en">English</button>
+    </div>
   </div>
 
   <div class="wrap">
-
+  <section class="lang-block" data-doc="privacy" data-version="2026-10-11" lang="ar" dir="rtl">
     <div class="card">
       <h2>1. من نحن</h2>
       <p>
@@ -170,6 +129,7 @@
       <ul>
         <li>رقم جوالك عشان ما تحتاج تسجل دخول كل مرة تفتح المنيو.</li>
         <li>وقت آخر نشاط لك، عشان نطبّق تسجيل الخروج التلقائي بعد 5 ساعات خمول.</li>
+        <li>اللغة اللي اخترتها للمنيو (عربي / English).</li>
       </ul>
       <p>
         هذي البيانات تبقى على جهازك أنت فقط، ونقدر نمسحها أو نلغي صلاحيتها عن بعد
@@ -198,7 +158,7 @@
       <div class="contact-box">
         لتقديم أي طلب من الطلبات أعلاه، تواصل معنا مباشرة عبر واتساب:
         <br />
-        <a id="waLink" href="#">جاري تحميل الرقم...</a>
+        <a class="waLink" href="#">جاري تحميل الرقم...</a>
       </div>
     </div>
 
@@ -238,41 +198,208 @@
       </p>
     </div>
 
-    <div class="updated">آخر تحديث: 10 أكتوبر 2026</div>
+    <div class="updated">آخر تحديث: 11 أكتوبر 2026</div>
+  </section>
+
+  <section class="lang-block" data-doc="privacy" data-version="2026-10-11" lang="en" dir="ltr">
+    <div class="card">
+      <h2>1. Who We Are</h2>
+      <p>
+        This policy covers the digital systems of <strong>"Get-Break" (خذ لك بريك)</strong>:
+        the internal cashier system, the QR menu ordering page for customers, and the driver
+        (delivery) app. This page explains what data we collect, why we collect it, where it is
+        stored, and how you can ask for it to be deleted.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>2. The Data We Collect</h2>
+      <p><strong>A) QR menu customers (menu.html):</strong></p>
+      <ul>
+        <li>Your mobile number, used as the identifier of your customer account.</li>
+        <li>Your name, as you type it when placing an order.</li>
+        <li>The date you accepted the Terms of Use and Privacy Policy when creating the account, and the version of the terms you accepted.</li>
+        <li>A 4-digit PIN — stored in encrypted (hashed) form and never as plain text; even our team cannot see it.</li>
+        <li>Your order history (items, prices, order time, order status) and any notes you write on an order.</li>
+        <li>For delivery orders: the delivery address you type (area, block, road, building), and your geographic location (GPS) <strong>only if you press the "Use my current location" button and allow location permission in your browser</strong>. We do not collect your location without your request.</li>
+        <li>The account creation date and your last activity time (used for automatic logout after 5 hours of inactivity).</li>
+      </ul>
+
+      <p><strong>B) Delivery drivers (delivery app):</strong></p>
+      <ul>
+        <li>The username and PIN of the driver account (created for the driver by the shop). The PIN is stored hashed and never as plain text.</li>
+        <li>Geographic location (GPS) — collected only while actively logged in to the app, to track the current delivery and let the shop's management know the driver's position. We keep only the last known location (replaced with each update) and keep no historical record of the driver's route.</li>
+      </ul>
+
+      <p><strong>C) Cashier staff (internal system):</strong></p>
+      <ul>
+        <li>Login details of the cashier account (only for staff authorised by the shop's management).</li>
+        <li>Staff data in the system: name, staff code, hashed PIN, and staff purchase and benefit records (such as vouchers and shift statements) that the staff member sees in their own dashboard.</li>
+      </ul>
+
+      <p>
+        <strong>What we do not collect:</strong> We do not collect payment card data (payment is made directly at the shop or on receipt), we do not collect photos or identity documents, and we do not use any advertising tracking or third-party analytics (such as Google Analytics or Facebook Pixel). Note: some pages load software libraries or fonts from external servers (such as jsDelivr, cdnjs and Google Fonts). These providers may see your device's IP address simply because files are loaded over the internet, and we send them no data from your account.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>3. Why We Collect This Data</h2>
+      <ul>
+        <li>To activate the customer account and link its orders into a single history it can return to.</li>
+        <li>To send and update the order status (being prepared, ready, delivered, etc.).</li>
+        <li>To track the delivery driver's location during an actual order, for operational purposes (knowing where the order is and helping the driver with directions).</li>
+        <li>To protect staff and driver accounts from unauthorised access.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Where the Data Is Stored</h2>
+      <p>
+        All data is stored on <strong>Supabase</strong> servers (an internationally licensed and trusted cloud database service
+        built on PostgreSQL). The website itself (the interface you interact with) is hosted on
+        <strong>GitHub Pages</strong> and <strong>Cloudflare Pages</strong>; these services host the interface files only and do not store your account data. We do not store any data on private devices or undocumented local servers.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>5. Sharing Data with Third Parties</h2>
+      <p>
+        <strong>We do not sell, rent or share your data with any third party for marketing purposes.</strong>
+        The only exception: if you press the "Forgot PIN" or "Contact us" button in the menu, the
+        WhatsApp app opens on your phone so you can send a message to the shop team — this is an action you choose
+        yourself by pressing the button, and WhatsApp has its own privacy policy, independent of this website.
+      </p>
+      <p>
+        <strong>Delivery route map:</strong> When the driver (or management) opens the route map for your order, the
+        coordinates of the delivery location you set and of the driver (numbers only, without your name or mobile number) are sent to a
+        public open-source routing service (OSRM) to calculate the route and estimated time, and map tiles are loaded from OpenStreetMap servers.
+        These parties are independent of us and have their own policies, and we store no data with them.
+      </p>
+      <p>
+        <strong>Driver route:</strong> The driver saves with your order the road line they chose to reach the delivery location (road coordinates only)
+        so the restaurant can follow the same route; it is deleted automatically when the order is delivered or closed.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>6. Storage on Your Device (Local Storage)</h2>
+      <p>
+        We use the browser's local storage (localStorage) only to save:
+      </p>
+      <ul>
+        <li>Your mobile number, so you do not need to log in every time you open the menu.</li>
+        <li>Your last activity time, so we can apply automatic logout after 5 hours of inactivity.</li>
+        <li>The language you chose for the menu (Arabic / English).</li>
+      </ul>
+      <p>
+        This data stays on your own device only, and we can clear it or revoke it remotely
+        (for example, if you ask for a PIN reset, you are logged out automatically on all devices).
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>7. Data Retention</h2>
+      <p>
+        We keep your account data and order history for as long as your account is active, for internal operational and accounting purposes.
+        If you ask for your account to be deleted, your personal data (mobile number, hashed PIN) is deleted within a
+        reasonable time of receiving the request, except for records that local law requires us to keep
+        for a certain period (such as accounting records).
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>8. Your Rights</h2>
+      <ul>
+        <li>You can ask for a copy of the data we store about you.</li>
+        <li>You can ask for your account and all your data to be deleted.</li>
+        <li>You can ask for any incorrect data to be corrected.</li>
+        <li>You can ask for your account PIN to be reset at any time through the shop.</li>
+      </ul>
+      <div class="contact-box">
+        To make any of the requests above, contact us directly via WhatsApp:
+        <br />
+        <a class="waLink" href="#">Loading number...</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>9. Data Security</h2>
+      <p>
+        We apply technical measures to protect your data, chiefly: encrypting your account PIN
+        (it is never stored as plain text), protecting database tables so no visitor can reach them
+        without permission, limiting access to the cashier and admin systems to authorised shop accounts,
+        storing login sessions in encrypted form, and temporarily suspending an account after several consecutive wrong login attempts.
+        Even so, as with any internet-connected system, we cannot guarantee 100% absolute security, and we keep
+        improving these measures.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>10. Children's Privacy</h2>
+      <p>
+        This system is not directed at children under 18, and we do not knowingly collect data from minors.
+        If we notice an account created by a minor, we take immediate action to delete the account and its associated data.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>11. Changes to this Policy</h2>
+      <p>
+        We may update this policy from time to time to keep up with any change in the service or in local regulations.
+        Any material update will be published on this same page with the last-updated date.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>12. Governing Law</h2>
+      <p>
+        This policy is governed by and construed in accordance with the laws of the <strong>Kingdom of Bahrain</strong>,
+        including Bahrain's Personal Data Protection Law (PDPL), Law No. 30 of 2018.
+      </p>
+    </div>
+
+    <div class="updated">Last updated: October 11, 2026</div>
+  </section>
 
   </div>
 
+  <script>
+    // اللغة: ?lang=en|ar، وإلا لغة المنيو المحفوظة، وإلا عربي. بدون جافاسكربت تظهر اللغتين.
+    (function () {
+      var T = { ar: ["🔒 سياسة الخصوصية", "خذ لك بريك (Get-Break) — نظام الكاشير وطلب المنيو والتوصيل", "سياسة الخصوصية - خذ لك بريك"], en: ["🔒 Privacy Policy", "Get-Break — cashier system, menu ordering and delivery", "Privacy Policy - Get Break"] };
+      var q = (location.search.match(/[?&]lang=(ar|en)/) || [])[1];
+      var saved = ""; try { saved = localStorage.getItem("menu_lang") || ""; } catch (e) {}
+      var lang = q || (saved === "en" ? "en" : "ar");
+      function apply(l) {
+        lang = l;
+        document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl";
+        [].forEach.call(document.querySelectorAll(".lang-block"), function (b) { b.hidden = b.lang !== l; });
+        [].forEach.call(document.querySelectorAll("#langbar button"), function (b) { b.classList.toggle("on", b.dataset.l === l); });
+        document.getElementById("hTitle").textContent = T[l][0];
+        document.getElementById("hSub").textContent = T[l][1];
+        document.title = T[l][2];
+      }
+      document.getElementById("langbar").hidden = false;
+      [].forEach.call(document.querySelectorAll("#langbar button"), function (b) { b.onclick = function () { apply(b.dataset.l); }; });
+      apply(lang);
+    })();
+  </script>
+
   <script type="module">
     import { supabase } from "./supabase.js";
-
     async function loadSupportPhone() {
-      const link = document.getElementById("waLink");
+      const links = document.querySelectorAll(".waLink");
+      const fallback = { ar: "تواصل معنا عبر المحل مباشرة", en: "Contact us through the shop directly" };
+      const set = (txt) => links.forEach(l => { l.textContent = txt[l.closest(".lang-block").lang]; });
       try {
-        const { data, error } = await supabase
-          .from("restaurant_settings")
-          .select("support_whatsapp_phone, whatsapp_phone")
-          .eq("id", 1)
-          .single();
-
-        if (error || !data) {
-          link.textContent = "تواصل معنا عبر المحل مباشرة";
-          return;
-        }
-
-        const phone = data.support_whatsapp_phone || data.whatsapp_phone;
-        if (!phone) {
-          link.textContent = "تواصل معنا عبر المحل مباشرة";
-          return;
-        }
-
+        const { data, error } = await supabase.from("restaurant_settings")
+          .select("support_whatsapp_phone, whatsapp_phone").eq("id", 1).single();
+        const phone = !error && data && (data.support_whatsapp_phone || data.whatsapp_phone);
+        if (!phone) return set(fallback);
         const digits = phone.replace(/[^\d]/g, "");
-        link.href = `https://wa.me/${digits}`;
-        link.textContent = `واتساب: ${phone}`;
-      } catch (e) {
-        link.textContent = "تواصل معنا عبر المحل مباشرة";
-      }
+        links.forEach(l => { l.href = "https://wa.me/" + digits; l.textContent = (l.closest(".lang-block").lang === "en" ? "WhatsApp: " : "واتساب: ") + phone; });
+      } catch (e) { set(fallback); }
     }
-
     loadSupportPhone();
   </script>
 
