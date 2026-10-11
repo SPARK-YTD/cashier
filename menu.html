@@ -1852,6 +1852,13 @@
       const pairs = [];
       (v.data || []).forEach(r => { if (r.label && r.label_en) pairs.push({ ar: r.label, en: r.label_en }); });
       (a.data || []).forEach(r => { if (r.name && r.name_en) pairs.push({ ar: r.name, en: r.name_en }); });
+      // الإضافات الداخلية (القابلة للإزالة): extras_list_en سطر بسطر مع extras_list
+      (allProducts || []).forEach(p => {
+        if (!p.extras_list || !p.extras_list_en) return;
+        const ar = p.extras_list.split("\n").map(e => e.trim()).filter(Boolean);
+        const en = p.extras_list_en.split("\n").map(e => e.trim());
+        ar.forEach((t, i) => { if (en[i]) pairs.push({ ar: t, en: en[i] }); });
+      });
       if (window.MenuI18n && window.MenuI18n.setExtraNames) window.MenuI18n.setExtraNames(pairs);
     } catch (e) { console.warn("extra names:", e); }
   }
