@@ -175,24 +175,47 @@ window.login = async function () {
 /* ===============================
    رفع صورة (آمن)
 ================================ */
+// تصغير الصورة وتحويلها JPEG (يحل مشاكل الحجم الكبير وصيغ الجوال مثل HEIC)
+async function shrinkImage(file, maxSide = 1200, quality = 0.85) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", quality));
+    return blob && blob.size > 0 ? blob : null;
+  } catch (e) {
+    console.warn("shrinkImage failed, using original", e);
+    return null;
+  }
+}
+
 async function uploadImage(file) {
   try {
     // ⛔ منع أي ملف غير صورة
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/") && !/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)) {
       alert("❌ الملف لازم يكون صورة");
       return null;
     }
 
-    const ext = file.name.split(".").pop().toLowerCase();
+    const small = await shrinkImage(file);
+    const body = small || file;
+    const type = small ? "image/jpeg" : (file.type || "image/jpeg");
+    const ext = small ? "jpg" : (file.name.split(".").pop().toLowerCase() || "jpg");
     const path = `products/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const { error } = await supabase.storage
-  .from("products")
-  .upload(path, file, {
-    cacheControl: "3600",
-    upsert: false,
-    contentType: file.type
-  });
+      .from("products")
+      .upload(path, body, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: type
+      });
 
     if (error) throw error;
 
@@ -203,7 +226,7 @@ async function uploadImage(file) {
 
   } catch (err) {
     console.error("UPLOAD IMAGE ERROR:", err);
-    alert("❌ فشل رفع الصورة");
+    alert("❌ فشل رفع الصورة\n\nالسبب: " + (err?.message || err?.error || String(err)));
     return null;
   }
 }
