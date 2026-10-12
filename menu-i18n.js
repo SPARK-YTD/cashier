@@ -206,6 +206,9 @@
 
     // ===== Stage 10: حالة المطعم =====
     "المنيو للعرض فقط حالياً": "Menu is view-only right now",
+    "👆 اختر النوع": "👆 Choose a type",
+    "👆 اختر الحجم": "👆 Choose a size",
+    "متعدد الخيارات": "Multiple options",
     "استقبال الطلبات من المنيو متوقف مؤقتاً. تقدر تتصفح الأصناف والأسعار، وللطلب تواصل معنا أو زرنا في العربة.": "Ordering from the menu is temporarily paused. You can browse items and prices; to order, contact us or visit the cart.",
     "المنيو للعرض فقط حالياً — استقبال الطلبات متوقف مؤقتاً": "The menu is view-only right now — ordering is temporarily paused",
     "👁️ الطلب متوقف حالياً": "👁️ Ordering paused",
@@ -222,6 +225,7 @@
 
   // أنماط فيها أرقام (تُطبّق قبل القاموس)
   var DYN = [
+    [/من (\d+(?:\.\d+)?) د\.ب/g, function (_, n) { return "From " + n + " BHD"; }],
     [/نتوقع نفتح الطلبات خلال حوالي (\d+) دقيقة\./g, function (_, n) { return "We expect to reopen orders in about " + n + " min."; }],
     [/العربة مشغولة حالياً، حاول بعد حوالي (\d+) دقيقة/g, function (_, n) { return "We're busy right now, please try again in about " + n + " min"; }]
   ];
