@@ -206,8 +206,7 @@
 
     // ===== Stage 10: حالة المطعم =====
     "المنيو للعرض فقط حالياً": "Menu is view-only right now",
-    "👆 اختر النوع": "👆 Choose a type",
-    "👆 اختر الحجم": "👆 Choose a size",
+    "👆 قم بالاختيار": "👆 Tap to choose",
     "متعدد الخيارات": "Multiple options",
     "استقبال الطلبات من المنيو متوقف مؤقتاً. تقدر تتصفح الأصناف والأسعار، وللطلب تواصل معنا أو زرنا في العربة.": "Ordering from the menu is temporarily paused. You can browse items and prices; to order, contact us or visit the cart.",
     "المنيو للعرض فقط حالياً — استقبال الطلبات متوقف مؤقتاً": "The menu is view-only right now — ordering is temporarily paused",
