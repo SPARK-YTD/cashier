@@ -1849,7 +1849,7 @@
     }
   }
 
-  // 💲 الصنف اللي له أحجام/أنواع: بدل "0.000 د.ب" نعرض "من X د.ب" + "اختر النوع/الحجم"
+  // 💲 الصنف اللي له أحجام/أنواع: بدل "0.000 د.ب" نعرض "من X د.ب" + "قم بالاختيار"
   let variantHint = {};   // product_id -> { min, kind }
   async function loadVariantHints() {
     variantHint = {};
@@ -1925,7 +1925,7 @@
         <button type="button" class="drink-opt" onclick="pickDrink('${p.id}')">
           <span class="drink-img">${p.image_url ? `<img src="${p.image_url}" alt="">` : "🥤"}</span>
           <span class="drink-name">${escapeHtmlSafe(p.name || "مشروب")}</span>
-          <span class="drink-price">${parseFloat(p.price || 0).toFixed(3)} د.ب</span>
+          <span class="drink-price">${p.has_variants ? variantFromHtml(p) : parseFloat(p.price || 0).toFixed(3) + " د.ب"}</span>
         </button>
       `).join("");
     }
@@ -1969,7 +1969,7 @@
         <div class="product-info">
           <div class="product-name">${p.name || "صنف بدون اسم"}</div>
           ${p.has_variants
-            ? `<div class="product-price">${variantFromHtml(p)}</div><div class="product-choose">${variantHint[p.id] && variantHint[p.id].kind === "choices" ? "👆 اختر النوع" : "👆 اختر الحجم"}</div>`
+            ? `<div class="product-price">${variantFromHtml(p)}</div><div class="product-choose">👆 قم بالاختيار</div>`
             : `<div class="product-price">${parseFloat(p.price || 0).toFixed(3)} د.ب</div>`}
         </div>
       </div>
