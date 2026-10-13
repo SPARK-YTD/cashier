@@ -393,6 +393,15 @@
     </div>
     <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 0; padding-top:14px; border-top:1px solid #E5E7EB;">
       <div>
+        <label class="setting-label" style="margin-bottom:4px;">🇸🇦 السماح بأرقام السعودية</label>
+        <div class="setting-hint" id="saudiHint">جاري التحميل...</div>
+      </div>
+      <button class="toggle-switch" id="saudiToggle" onclick="toggleSaudi()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+    <div class="setting-group" style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 0; padding-top:14px; border-top:1px solid #E5E7EB;">
+      <div>
         <label class="setting-label" style="margin-bottom:4px;">تفعيل التوصيل</label>
         <div class="setting-hint" id="deliveryHint">جاري التحميل...</div>
       </div>
@@ -486,6 +495,7 @@
     await loadOrderingStatus();
     await loadDeliveryStatus();
     await loadViewOnlyStatus();
+    await loadSaudiStatus();
     await loadBusyStatus();
     setInterval(loadBusyStatus, 20000);
   });
@@ -626,6 +636,44 @@
     } catch (e) {
       console.error("view_only update:", e);
       alert("❌ خطأ في تحديث الوضع");
+    } finally { toggle.disabled = false; }
+  };
+
+  // ========== SAUDI PHONES (السماح بأرقام السعودية) ==========
+  function saudiHintText(on) {
+    return on
+      ? "🇸🇦 مفعّل — الزبون السعودي يقدر يسجّل ويطلب برقمه (05XXXXXXXX أو +9665XXXXXXXX) ويتوصل له داخل البحرين"
+      : "مطفي — المنيو يقبل الأرقام البحرينية فقط";
+  }
+  async function loadSaudiStatus() {
+    const toggle = document.getElementById("saudiToggle");
+    const hint = document.getElementById("saudiHint");
+    try {
+      const { data, error } = await supabase.from("restaurant_settings").select("allow_saudi_phones").eq("id", 1).single();
+      if (error) throw error;
+      const on = data.allow_saudi_phones === true;
+      toggle.classList.toggle("active", on);
+      hint.textContent = saudiHintText(on);
+    } catch (e) {
+      console.error("allow_saudi_phones:", e);
+      toggle.disabled = true;
+      hint.textContent = "❌ شغّل ملف sql_stage16_saudi_phones.sql في Supabase أولاً";
+    }
+  }
+  window.toggleSaudi = async () => {
+    const toggle = document.getElementById("saudiToggle");
+    const hint = document.getElementById("saudiHint");
+    const newValue = !toggle.classList.contains("active");
+    toggle.disabled = true;
+    try {
+      const { error } = await supabase.from("restaurant_settings")
+        .update({ allow_saudi_phones: newValue, updated_at: new Date().toISOString() }).eq("id", 1);
+      if (error) throw error;
+      toggle.classList.toggle("active", newValue);
+      hint.textContent = saudiHintText(newValue);
+    } catch (e) {
+      console.error("allow_saudi_phones update:", e);
+      alert("❌ خطأ في تحديث الخيار");
     } finally { toggle.disabled = false; }
   };
 
