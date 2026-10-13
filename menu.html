@@ -1032,6 +1032,7 @@
       <div class="form-group">
         <label>رقم الهاتف *</label>
         <input type="tel" id="customerPhone" placeholder="33123456 أو +97333123456">
+        <div class="saudi-hint" style="display:none;font-size:12px;color:#166534;background:#DCFCE7;border-radius:6px;padding:6px 8px;margin-top:6px;">🇸🇦 أرقام السعودية مقبولة: 05XXXXXXXX أو +9665XXXXXXXX</div>
       </div>
 
       <div class="form-group">
@@ -1177,6 +1178,24 @@
   }
   let pendingGatePhone = null; // الرقم اللي قيد تسجيل الدخول/الإنشاء بالخطوة الحالية
 
+  // 🇸🇦 أرقام السعودية: 05XXXXXXXX / 5XXXXXXXX / 9665XXXXXXXX / +9665XXXXXXXX / 009665XXXXXXXX
+  function isSaudiPhone(raw) {
+    const p = String(raw || "").replace(/[\s-]/g, "");
+    return /^(\+|00)?9665\d{8}$/.test(p) || /^05\d{8}$/.test(p) || /^5\d{8}$/.test(p);
+  }
+  function isBahrainPhone(raw) {
+    return /^(\d{7,8}|\+973\d{8})$/.test(String(raw || "").replace(/[\s-]/g, ""));
+  }
+  function applyPhoneHints() {
+    document.querySelectorAll(".saudi-hint").forEach(el => { el.style.display = allowSaudi ? "block" : "none"; });
+  }
+  // رسالة خطأ من كود السيرفر الخاص بالأرقام (أو null لو ما هو خطأ رقم)
+  function phoneErrorMessage(code) {
+    if (code === "SAUDI_DISABLED") { allowSaudi = false; applyPhoneHints(); return "⚠️ الطلب بأرقام السعودية غير مفعّل حالياً، استخدم رقم بحريني"; }
+    if (code === "COUNTRY_NOT_ALLOWED") return "⚠️ المنيو يقبل الأرقام البحرينية فقط حالياً";
+    return null;
+  }
+
   function normalizeGatePhone(raw) {
     return (raw || "").replace(/[^\d+]/g, "");
   }
@@ -1196,6 +1215,7 @@
 
   function renderGateStep(step, data = {}) {
     renderGateStepCore(step, data);
+    applyPhoneHints();
     const gateCard = document.getElementById("phoneGateCard");
     if (gateCard && !gateCard.querySelector(".legal-mini")) {
       gateCard.insertAdjacentHTML("beforeend",
@@ -1215,6 +1235,7 @@
         <h2>👋 أهلاً بك</h2>
         <p>أدخل رقم هاتفك عشان تدخل المنيو</p>
         <input type="tel" id="gatePhoneInput" placeholder="33123456" inputmode="numeric" autofocus>
+        <div class="saudi-hint" style="display:none;font-size:12px;color:#166534;background:#DCFCE7;border-radius:6px;padding:6px 8px;margin-top:6px;">🇸🇦 أرقام السعودية مقبولة: 05XXXXXXXX أو +9665XXXXXXXX</div>
         <div class="phone-gate-error" id="gateError"></div>
         <button class="phone-gate-btn" onclick="submitGatePhone()">متابعة</button>
       `;
@@ -1299,7 +1320,7 @@
 
       if (error) throw error;
       if (!res || res.ok !== true) {
-        errorEl.textContent = "⚠️ أدخل رقم هاتف صحيح";
+        errorEl.textContent = phoneErrorMessage(res && res.error) || "⚠️ أدخل رقم هاتف صحيح";
         return;
       }
 
@@ -1340,6 +1361,8 @@
         } else if (res && res.error === "NEEDS_RESET") {
           renderGateStep("reset-pin", { phone: pendingGatePhone });
           return;
+        } else if (phoneErrorMessage(res && res.error)) {
+          errorEl.textContent = phoneErrorMessage(res.error);
         } else {
           errorEl.textContent = "❌ رمز خاطئ، حاول مرة ثانية";
         }
@@ -1399,6 +1422,8 @@
           errorEl.textContent = "⚠️ هذا الرقم عنده حساب، ارجع وادخل الرمز السري";
         } else if (res && res.error === "TERMS_REQUIRED") {
           errorEl.textContent = "⚠️ لازم توافق على شروط الاستخدام وسياسة الخصوصية عشان تكمّل";
+        } else if (res && phoneErrorMessage(res.error)) {
+          errorEl.textContent = phoneErrorMessage(res.error);
         } else {
           errorEl.textContent = "⚠️ تعذّر إنشاء الحساب، تأكد من الرقم والرمز";
         }
@@ -1490,6 +1515,7 @@
   let currentAddonsData = {};
   let orderingEnabled = true; // ✅ افتراضياً مفعّل لحين التحقق
   let viewOnly = false;      // 👁️ المنيو للعرض فقط
+  let allowSaudi = false;    // 🇸🇦 قبول أرقام السعودية (يتحكم فيها السيرفر من إدارة المنيو)
   let busyUntilMs = 0;       // 🔥 العربة مشغولة لين هذا الوقت (وقت السيرفر محوّل لساعة الجهاز)
   let highLoad = false;      // ⏳ ضغط طلبات (إشعار تلقائي)
   let busyTicker = null;
@@ -1702,6 +1728,7 @@
         orderingEnabled = st.ordering_enabled !== false;
         deliveryEnabled = st.delivery_enabled !== false;
         viewOnly = st.view_only === true;
+        allowSaudi = st.allow_saudi_phones === true;
         highLoad = st.high_load === true;
         const mins = Number(st.busy_minutes || 0);
         busyUntilMs = st.busy === true && mins > 0 ? Date.now() + mins * 60000 : 0;
@@ -1731,13 +1758,14 @@
         deliveryEnabled = data.delivery_enabled !== false;
         whatsappPhone = data.whatsapp_phone || null;
         supportWhatsappPhone = data.support_whatsapp_phone || null;
-        viewOnly = false; busyUntilMs = 0; highLoad = false;
+        viewOnly = false; busyUntilMs = 0; highLoad = false; allowSaudi = false;
       } catch (error) {
         console.error("Error checking ordering status:", error);
         orderingEnabled = true; // في حال الخطأ، ما نمنع الطلبات
       }
     }
     renderStatus();
+    applyPhoneHints();
   }
   window.refreshMenuStatus = checkOrderingEnabled;
 
@@ -2607,8 +2635,10 @@
       return;
     }
 
-    if (!phone || !/^(\d{7,8}|\+973\d{8})$/.test(phone.replace(/[\s-]/g, ""))) {
-      alert("❌ رقم الهاتف غير صحيح");
+    if (!phone || !(isBahrainPhone(phone) || (allowSaudi && isSaudiPhone(phone)))) {
+      alert(!allowSaudi && isSaudiPhone(phone)
+        ? "⚠️ الطلب بأرقام السعودية غير مفعّل حالياً، استخدم رقم بحريني"
+        : "❌ رقم الهاتف غير صحيح");
       return;
     }
 
@@ -2745,6 +2775,10 @@
           const bad = Number(submitRes.index);
           if (Number.isInteger(bad) && cart[bad]) { cart.splice(bad, 1); saveCart(); updateBadge(); try { updateOrderTotal(); } catch (e) {} }
           throw new Error("صنف في سلتك لم يعد متوفراً وتم حذفه، راجع السلة");
+        }
+        if (code === "PHONE_NOT_ALLOWED") {
+          allowSaudi = false; applyPhoneHints();
+          throw new Error("الطلب بأرقام السعودية غير مفعّل حالياً، سجّل بحساب برقم بحريني");
         }
         if (code === "BAD_AREA") throw new Error("المنطقة المختارة غير صحيحة، اختر المنطقة من جديد");
         throw new Error("تعذّر إرسال الطلب، تأكد من البيانات وحاول مرة ثانية");
