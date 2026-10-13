@@ -2727,6 +2727,26 @@
           busyUntilMs = Date.now() + Number(submitRes.busy_minutes || 10) * 60000; renderStatus();
           throw new Error("العربة مشغولة حالياً، حاول بعد حوالي " + Number(submitRes.busy_minutes || 10) + " دقيقة");
         }
+        if (code === "PRICE_CHANGED") {
+          // السيرفر أعاد حساب الأسعار: نحدّث السلة بأسعاره ونطلب من الزبون مراجعة الطلب
+          const fixed = Array.isArray(submitRes.items) ? submitRes.items : [];
+          fixed.forEach((fx, i) => {
+            if (!cart[i] || !fx) return;
+            cart[i].price = parseFloat(fx.price) || 0;
+            (cart[i].addons || []).forEach((a, j) => {
+              if (fx.addons && fx.addons[j]) a.price = parseFloat(fx.addons[j].price) || 0;
+            });
+          });
+          saveCart(); updateBadge();
+          try { updateOrderTotal(); } catch (e) {}
+          throw new Error("تم تحديث الأسعار، راجع السلة ثم أكّد الطلب من جديد");
+        }
+        if (code === "ITEM_UNAVAILABLE") {
+          const bad = Number(submitRes.index);
+          if (Number.isInteger(bad) && cart[bad]) { cart.splice(bad, 1); saveCart(); updateBadge(); try { updateOrderTotal(); } catch (e) {} }
+          throw new Error("صنف في سلتك لم يعد متوفراً وتم حذفه، راجع السلة");
+        }
+        if (code === "BAD_AREA") throw new Error("المنطقة المختارة غير صحيحة، اختر المنطقة من جديد");
         throw new Error("تعذّر إرسال الطلب، تأكد من البيانات وحاول مرة ثانية");
       }
       if (submitRes.high_load === true) { highLoad = true; }
