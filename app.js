@@ -1439,8 +1439,10 @@ div.innerHTML = `
         </button>
       `
       : order.kitchen_ready
-        ? `<div style="color:#16a34a;font-weight:800">🟢 جاهز</div>`
-        : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>`
+        ? `<div style="color:#16a34a;font-weight:800">${order.is_delivery ? "🟢 جاهز للتوصيل" : "🟢 جاهز للاستلام"}</div>
+           <button onclick="undoReady('${order.id}')" style="background:#E5E7EB;color:#374151;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin:2px 0;" title="لو ضغطت جاهز بالغلط">↩️ تراجع</button>`
+        : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>
+           <button onclick="markReady('${order.id}')" style="background:#16a34a;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:800;cursor:pointer;margin:4px 0;">${order.is_delivery ? "🛵 جاهز للتوصيل" : "✅ جاهز للاستلام"}</button>`
   }
 
   ${parseFloat(order.total || 0).toFixed(3)} د.ب<br>
@@ -1494,6 +1496,52 @@ div.innerHTML = `
       box.appendChild(div);
     });
   }
+  // 🛵 المطعم يضغط "جاهز" بعد ما يخلص التحضير: يتسجل الوقت (لتحليل الأداء) ويطلع إشعار للديلفري بصفحته
+  // نتحمّل لو SQL مرحلة 14 ما انشغّل بعد: نحفظ kitchen_ready بس بدون ready_at
+  window.markReady = async function (orderId) {
+    const order = activeOrders.find(o => o.id === orderId);
+    if (!order || order.kitchen_ready) return;
+    let { error } = await supabase
+      .from("orders")
+      .update({ kitchen_ready: true, ready_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .eq("kitchen_ready", false);
+    if (error && /ready_at/i.test(error.message || "")) {
+      ({ error } = await supabase
+        .from("orders")
+        .update({ kitchen_ready: true })
+        .eq("id", orderId)
+        .eq("kitchen_ready", false));
+    }
+    if (error) {
+      console.error(error);
+      alert("❌ تعذر تسجيل الجاهزية");
+      return;
+    }
+    await loadActiveOrders();
+  };
+
+  // ↩️ تراجع لو انضغط جاهز بالغلط (فقط قبل ما الطلب يتسلّم)
+  window.undoReady = async function (orderId) {
+    const order = activeOrders.find(o => o.id === orderId);
+    if (!order || !order.kitchen_ready) return;
+    if (order.is_delivered) return;
+    if (!confirm("إرجاع الطلب إلى «قيد التحضير»؟")) return;
+    let { error } = await supabase
+      .from("orders")
+      .update({ kitchen_ready: false, ready_at: null })
+      .eq("id", orderId);
+    if (error && /ready_at/i.test(error.message || "")) {
+      ({ error } = await supabase.from("orders").update({ kitchen_ready: false }).eq("id", orderId));
+    }
+    if (error) {
+      console.error(error);
+      alert("❌ تعذر التراجع");
+      return;
+    }
+    await loadActiveOrders();
+  };
+
   // ✅ إخفاء طلب الموظف من الجارية
   window.markEmployeeDone = async function (orderId) {
     await supabase
