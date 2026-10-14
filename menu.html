@@ -1951,7 +1951,7 @@
     } else {
       body.innerHTML = drinks.map(p => `
         <button type="button" class="drink-opt" onclick="pickDrink('${p.id}')">
-          <span class="drink-img">${p.image_url ? `<img src="${p.image_url}" alt="">` : "🥤"}</span>
+          <span class="drink-img">${p.image_url ? `<img loading="lazy" decoding="async" src="${p.image_url}" alt="">` : "🥤"}</span>
           <span class="drink-name">${escapeHtmlSafe(p.name || "مشروب")}</span>
           <span class="drink-price">${p.has_variants ? variantFromHtml(p) : parseFloat(p.price || 0).toFixed(3) + " د.ب"}</span>
         </button>
@@ -1992,7 +1992,7 @@
     const html = products.map(p => `
       <div class="product-card" onclick="addToCart('${p.id}', '${(p.name || "صنف").replace(/'/g, "\\'")}', ${p.price || 0})">
         <div class="product-img">
-          ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}">` : "🍽️"}
+          ${p.image_url ? `<img loading="lazy" decoding="async" src="${p.image_url}" alt="${p.name}">` : "🍽️"}
         </div>
         <div class="product-info">
           <div class="product-name">${p.name || "صنف بدون اسم"}</div>
