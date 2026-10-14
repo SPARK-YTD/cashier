@@ -677,7 +677,7 @@ async function loadItems() {
             : ""
         }
 
-        <strong>#{index + 1} — ${item.name}</strong><br>
+        <strong>#${index + 1} — ${item.name}</strong><br>
 
         ${item.has_variants ? "متعدد الأحجام" : `${Number(item.price).toFixed(3)} د.ب`} — ${item.category}<br>
         الحالة: ${item.active ? "نشط" : "موقوف"}<br><br>
@@ -716,6 +716,8 @@ window.toggleItem = async function (id, state) {
   window.deleteItem = async function (id) {
   if (!confirm("هل أنت متأكد من الحذف؟ (يتحذف الصنف نهائياً، وسجل المبيعات القديمة يبقى كما هو)")) return;
 
+  // نحتفظ برابط الصورة عشان نحذف ملفها من التخزين بعد نجاح الحذف
+  const { data: prodRow } = await supabase.from("products").select("image_url").eq("id", id).maybeSingle();
   // نحذف التوابع ثم الصنف، ونوقف عند أول خطأ ونعرض سببه بدل ما يفشل بصمت
   const steps = ["product_variants", "product_consumables", "product_employees", "product_addons"];
   for (const t of steps) {
@@ -733,6 +735,16 @@ window.toggleItem = async function (id, state) {
       ? "❌ الصنف مرتبط بطلبات قديمة. شغّل ملف sql_stage13_safe_product_delete.sql في Supabase مرة وحدة وبعدها الحذف يشتغل."
       : "❌ تعذر الحذف: " + pErr.message);
   }
+
+  // حذف ملف الصورة من التخزين (يتجاهل الفشل — الصنف انحذف أصلاً)
+  try {
+    const marker = "/storage/v1/object/public/products/";
+    const u = prodRow && prodRow.image_url ? String(prodRow.image_url).replace(/"/g, "").trim() : "";
+    if (u.includes(marker)) {
+      const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("image_url", prodRow.image_url);
+      if (!count) await supabase.storage.from("products").remove([decodeURIComponent(u.split(marker)[1].split("?")[0])]);
+    }
+  } catch (e) { console.warn("image cleanup skipped", e); }
 
   loadItems();
 };
