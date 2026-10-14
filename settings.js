@@ -317,6 +317,7 @@ window.addItem = async function () {
 
 /* === حفظ الصنف === */
 let query;
+let replacedOldImage = null;
 
 if (editingItemId) {
   // ✏️ تعديل — نحافظ على الصورة والترتيب
@@ -325,6 +326,7 @@ if (editingItemId) {
     .select("image_url, sort_order")
     .eq("id", editingItemId)
     .single();
+  if (image_url && oldItem?.image_url && oldItem.image_url !== image_url) replacedOldImage = oldItem.image_url;
 
   query = supabase
     .from("products")
@@ -366,6 +368,9 @@ query = supabase
 
 const { data: product, error } = await query.select().single();
 if (error) throw error;
+
+// الصورة القديمة انبدلت: نحذف ملفها من التخزين (بعد نجاح الحفظ فقط)
+if (replacedOldImage) await removeStoredImageIfUnused(replacedOldImage);
 
 // ===============================
 // حفظ الموظفين المتعددين (نسخة آمنة 100%)
@@ -737,14 +742,7 @@ window.toggleItem = async function (id, state) {
   }
 
   // حذف ملف الصورة من التخزين (يتجاهل الفشل — الصنف انحذف أصلاً)
-  try {
-    const marker = "/storage/v1/object/public/products/";
-    const u = prodRow && prodRow.image_url ? String(prodRow.image_url).replace(/"/g, "").trim() : "";
-    if (u.includes(marker)) {
-      const { count } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("image_url", prodRow.image_url);
-      if (!count) await supabase.storage.from("products").remove([decodeURIComponent(u.split(marker)[1].split("?")[0])]);
-    }
-  } catch (e) { console.warn("image cleanup skipped", e); }
+  if (prodRow && prodRow.image_url) await removeStoredImageIfUnused(prodRow.image_url);
 
   loadItems();
 };
@@ -1022,4 +1020,60 @@ window.compressOldImages = async function () {
   }
   say(`✅ انتهى: انضغط ${done}، تُرك ${skipped}، فشل ${failed}. التوفير ≈ ${(savedBytes / 1048576).toFixed(1)} MB`);
   if (typeof loadItems === "function") await loadItems();
+};
+
+
+const IMG_MARKER = "/storage/v1/object/public/products/";
+function storagePathOf(url) {
+  const u = url ? String(url).replace(/"/g, "").trim() : "";
+  return u.includes(IMG_MARKER) ? decodeURIComponent(u.split(IMG_MARKER)[1].split("?")[0]) : null;
+}
+// يحذف ملف الصورة من التخزين فقط إذا ما فيه صنف ثاني يستخدمها
+async function removeStoredImageIfUnused(url) {
+  try {
+    const path = storagePathOf(url);
+    if (!path) return;
+    const { count, error } = await supabase.from("products").select("id", { count: "exact", head: true }).eq("image_url", url);
+    if (error || count) return;
+    await supabase.storage.from("products").remove([path]);
+  } catch (e) { console.warn("image cleanup skipped", e); }
+}
+
+/* ===============================
+   تنظيف الصور اليتيمة (ملفات في التخزين ما يستخدمها أي صنف)
+   خطوتين: معاينة أولاً، ثم تأكيد الحذف.
+================================ */
+window.cleanOrphanImages = async function () {
+  const out = document.getElementById("compressStatus");
+  const say = (m) => { if (out) out.textContent = m; console.log(m); };
+
+  const { data: prods, error: pe } = await supabase.from("products").select("image_url");
+  if (pe || !prods) { say("❌ تعذر قراءة الأصناف: " + (pe && pe.message)); return; }
+  const used = new Set(prods.map(p => storagePathOf(p.image_url)).filter(Boolean));
+  if (!used.size) { say("⛔ ما لقيت أي صنف له صورة — أوقفت العملية للأمان."); return; }
+
+  const files = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await supabase.storage.from("products").list("products", { limit: 100, offset });
+    if (error) { say("❌ تعذر قراءة التخزين: " + error.message); return; }
+    if (!data || !data.length) break;
+    files.push(...data);
+    if (data.length < 100) break;
+  }
+  const orphans = files.filter(f => f.name && f.name !== ".emptyFolderPlaceholder" && f.id && !used.has("products/" + f.name));
+  const bytes = orphans.reduce((n, f) => n + Number((f.metadata && f.metadata.size) || 0), 0);
+  if (!orphans.length) { say("✅ ما فيه صور يتيمة."); return; }
+
+  if (!confirm(`لقيت ${orphans.length} ملف يتيم (≈ ${(bytes / 1048576).toFixed(1)} MB) ما يستخدمه أي صنف.\nنحذفها نهائياً؟`)) {
+    say(`ℹ️ ما انحذف شي. اليتيمة: ${orphans.length} ملف (≈ ${(bytes / 1048576).toFixed(1)} MB)`);
+    return;
+  }
+  let removed = 0;
+  const paths = orphans.map(f => "products/" + f.name);
+  for (let i = 0; i < paths.length; i += 20) {
+    const { error } = await supabase.storage.from("products").remove(paths.slice(i, i + 20));
+    if (error) { say(`❌ توقف الحذف بعد ${removed} ملف: ${error.message}`); return; }
+    removed += Math.min(20, paths.length - i);
+  }
+  say(`✅ انحذف ${removed} ملف يتيم (≈ ${(bytes / 1048576).toFixed(1)} MB)`);
 };
