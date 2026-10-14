@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const div = document.createElement("div");
       div.className = "item";
       div.innerHTML = `
-  ${item.image_url ? `<img src="${cleanImageUrl(item.image_url)}" class="cashier-item-img">` : ""}
+  ${item.image_url ? `<img loading="lazy" decoding="async" src="${cleanImageUrl(item.image_url)}" class="cashier-item-img">` : ""}
         <strong>${item.name}</strong>
         <span>${item.has_variants ? "قم بالاختيار" : item.price.toFixed(3) + " د.ب"}</span>
       `;
