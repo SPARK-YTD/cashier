@@ -2924,7 +2924,22 @@
     return { cls: "pending", label: "🕐 قيد الانتظار - بانتظار موافقة المطعم" };
   }
 
-  function renderOrderCard({ id, invoiceLabel, dateIso, statusInfo, itemsHtml, total, isActive }) {
+  const FEE_NAME = "🚚 رسوم التوصيل";
+  // ✅ الأصناف الحالية: items_live (من جدول order_items بعد تعديل الكاشير) وإلا النسخة المحفوظة، دائماً بدون بند الرسوم
+  function liveItemsOf(data) {
+    const src = Array.isArray(data.items_live) && data.items_live.length ? data.items_live : data.order_items;
+    return (Array.isArray(src) ? src : []).filter(i => i && (i.name || i.productName) !== FEE_NAME);
+  }
+  function itemsSumOf(items) {
+    return items.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
+  }
+
+  function renderOrderCard({ id, invoiceLabel, dateIso, statusInfo, itemsHtml, total, isActive, fee, itemsSum }) {
+    const hasFee = fee !== undefined && fee !== null && Number(fee) > 0;
+    const breakdown = hasFee
+      ? `<div class="order-total-row" style="font-weight:600;border-top:none;margin-top:6px;padding-top:0;"><span>الأصناف</span><span>${Number(itemsSum || 0).toFixed(3)} د.ب</span></div>
+          <div class="order-total-row" style="font-weight:600;border-top:none;margin-top:2px;padding-top:0;"><span>🚚 رسوم التوصيل</span><span>${Number(fee).toFixed(3)} د.ب</span></div>`
+      : "";
     return `
       <div class="order-card ${isActive ? "active" : ""}">
         <div class="order-card-top">
@@ -2935,6 +2950,7 @@
         <button class="order-toggle-details" onclick="toggleOrderDetails('${id}')">عرض تفاصيل الطلب ▾</button>
         <div class="order-items-list" id="order-details-${id}" style="display:none;">
           ${itemsHtml}
+          ${breakdown}
           <div class="order-total-row"><span>الإجمالي</span><span>${parseFloat(total || 0).toFixed(3)} د.ب</span></div>
         </div>
       </div>
@@ -2989,8 +3005,10 @@
           invoiceLabel: "🧾 طلب جديد (بانتظار الموافقة)",
           dateIso: data.created_at,
           statusInfo: statusInfoForPending(data),
-          itemsHtml: renderOrderItemsHtml(data.order_items),
+          itemsHtml: renderOrderItemsHtml(liveItemsOf(data)),
           total: data.total_price,
+          fee: data.delivery_fee,
+          itemsSum: itemsSumOf(liveItemsOf(data)),
           isActive: data.status === "pending"
         });
       }
@@ -3000,8 +3018,10 @@
         invoiceLabel: `🧾 فاتورة #${data.invoice_no ?? "—"}`,
         dateIso: data.created_at,
         statusInfo,
-        itemsHtml: renderOrderItemsHtml(data.order_items),
+        itemsHtml: renderOrderItemsHtml(liveItemsOf(data)),
         total: data.total,
+        fee: data.is_delivery ? data.delivery_fee : 0,
+        itemsSum: itemsSumOf(liveItemsOf(data)),
         isActive: data.status !== "completed"
       });
     }).join("");
