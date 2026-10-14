@@ -182,7 +182,7 @@ window.login = async function () {
    رفع صورة (آمن)
 ================================ */
 // تصغير الصورة وتحويلها JPEG (يحل مشاكل الحجم الكبير وصيغ الجوال مثل HEIC)
-async function shrinkImage(file, maxSide = 1200, quality = 0.85) {
+async function shrinkImage(file, maxSide = 800, quality = 0.78) {
   try {
     const bmp = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
@@ -218,7 +218,7 @@ async function uploadImage(file) {
     const { error } = await supabase.storage
       .from("products")
       .upload(path, body, {
-        cacheControl: "3600",
+        cacheControl: "31536000",   // اسم الملف فريد لكل رفع، فالكاش السنوي آمن ويوفّر الـ egress
         upsert: false,
         contentType: type
       });
@@ -673,7 +673,7 @@ async function loadItems() {
       div.innerHTML = `
         ${
           item.image_url
-            ? `<img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
+            ? `<img loading="lazy" decoding="async" src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:6px">`
             : ""
         }
 
@@ -963,3 +963,51 @@ function enableDragSort(sectionElement) {
 }
 
 window.goBack = () => location.href = "index.html";
+
+
+/* ===============================
+   ضغط الصور القديمة (مرة وحدة)
+   يحمّل كل صورة كبيرة، يصغّرها، يرفعها باسم جديد، يحدّث رابط الصنف، ثم يحذف القديمة.
+   لو فشل أي خطوة قبل تحديث الرابط، الصنف يبقى على صورته القديمة بدون أي ضرر.
+================================ */
+window.compressOldImages = async function () {
+  const out = document.getElementById("compressStatus");
+  const say = (m) => { if (out) out.textContent = m; console.log(m); };
+  if (!confirm("بيضغط الصور الكبيرة (أكبر من 250KB) ويحدّث روابطها. يستغرق دقائق. نكمل؟")) return;
+
+  const { data: items, error } = await supabase.from("products").select("id, name, image_url").not("image_url", "is", null);
+  if (error) { say("❌ تعذر تحميل الأصناف: " + error.message); return; }
+
+  const marker = "/storage/v1/object/public/products/";
+  let done = 0, skipped = 0, failed = 0, savedBytes = 0;
+  const list = (items || []).filter(i => i.image_url && i.image_url.includes(marker));
+  for (let n = 0; n < list.length; n++) {
+    const it = list[n];
+    say(`⏳ ${n + 1}/${list.length} — ${it.name || ""}`);
+    try {
+      const url = it.image_url.replace(/"/g, "").trim();
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("fetch " + res.status);
+      const orig = await res.blob();
+      if (orig.size <= 250 * 1024) { skipped++; continue; }
+      const small = await shrinkImage(orig);
+      if (!small || small.size >= orig.size) { skipped++; continue; }
+      const path = `products/${Date.now()}-${crypto.randomUUID()}.jpg`;
+      const up = await supabase.storage.from("products").upload(path, small, { cacheControl: "31536000", upsert: false, contentType: "image/jpeg" });
+      if (up.error) throw up.error;
+      const newUrl = supabase.storage.from("products").getPublicUrl(path).data.publicUrl;
+      const upd = await supabase.from("products").update({ image_url: newUrl }).eq("id", it.id);
+      if (upd.error) throw upd.error;
+      savedBytes += orig.size - small.size;
+      done++;
+      // حذف الملف القديم (لو الصلاحيات ما تسمح، يتجاهل — الصورة الجديدة شغالة)
+      const oldPath = decodeURIComponent(url.split(marker)[1].split("?")[0]);
+      await supabase.storage.from("products").remove([oldPath]).catch(() => {});
+    } catch (e) {
+      failed++;
+      console.warn("compress failed for", it.id, e);
+    }
+  }
+  say(`✅ انتهى: انضغط ${done}، تُرك ${skipped}، فشل ${failed}. التوفير ≈ ${(savedBytes / 1048576).toFixed(1)} MB`);
+  if (typeof loadItems === "function") await loadItems();
+};
