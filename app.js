@@ -11,6 +11,14 @@ window.supabase = supabase;
   let activeOrders = [];
   let currentBusinessDay = null;
   let editingOrderId = null;
+  // 🚚 رسوم التوصيل: المصدر الوحيد هو orders.delivery_fee. صف "رسوم التوصيل" داخل order_items
+  // تديره دالة السيرفر shop_set_delivery_fee فقط، وما يظهر ولا ينعدّل كصنف داخل سلة التعديل.
+  const FEE_ITEM_NAME = "🚚 رسوم التوصيل";
+  const isFeeRow = (r) => r && r.item_name === FEE_ITEM_NAME && !r.product_id;
+  const money = (n) => (Math.round(Number(n || 0) * 1000) / 1000).toFixed(3);
+  const escHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let editingIsDelivery = false;
+  let editingDeliveryFee = 0;
   let currentInvoiceNo = null;
   let currentInvoiceCreatedAt = null;
 
@@ -490,7 +498,22 @@ addToCart({
     });
   
     document.getElementById("total").textContent = total.toFixed(3) + " د.ب";
-    
+
+    // 🚚 أثناء تعديل فاتورة توصيل: الرسوم سطر منفصل (مو صنف) والإجمالي النهائي يشملها
+    const feeBox = document.getElementById("cartFeeInfo");
+    if (feeBox) {
+      if (editingOrderId && editingIsDelivery) {
+        feeBox.style.display = "block";
+        feeBox.innerHTML = `
+          <div>🚚 رسوم التوصيل: <strong>${editingDeliveryFee.toFixed(3)} د.ب</strong>
+            <button type="button" onclick="openFeeEditor('${editingOrderId}')" style="margin-right:6px;background:#2563EB;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer;">✏️ تعديل الرسوم</button>
+          </div>
+          <div style="font-weight:900;margin-top:4px;">الإجمالي مع التوصيل: ${(total + editingDeliveryFee).toFixed(3)} د.ب</div>`;
+      } else {
+        feeBox.style.display = "none";
+        feeBox.innerHTML = "";
+      }
+    }
   }
   
   window.changeQty = (i, d) => {
@@ -584,21 +607,23 @@ addToCart({
       ================================ */
       if (editingOrderId) {
   
-    // تحديث الإجمالي (طلبات التوصيل: نحافظ على رسوم التوصيل ضمن الإجمالي)
+    // تحديث الإجمالي (طلبات التوصيل: الإجمالي = الأصناف + رسوم التوصيل المحفوظة بالطلب)
+    // صف الرسوم ما ينعدّل من السلة، فما يتحسب مرتين.
+    const editedId = editingOrderId;
     const { data: curOrder } = await supabase
       .from("orders")
       .select("is_delivery, delivery_fee")
-      .eq("id", editingOrderId)
+      .eq("id", editedId)
       .single();
     const keepFee = curOrder && curOrder.is_delivery ? Number(curOrder.delivery_fee || 0) : 0;
     await supabase
       .from("orders")
       .update({ total: total + keepFee })
-      .eq("id", editingOrderId);
-  
+      .eq("id", editedId);
+
     // 🔥 استبدال الأصناف بالكامل (آمن)
-    await supabase.rpc("replace_order_items", {
-      p_order_id: editingOrderId,
+    const { error: replaceErr } = await supabase.rpc("replace_order_items", {
+      p_order_id: editedId,
       p_items: cart.map(i => ({
         product_id: i.id,
         variant_id: i.variant_id,
@@ -609,7 +634,17 @@ addToCart({
         addons: i.addons || []
       }))
     });
-  
+    if (replaceErr) {
+      console.error("replace_order_items:", replaceErr);
+      alert("❌ فشل حفظ التعديل، حاول مرة ثانية");
+      isSavingOrder = false;
+      if (completeBtn) completeBtn.disabled = false;
+      return;
+    }
+
+    // 🚚 نرجّع صف الرسوم ونثبّت الإجمالي (السيرفر يعيد الحساب: أصناف + رسوم)
+    if (curOrder && curOrder.is_delivery) await resyncDeliveryFee(editedId, keepFee);
+
     editingOrderId = null;
     loadActiveOrders(); // ✅ تحديث الطلبات الجارية فورًا
   }
@@ -717,8 +752,8 @@ const { data: order, error } = await supabase
           throw new Error("فشل إنشاء الطلب");
         }
   
-               await supabase.from("order_items").insert(
-          cart.map(i => ({
+               await supabase.from("order_items").insert([
+          ...cart.map(i => ({
             order_id: order.id,
             product_id: i.id,
             variant_id: i.variant_id || null,
@@ -727,8 +762,19 @@ const { data: order, error } = await supabase
             price: i.price,
             extras_removed: i.extras_removed || [],
             addons: i.addons || []
-          }))
-        );
+          })),
+          // 🚚 رسوم التوصيل كبند مستقل (نفس طلبات المنيو) عشان التقارير والفاتورة تطابق الإجمالي
+          ...((deliveryMode && Number(deliveryMode.fee) > 0) ? [{
+            order_id: order.id,
+            product_id: null,
+            variant_id: null,
+            item_name: FEE_ITEM_NAME,
+            qty: 1,
+            price: Number(deliveryMode.fee),
+            extras_removed: [],
+            addons: []
+          }] : [])
+        ]);
       }
        await loadActiveOrders(); // ✅ تحديث فوري للطلبات الجارية
   // خصم رصيد الموظف + الخروج من الوضع
@@ -1371,7 +1417,10 @@ div.innerHTML = `
           <div>📍 ${order.customer_area || "—"}</div>
           ${order.delivery_block || order.delivery_road || order.delivery_building ? `<div>🏘️ مجمع ${order.delivery_block || "—"} - طريق ${order.delivery_road || "—"} - منزل ${order.delivery_building || "—"}</div>` : ""}
           ${order.customer_address ? `<div>📝 ${order.customer_address}</div>` : ""}
-          ${order.delivery_fee ? `<div>🚚 رسوم التوصيل: ${parseFloat(order.delivery_fee).toFixed(3)} د.ب</div>` : ""}
+          <div style="margin-top:4px;">🚚 رسوم التوصيل: <strong>${money(order.delivery_fee)} د.ب</strong>
+            ${(!order.is_paid && !order.is_delivered) ? `<button onclick="openFeeEditor('${order.id}')" style="margin-right:6px;background:#2563EB;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:700;cursor:pointer;">✏️ تعديل الرسوم / المنطقة</button>` : ""}
+          </div>
+          <div style="font-size:12px;color:#475569;">الأصناف ${money(Math.max(0, Number(order.total || 0) - Number(order.delivery_fee || 0)))} + التوصيل ${money(order.delivery_fee)} = ${money(order.total)} د.ب</div>
           ${order.delivery_lat && order.delivery_lng ? `<div><a href="https://www.google.com/maps?q=${order.delivery_lat},${order.delivery_lng}" target="_blank" style="color:#2563EB;font-weight:700;">🗺️ فتح الموقع على الخريطة</a></div>` : ""}
         </div>
       `
@@ -1555,6 +1604,147 @@ div.innerHTML = `
     await loadActiveOrders();
   };
   /* ✏️ تحميل الفاتورة للتعديل */
+
+  // ===============================
+  // 🚚 رسوم التوصيل (مصدر واحد: orders.delivery_fee، والسيرفر يعيد الحساب)
+  // ===============================
+  function feeRpcMissing(err) {
+    return !!err && (err.code === "PGRST202" || /shop_set_delivery_fee|schema cache|does not exist/i.test(err.message || ""));
+  }
+
+  // بعد تعديل الأصناف: يرجّع صف الرسوم ويثبّت الإجمالي = أصناف + رسوم.
+  // لو SQL المرحلة 17 ما انشغّل بعد: نرجّع الصف من الكلاينت (نفس اللي كان قبل) والإجمالي محسوب فوق.
+  async function resyncDeliveryFee(orderId, fee) {
+    const { data, error } = await supabase.rpc("shop_set_delivery_fee", { p_order_id: orderId, p_fee: fee, p_area: null });
+    if (!error && data && data.ok) return true;
+    if (error && feeRpcMissing(error)) {
+      await supabase.from("order_items").delete().eq("order_id", orderId).eq("item_name", FEE_ITEM_NAME).is("product_id", null);
+      if (fee > 0) {
+        await supabase.from("order_items").insert([{ order_id: orderId, product_id: null, variant_id: null, item_name: FEE_ITEM_NAME, qty: 1, price: fee, extras_removed: [], addons: [] }]);
+      }
+      return true;
+    }
+    console.warn("shop_set_delivery_fee:", error || data);
+    return false;
+  }
+
+  window.openFeeEditor = async function (orderId) {
+    if (document.querySelector(".fee-editor-overlay")) return;
+
+    const { data: o, error: oErr } = await supabase
+      .from("orders")
+      .select("id, invoice_no, is_delivery, delivery_fee, total, customer_area, is_paid, is_delivered, status")
+      .eq("id", orderId)
+      .single();
+    if (oErr || !o) { alert("❌ تعذر تحميل الطلب"); return; }
+    if (!o.is_delivery) { alert("هذا الطلب مو توصيل"); return; }
+
+    // مجموع الأصناف الفعلي من جدول order_items (بدون صف الرسوم)
+    const { data: rows } = await supabase
+      .from("order_items")
+      .select("qty, price, item_name, product_id")
+      .eq("order_id", orderId);
+    const itemRows = (rows || []).filter(r => !isFeeRow(r));
+    const oldFee = Number(o.delivery_fee || 0);
+    const itemsAmount = itemRows.length
+      ? itemRows.reduce((sum, r) => sum + Number(r.qty || 0) * Number(r.price || 0), 0)
+      : Math.max(0, Number(o.total || 0) - oldFee);
+
+    // قائمة المناطق والرسوم من قاعدة البيانات (المرحلة 15/17). لو ما انقرت، يبقى إدخال الرسوم يدوي.
+    let areas = [];
+    try {
+      const { data: a } = await supabase.from("delivery_area_fees").select("area, fee").order("fee", { ascending: true }).order("area", { ascending: true });
+      areas = a || [];
+    } catch (e) { areas = []; }
+
+    const locked = !!(o.is_paid || o.is_delivered || !["pending", "active"].includes(o.status));
+    const groups = {};
+    areas.forEach(a => { (groups[money(a.fee)] = groups[money(a.fee)] || []).push(a); });
+    const optionsHtml = Object.keys(groups).sort((x, y) => Number(x) - Number(y)).map(f =>
+      `<optgroup label="${f} د.ب">${groups[f].map(a => `<option value="${escHtml(a.area)}" data-fee="${money(a.fee)}">${escHtml(a.area)}</option>`).join("")}</optgroup>`
+    ).join("");
+    const presets = [...new Set(["0.000", ...areas.map(a => money(a.fee))])].sort((x, y) => Number(x) - Number(y));
+
+    const overlay = document.createElement("div");
+    overlay.className = "variant-overlay fee-editor-overlay";
+    overlay.innerHTML = `
+      <div class="variant-box" style="max-width:420px;text-align:right">
+        <h3 style="margin-top:0;text-align:center;">🚚 تعديل رسوم التوصيل${o.invoice_no ? ` — فاتورة #${escHtml(o.invoice_no)}` : ""}</h3>
+        ${locked ? `<div style="background:#FEE2E2;color:#991B1B;border-radius:8px;padding:8px;margin-bottom:8px;font-weight:700;">🔒 الفاتورة مدفوعة أو موصّلة أو مقفلة، ما تقدر تغيّر الرسوم. (إرجاعها لحالة غير مدفوعة/غير موصّلة يفتح التعديل)</div>` : ""}
+        <div style="margin-bottom:6px;">📍 المنطقة الحالية: <strong id="feeCurArea">${escHtml(o.customer_area || "—")}</strong></div>
+        ${areas.length ? `
+        <label style="font-weight:700;">المنطقة الصحيحة (تغيّر الرسوم تلقائياً)</label>
+        <select id="feeArea" ${locked ? "disabled" : ""} style="width:100%;padding:10px;border:1px solid #CBD5E1;border-radius:8px;margin:4px 0 10px;font-size:15px;">
+          <option value="">— بدون تغيير المنطقة —</option>${optionsHtml}
+        </select>` : `<div style="color:#92400E;font-size:12px;margin-bottom:8px;">ما قدرت أقرأ قائمة المناطق (شغّل SQL المرحلة 17)، تقدر تكتب الرسوم يدوي.</div>`}
+        <label style="font-weight:700;">رسوم التوصيل (د.ب)</label>
+        <div style="display:flex;gap:6px;align-items:center;margin:4px 0 8px;">
+          <button type="button" id="feeMinus" class="variant-btn" style="flex:0 0 52px;" ${locked ? "disabled" : ""}>−</button>
+          <input id="feeInput" type="number" inputmode="decimal" min="0" max="50" step="0.1" value="${money(oldFee)}" ${locked ? "disabled" : ""} style="flex:1;padding:10px;border:1px solid #CBD5E1;border-radius:8px;font-size:18px;text-align:center;">
+          <button type="button" id="feePlus" class="variant-btn" style="flex:0 0 52px;" ${locked ? "disabled" : ""}>+</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          ${presets.map(p => `<button type="button" class="variant-btn fee-preset" data-v="${p}" ${locked ? "disabled" : ""} style="padding:6px 10px;">${p === "0.000" ? "بدون رسوم" : p}</button>`).join("")}
+        </div>
+        <div style="background:#F1F5F9;border-radius:8px;padding:10px;font-size:15px;line-height:1.9;">
+          <div>الأصناف: <strong>${money(itemsAmount)}</strong> د.ب</div>
+          <div>رسوم التوصيل: <strong id="feeShown">${money(oldFee)}</strong> د.ب</div>
+          <div style="border-top:1px solid #CBD5E1;margin-top:4px;padding-top:4px;font-weight:900;">الإجمالي: <span id="feeTotal">${money(itemsAmount + oldFee)}</span> د.ب</div>
+        </div>
+        <div id="feeErr" style="color:#B91C1C;font-weight:700;font-size:13px;min-height:18px;margin-top:6px;"></div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button type="button" id="feeSave" class="variant-btn" style="flex:2;" ${locked ? "disabled" : ""}>✅ حفظ</button>
+          <button type="button" id="feeCancel" class="variant-btn variant-cancel" style="flex:1;">إغلاق</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const $ = (id) => overlay.querySelector("#" + id);
+    const input = $("feeInput");
+    const read = () => {
+      const v = Number(String(input.value).replace(",", "."));
+      return Number.isFinite(v) ? Math.round(v * 1000) / 1000 : NaN;
+    };
+    const refresh = () => {
+      const v = read();
+      $("feeShown").textContent = Number.isFinite(v) ? money(v) : "—";
+      $("feeTotal").textContent = Number.isFinite(v) ? money(itemsAmount + v) : "—";
+    };
+    const setFee = (v) => { input.value = money(Math.min(50, Math.max(0, v))); refresh(); };
+    input.addEventListener("input", refresh);
+    $("feeMinus").onclick = () => setFee((Number.isFinite(read()) ? read() : 0) - 0.1);
+    $("feePlus").onclick = () => setFee((Number.isFinite(read()) ? read() : 0) + 0.1);
+    overlay.querySelectorAll(".fee-preset").forEach(b => { b.onclick = () => setFee(Number(b.dataset.v)); });
+    const sel = overlay.querySelector("#feeArea");
+    if (sel) sel.onchange = () => {
+      const opt = sel.selectedOptions[0];
+      if (opt && opt.dataset.fee !== undefined) setFee(Number(opt.dataset.fee));
+    };
+    $("feeCancel").onclick = () => overlay.remove();
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    $("feeSave").onclick = async () => {
+      const fee = read();
+      const err = (m) => { $("feeErr").textContent = m; };
+      if (!Number.isFinite(fee) || fee < 0 || fee > 50) return err("الرسوم لازم تكون رقم من 0 إلى 50");
+      const area = sel && sel.value ? sel.value : null;
+      $("feeSave").disabled = true;
+      const { data, error } = await supabase.rpc("shop_set_delivery_fee", { p_order_id: orderId, p_fee: fee, p_area: area });
+      $("feeSave").disabled = false;
+      if (error) {
+        console.error("shop_set_delivery_fee:", error);
+        return err(feeRpcMissing(error) ? "❌ شغّل ملف sql_stage17_delivery_fee.sql في Supabase أولاً" : "❌ تعذر الحفظ: " + (error.message || "خطأ"));
+      }
+      if (!data || data.ok !== true) {
+        const m = { LOCKED: "🔒 الفاتورة مدفوعة أو موصّلة أو مقفلة", BAD_FEE: "الرسوم غير صحيحة", NOT_DELIVERY: "هذا الطلب مو توصيل", NOT_FOUND: "الطلب غير موجود" };
+        return err("❌ " + (m[data && data.error] || "تعذر الحفظ"));
+      }
+      overlay.remove();
+      if (editingOrderId === orderId) { editingDeliveryFee = Number(data.fee || 0); renderCart(); }
+      await loadActiveOrders();
+      alert(`✅ تم تحديث الرسوم: ${money(data.fee)} د.ب\nالأصناف ${money(data.items)} + التوصيل ${money(data.fee)} = ${money(data.total)} د.ب`);
+    };
+  };
+
   window.editOrder = async function (orderId) {
     editingOrderId = orderId;
     cart = [];
@@ -1562,12 +1752,14 @@ div.innerHTML = `
     // ✅ جلب رقم الفاتورة (مهم للطباعة)
     const { data: order } = await supabase
       .from("orders")
-      .select("invoice_no, created_at")
+      .select("invoice_no, created_at, is_delivery, delivery_fee")
       .eq("id", orderId)
       .single();
   
     currentInvoiceNo = order?.invoice_no || null;
     currentInvoiceCreatedAt = order?.created_at || null;
+    editingIsDelivery = !!(order && order.is_delivery);
+    editingDeliveryFee = editingIsDelivery ? Number(order.delivery_fee || 0) : 0;
     const { data } = await supabase
       .from("order_items")
       .select("qty, price, item_name, product_id, variant_id, extras_removed, addons")
@@ -1575,10 +1767,12 @@ div.innerHTML = `
 
     if (!data || data.length === 0) {
       alert("⚠️ لا توجد أصناف حالياً، حاول مرة أخرى");
+      editingOrderId = null;
       return;
     }
 
-    cart = data.map(i => ({
+    // 🚚 صف رسوم التوصيل ما يدخل السلة كصنف (يتعدّل من «تعديل الرسوم» بس)
+    cart = data.filter(i => !isFeeRow(i)).map(i => ({
       row_id: crypto.randomUUID(), // 🔑 فريد لكل سطر
       id: i.product_id,
       name: i.item_name,
@@ -2130,14 +2324,19 @@ await supabase.from("orders").update({
     // 🕒 وقت الطلب (للعرض داخل الفاتورة)
     const { data: timeMeta } = await supabase
       .from("orders")
-      .select("created_at")
+      .select("created_at, total, delivery_fee, is_delivery, invoice_no, is_paid, is_delivered, status")
       .eq("id", orderId)
       .single();
     const orderTimeText = fmtOrderTime(timeMeta && timeMeta.created_at);
 
-    if (separateItems && separateItems.length > 0) {
+    // 🚚 صف رسوم التوصيل ما يظهر كصنف: يظهر بسطر مستقل في الملخص (من orders.delivery_fee)
+    const tableItems = (separateItems || []).filter(i => !isFeeRow(i));
+    let itemsSum = 0;
+
+    if (tableItems.length > 0) {
       // ✅ طلب كاشير عادي - البيانات من جدول order_items المنفصل
-      itemsHtml = separateItems.map(i => `
+      itemsSum = tableItems.reduce((sum, i) => sum + Number(i.qty || 0) * Number(i.price || 0), 0);
+      itemsHtml = tableItems.map(i => `
         <div style="border-bottom:1px dashed #ddd;padding:8px 0">
           <strong>${i.item_name}</strong>
           ${
@@ -2173,6 +2372,7 @@ await supabase.from("orders").update({
 
       orderTotal = order.total;
       invoiceNo = order.invoice_no;
+      itemsSum = order.order_items.reduce((sum, i) => sum + Number(i.qty || 1) * Number(i.price || 0), 0);
 
       itemsHtml = order.order_items.map(i => {
         // ✅ نأخذ الجزء الأول قبل أول " - " فقط (يعالج أي تكرار قديم بالبيانات)
@@ -2212,6 +2412,16 @@ await supabase.from("orders").update({
       }).join("");
     }
 
+    if (timeMeta) {
+      if (orderTotal === null) orderTotal = timeMeta.total;
+      if (!invoiceNo) invoiceNo = timeMeta.invoice_no;
+    }
+    const feeVal = Number((timeMeta && timeMeta.delivery_fee) || 0);
+    const isDel = !!(timeMeta && timeMeta.is_delivery);
+    const totalVal = Number(orderTotal || 0);
+    const mismatch = Math.abs(itemsSum + feeVal - totalVal) > 0.001;
+    const canFix = mismatch && isDel && !(timeMeta.is_paid || timeMeta.is_delivered || !["pending", "active"].includes(timeMeta.status));
+
     const overlay = document.createElement("div");
     overlay.className = "variant-overlay";
 
@@ -2224,9 +2434,15 @@ await supabase.from("orders").update({
           ${itemsHtml}
         </div>
 
-        ${orderTotal !== null ? `
-        <div style="text-align:left;margin-top:10px;font-weight:900">
-          الإجمالي: ${parseFloat(orderTotal || 0).toFixed(3)} د.ب
+        <div style="text-align:left;margin-top:10px;font-weight:900;line-height:1.9">
+          <div>الأصناف: ${money(itemsSum)} د.ب</div>
+          ${(isDel || feeVal > 0) ? `<div>🚚 رسوم التوصيل: ${money(feeVal)} د.ب</div>` : ""}
+          <div style="border-top:1px solid #CBD5E1;padding-top:4px;">الإجمالي: ${money(totalVal)} د.ب</div>
+        </div>
+        ${mismatch ? `
+        <div style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:8px;margin-top:8px;font-size:13px;font-weight:700;">
+          ⚠️ الإجمالي المحفوظ (${money(totalVal)}) ما يطابق الأصناف + الرسوم (${money(itemsSum + feeVal)}).
+          ${canFix ? `<button type="button" id="invFix" style="margin-top:6px;background:#D97706;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-weight:800;cursor:pointer;">🔧 إصلاح الإجمالي</button>` : ""}
         </div>` : ""}
 
         <button class="variant-cancel" style="margin-top:10px">إغلاق</button>
@@ -2234,6 +2450,16 @@ await supabase.from("orders").update({
     `;
   
     document.body.appendChild(overlay);
+
+    const fixBtn = overlay.querySelector("#invFix");
+    if (fixBtn) fixBtn.onclick = async () => {
+      fixBtn.disabled = true;
+      const ok = await resyncDeliveryFee(orderId, feeVal);
+      overlay.remove();
+      if (!ok) { alert("❌ تعذر إصلاح الإجمالي (شغّل SQL المرحلة 17)"); return; }
+      await loadActiveOrders();
+      viewOrder(orderId);
+    };
   
     overlay.querySelector(".variant-cancel").onclick = () => overlay.remove();
     overlay.onclick = e => {
@@ -2412,6 +2638,8 @@ await supabase.from("orders").update({
     currentInvoiceNo = null;
     currentInvoiceCreatedAt = null;
     editingOrderId = null;
+    editingIsDelivery = false;
+    editingDeliveryFee = 0;
     renderCart();
   
   }
@@ -2441,7 +2669,10 @@ await supabase.from("orders").update({
       </div>
     `).join("");
   
-    const total = cart.reduce((s, i) => s + i.qty * i.price, 0);
+    const itemsTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+    // 🚚 رسوم التوصيل: من الطلب المفتوح للتعديل، أو من بيانات التوصيل للطلب الجديد
+    const printFee = editingOrderId ? (editingIsDelivery ? editingDeliveryFee : 0) : Number((deliveryMode && deliveryMode.fee) || 0);
+    const total = itemsTotal + printFee;
   
     const win = window.open("", "", "width=300,height=600");
   
@@ -2511,6 +2742,8 @@ await supabase.from("orders").update({
   
   <hr>
   
+  ${printFee > 0 ? `<div style="font-size:15px;margin-top:8px;">الأصناف: ${itemsTotal.toFixed(3)} د.ب</div>
+  <div style="font-size:15px;">🚚 رسوم التوصيل: ${printFee.toFixed(3)} د.ب</div>` : ""}
   <div class="total">
     الإجمالي: ${total.toFixed(3)} د.ب
   </div>
