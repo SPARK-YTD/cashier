@@ -1133,6 +1133,17 @@
   </div>
 </div>
 
+<!-- CONFIRM PROMPT (المطعم يطلب تأكيد الطلب على واتساب) -->
+<div id="confirmPromptOverlay" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.65);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35);">
+    <div style="font-size:42px;line-height:1;">🔔</div>
+    <h2 style="margin:10px 0 6px;font-size:19px;">المطعم يطلب تأكيد طلبك</h2>
+    <p id="confirmPromptText" style="margin:0 0 14px;color:#475569;font-size:14px;line-height:1.7;"></p>
+    <button id="confirmPromptWa" type="button" style="width:100%;background:#16A34A;color:#fff;border:none;border-radius:10px;padding:13px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:8px;">📲 أكّد طلبي على واتساب</button>
+    <button id="confirmPromptLater" type="button" style="width:100%;background:#E5E7EB;color:#374151;border:none;border-radius:10px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;">لاحقاً</button>
+  </div>
+</div>
+
 <script src="menu-i18n.js"></script>
 <script src="legal-gate.js"></script>
 <script type="module">
@@ -2535,20 +2546,27 @@
     const card = document.getElementById("orderStatusCard");
 
     if (state === "pending") {
+      const must = !!data.confirmWaUrl;
       card.innerHTML = `
         <div class="status-spinner"></div>
         <h2 style="margin:0 0 8px; color:#111827;">تم إرسال طلبك</h2>
-        <p style="color:#6B7280; margin:0 0 4px; font-size:14px;">⏳ ينتظر الموافقة من المحل...</p>
+        ${must ? `
+        <div id="waMustBox" style="background:#FEF2F2; border:2px solid #DC2626; border-radius:12px; padding:14px; margin:12px 0; text-align:right;">
+          <p style="margin:0; color:#B91C1C; font-size:17px; font-weight:900;">🚨 طلبك لسا ما اكتمل!</p>
+          <p style="margin:8px 0 0; color:#7F1D1D; font-size:14px; font-weight:800; line-height:1.8;">لازم تأكّد الطلب عبر واتساب المحل. بدون التأكيد ما راح يتم تحضير طلبك.</p>
+          <p style="margin:8px 0 0; color:#7F1D1D; font-size:13px; line-height:1.7;">اضغط الزر الأخضر تحت، وبعدها اضغط «إرسال» على الرسالة الجاهزة في واتساب.</p>
+        </div>
+        <a class="btn-whatsapp" id="waConfirmBtn" href="${data.confirmWaUrl}" target="_blank" rel="noopener" onclick="onWaConfirmTapped()">📱 تأكيد الطلب عبر واتساب (إجباري)</a>
+        ` : `
+        <div style="background:#FEF2F2; border:2px solid #DC2626; border-radius:12px; padding:14px; margin:12px 0; text-align:right;">
+          <p style="margin:0; color:#B91C1C; font-size:16px; font-weight:900;">🚨 لازم تأكّد طلبك مع المحل</p>
+          <p style="margin:8px 0 0; color:#7F1D1D; font-size:13px; line-height:1.7;">رقم واتساب المحل غير متوفر حالياً. تواصل مع المحل مباشرة لتأكيد طلبك، وبدون التأكيد ما راح يتم تحضيره.</p>
+        </div>
+        `}
+        <p style="color:#6B7280; margin:10px 0 4px; font-size:14px;">⏳ ينتظر الموافقة من المحل...</p>
         <p style="color:#9CA3AF; margin:0; font-size:12px;">راح تتغيّر الصفحة تلقائياً عند القبول</p>
         ${data.highLoad ? `<p style="background:#FFFBEB; border:1px solid #FCD34D; color:#92400E; border-radius:8px; padding:8px 10px; margin:12px 0 0; font-size:13px;">⏳ عندنا طلبات كثيرة حالياً، فممكن يتأخر طلبك شوي. شكراً لصبرك 🙏</p>` : ""}
-        ${data.confirmWaUrl ? `
-        <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:8px; padding:12px; margin:14px 0 10px; text-align:right;">
-          <p style="margin:0; color:#92400E; font-size:14px; font-weight:700;">📱 أكّد طلبك عبر واتساب</p>
-          <p style="margin:6px 0 0; color:#92400E; font-size:13px;">طلبك انحفظ عندنا. اضغط الزر وأرسل الرسالة الجاهزة عشان المحل يشوفه فوراً</p>
-        </div>
-        <a class="btn-whatsapp" href="${data.confirmWaUrl}" target="_blank" rel="noopener">📱 تأكيد الطلب عبر واتساب</a>
-        ` : ""}
-        <button class="btn-status-secondary" onclick="hideOrderStatusScreen()">إخفاء (بيستمر الانتظار بالخلفية)</button>
+        <button class="btn-status-secondary" id="waHideBtn" style="display:${must ? "none" : "block"};" onclick="hideOrderStatusScreen()">إخفاء (بيستمر الانتظار بالخلفية)</button>
       `;
     } else if (state === "approved") {
       const waMessage = buildApprovalWhatsAppMessage(data);
@@ -2577,6 +2595,20 @@
 
   window.hideOrderStatusScreen = () => {
     document.getElementById("orderStatusOverlay").style.display = "none";
+  };
+
+  // ✅ الزبون ضغط زر التأكيد: نفتح له زر الإخفاء ونغيّر التنبيه (ما نقدر نجبره يرسل الرسالة، بس نجبره يضغط الزر)
+  window.onWaConfirmTapped = () => {
+    const box = document.getElementById("waMustBox");
+    if (box) {
+      box.style.background = "#FFFBEB";
+      box.style.borderColor = "#F59E0B";
+      box.innerHTML = `
+        <p style="margin:0; color:#92400E; font-size:15px; font-weight:900;">📱 افتحنا لك واتساب</p>
+        <p style="margin:8px 0 0; color:#92400E; font-size:13px; line-height:1.7;">تأكد إنك ضغطت «إرسال» على الرسالة. لو ما أرسلتها، اضغط الزر الأخضر مرة ثانية. طلبك ما يتحضّر إلا بعد وصول رسالتك.</p>`;
+    }
+    const hide = document.getElementById("waHideBtn");
+    if (hide) hide.style.display = "block";
   };
 
   // ✅ تحديد موقع العميل عبر GPS المتصفح
@@ -2826,7 +2858,7 @@
 
       // ✅ وضع واتساب: الطلب انحفظ بالنظام، ونجهز رسالة تأكيد كاملة برقم مرجعي (الزبون يضغط الزر بنفسه عشان ما يتحجب)
       let confirmWaUrl = null;
-      if (!orderingEnabled && whatsappPhone) {
+      if (whatsappPhone) {
         const ref = String(orderId || "").replace(/-/g, "").slice(0, 6).toUpperCase();
         const area = type === "delivery" ? document.getElementById("deliveryArea").value : null;
         const block = type === "delivery" ? document.getElementById("deliveryBlock").value.trim() : null;
@@ -2934,7 +2966,36 @@
     return items.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
   }
 
-  function renderOrderCard({ id, invoiceLabel, dateIso, statusInfo, itemsHtml, total, isActive, fee, itemsSum }) {
+  // ✅ زر تأكيد الطلب عبر واتساب داخل بطاقة "طلباتي" للطلبات اللي ما تأكدت (رسالة جاهزة بتفاصيل الطلب)
+  function confirmCardHtml(kind, data) {
+    if (!whatsappPhone) return "";
+    const isPending = kind === "pending";
+    const needs = isPending
+      ? data.status === "pending"
+      : (data.source === "qr_menu" && !data.customer_order_confirmed && data.status !== "completed" && !data.is_employee_order);
+    if (!needs) return "";
+    const items = liveItemsOf(data);
+    const total = Number(isPending ? data.total_price : data.total) || 0;
+    let msg = `✅ *تأكيد طلب*\n`;
+    msg += isPending
+      ? `🔖 مرجع الطلب: ${String(data.id || "").replace(/-/g, "").slice(0, 6).toUpperCase()}\n`
+      : `🧾 رقم الفاتورة: #${data.invoice_no ?? "—"}\n`;
+    msg += `📱 الهاتف: ${loggedInCustomerPhone || "—"}\n\n📦 *الأصناف:*\n`;
+    items.forEach(it => {
+      const base = String(it.productName || it.name || "صنف").split(" - ")[0];
+      const label = it.variant && it.variant.label ? `${base} (${it.variant.label})` : base;
+      msg += `• ${label} ×${it.qty || 1} = ${(parseFloat(it.price || 0) * (it.qty || 1)).toFixed(3)} د.ب\n`;
+    });
+    msg += `\n💰 *الإجمالي: ${total.toFixed(3)} د.ب*\n\nأكّدوا طلبي من فضلكم 🙏`;
+    const url = `https://wa.me/${normalizePhoneForWhatsApp(whatsappPhone)}?text=${encodeURIComponent(msg)}`;
+    return `
+      <div style="background:#FEF2F2; border:2px solid #DC2626; border-radius:10px; padding:10px; margin:8px 0; text-align:right;">
+        <div style="font-weight:900; color:#B91C1C; font-size:13px; line-height:1.7;">🚨 لازم تأكّد هذا الطلب عبر واتساب، وبدون التأكيد ما راح يتم تحضيره</div>
+        <a class="btn-whatsapp" href="${url}" target="_blank" rel="noopener" style="margin-top:8px; display:block; text-align:center;">📱 تأكيد الطلب عبر واتساب</a>
+      </div>`;
+  }
+
+  function renderOrderCard({ id, invoiceLabel, dateIso, statusInfo, itemsHtml, total, isActive, fee, itemsSum, confirmHtml }) {
     const hasFee = fee !== undefined && fee !== null && Number(fee) > 0;
     const breakdown = hasFee
       ? `<div class="order-total-row" style="font-weight:600;border-top:none;margin-top:6px;padding-top:0;"><span>الأصناف</span><span>${Number(itemsSum || 0).toFixed(3)} د.ب</span></div>
@@ -2947,6 +3008,7 @@
           <span class="order-date">${formatOrderDate(dateIso)}</span>
         </div>
         <span class="order-status-badge ${statusInfo.cls}">${statusInfo.label}</span>
+        ${confirmHtml || ""}
         <button class="order-toggle-details" onclick="toggleOrderDetails('${id}')">عرض تفاصيل الطلب ▾</button>
         <div class="order-items-list" id="order-details-${id}" style="display:none;">
           ${itemsHtml}
@@ -3009,6 +3071,7 @@
           total: data.total_price,
           fee: data.delivery_fee,
           itemsSum: itemsSumOf(liveItemsOf(data)),
+          confirmHtml: confirmCardHtml("pending", data),
           isActive: data.status === "pending"
         });
       }
@@ -3022,6 +3085,7 @@
         total: data.total,
         fee: data.is_delivery ? data.delivery_fee : 0,
         itemsSum: itemsSumOf(liveItemsOf(data)),
+        confirmHtml: confirmCardHtml("order", data),
         isActive: data.status !== "completed"
       });
     }).join("");
@@ -3086,6 +3150,58 @@
     .channel("products")
     .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => loadProducts())
     .subscribe();
+
+  // ========== تنبيه تأكيد الطلب (Stage 20) ==========
+  // الكاشير يضغط «نبّه الزبون» → هنا تطلع نافذة تدعو الزبون يأكد طلبه على واتساب المطعم.
+  // نستعلم كل 20 ثانية (بيانات صغيرة جداً) بس لو الزبون داخل والصفحة ظاهرة. كل تنبيه جديد يطلّع النافذة مرة وحدة.
+  let confirmPromptShowing = null;
+
+  function confirmSeenKey(id) { return "confirm_prompt_seen_" + id; }
+  function confirmSeenGet(id) { try { return localStorage.getItem(confirmSeenKey(id)); } catch (e) { return null; } }
+  function confirmSeenSet(id, v) { try { localStorage.setItem(confirmSeenKey(id), v); } catch (e) {} }
+
+  function showConfirmPrompt(p) {
+    confirmPromptShowing = p;
+    const ov = document.getElementById("confirmPromptOverlay");
+    const kind = p.is_delivery ? "توصيل" : "استلام";
+    const en = window.MenuI18n && MenuI18n.getLang && MenuI18n.getLang() === "en";
+    document.getElementById("confirmPromptText").textContent = en
+      ? `Your order #${p.invoice_no ?? "—"} (${p.is_delivery ? "delivery" : "pickup"}) worth ${Number(p.total || 0).toFixed(3)} BHD is not confirmed yet. Tap the button and send the message on the restaurant's WhatsApp so we can start preparing it.`
+      : `طلبك رقم #${p.invoice_no ?? "—"} (${kind}) بقيمة ${Number(p.total || 0).toFixed(3)} د.ب ما انأكّد بعد. اضغط الزر وأرسل الرسالة على واتساب المطعم عشان نبدأ التحضير.`;
+    const waBtn = document.getElementById("confirmPromptWa");
+    waBtn.style.display = whatsappPhone ? "block" : "none";
+    ov.style.display = "flex";
+  }
+
+  function hideConfirmPrompt(markSeen) {
+    document.getElementById("confirmPromptOverlay").style.display = "none";
+    if (markSeen && confirmPromptShowing) confirmSeenSet(confirmPromptShowing.id, String(confirmPromptShowing.nudge_at));
+    confirmPromptShowing = null;
+  }
+
+  document.getElementById("confirmPromptLater").onclick = () => hideConfirmPrompt(true);
+  document.getElementById("confirmPromptWa").onclick = () => {
+    const p = confirmPromptShowing;
+    if (!p || !whatsappPhone) return hideConfirmPrompt(true);
+    const msg = `✅ *تأكيد طلب*\n🧾 رقم الفاتورة: #${p.invoice_no ?? "—"}\n👤 الاسم: ${p.customer_name || "—"}\n📱 الهاتف: ${loggedInCustomerPhone || "—"}\n💰 المبلغ: ${Number(p.total || 0).toFixed(3)} د.ب\n\nأكّدوا طلبي من فضلكم 🙏`;
+    window.open(`https://wa.me/${normalizePhoneForWhatsApp(whatsappPhone)}?text=${encodeURIComponent(msg)}`, "_blank");
+    hideConfirmPrompt(true);
+  };
+
+  async function checkConfirmPrompts() {
+    try {
+      if (document.hidden || confirmPromptShowing) return;
+      if (!loggedInCustomerPhone || !customerToken()) return;
+      const { data, error } = await supabase.rpc("customer_confirm_prompts", { p_token: customerToken() });
+      if (error || !data || data.ok !== true) return;   // SQL المرحلة 20 غير مشغّل أو الجلسة منتهية: نتجاهل بصمت
+      const next = (data.prompts || []).find(p => confirmSeenGet(p.id) !== String(p.nudge_at));
+      if (next) showConfirmPrompt(next);
+    } catch (e) { /* ما نزعج الزبون */ }
+  }
+
+  setInterval(checkConfirmPrompts, 20000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkConfirmPrompts(); });
+  setTimeout(checkConfirmPrompts, 3000);
 
   window.supabase = supabase;
 </script>
