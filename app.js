@@ -1321,6 +1321,17 @@ function playNotificationSound() {
   .order("created_at", { ascending: false });
   
     activeOrders = data || [];
+    // 🔔 معلومات تنبيه التأكيد (Stage 20): استعلام منفصل ويتجاهل الفشل لو SQL المرحلة 20 ما انشغّل
+    try {
+      const ids = activeOrders.filter(o => o.source === "qr_menu" && !o.customer_order_confirmed).map(o => o.id);
+      if (ids.length) {
+        const { data: nd, error: ne } = await supabase.from("orders").select("id, confirm_nudge_at, confirm_nudge_count").in("id", ids);
+        if (!ne && nd) {
+          const m = new Map(nd.map(r => [r.id, r]));
+          activeOrders.forEach(o => { const r = m.get(o.id); if (r) { o.confirm_nudge_at = r.confirm_nudge_at; o.confirm_nudge_count = r.confirm_nudge_count; } });
+        }
+      }
+    } catch (e) { console.warn("nudge info skipped", e); }
     renderActiveOrders();
   }
   
@@ -1387,7 +1398,13 @@ div.innerHTML = `
       ? (
           order.customer_order_confirmed
             ? `<div style="background:#16A34A;color:white;font-weight:900;padding:6px 10px;border-radius:6px;margin:6px 0;text-align:center;font-size:13px;">✅ تم تأكيد الطلب - جاهز للتحضير</div>`
-            : `<button onclick="confirmCustomerOrder('${order.id}')" style="width:100%;background:#F59E0B;color:white;font-weight:900;padding:8px 10px;border:none;border-radius:6px;margin:6px 0;cursor:pointer;font-size:13px;">⚠️ اضغط لتأكيد طلب العميل</button>`
+            : `<div style="background:#FEF3C7;border:2px solid #F59E0B;border-radius:8px;padding:8px;margin:6px 0;">
+                 <div style="font-weight:900;color:#92400E;font-size:13px;margin-bottom:6px;">⚠️ طلب من المنيو — لازم تتأكد من الزبون قبل التحضير</div>
+                 <button onclick="contactCustomerWA('${order.id}')" style="width:100%;background:#16A34A;color:white;font-weight:900;padding:8px 10px;border:none;border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:13px;">📲 تواصل مع الزبون على واتساب</button>
+                 <button onclick="nudgeCustomerConfirm('${order.id}')" style="width:100%;background:#2563EB;color:white;font-weight:900;padding:8px 10px;border:none;border-radius:6px;margin-bottom:${order.confirm_nudge_at ? "2px" : "6px"};cursor:pointer;font-size:13px;">🔔 نبّه الزبون (تطلع له نافذة تأكيد في المنيو)</button>
+                 ${order.confirm_nudge_at ? `<div style="font-size:11px;color:#475569;font-weight:700;margin-bottom:6px;">آخر تنبيه: قبل ${fmtElapsed(order.confirm_nudge_at)} · عدد التنبيهات: ${order.confirm_nudge_count || 1}</div>` : ""}
+                 <button onclick="confirmCustomerOrder('${order.id}')" style="width:100%;background:#F59E0B;color:white;font-weight:900;padding:8px 10px;border:none;border-radius:6px;cursor:pointer;font-size:13px;">✅ الزبون أكّد — تأكيد الطلب</button>
+               </div>`
         )
       : ""
   }
@@ -1491,7 +1508,7 @@ div.innerHTML = `
         ? `<div style="color:#16a34a;font-weight:800">${order.is_delivery ? "🟢 جاهز للتوصيل" : "🟢 جاهز للاستلام"}</div>
            <button onclick="undoReady('${order.id}')" style="background:#E5E7EB;color:#374151;border:none;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;margin:2px 0;" title="لو ضغطت جاهز بالغلط">↩️ تراجع</button>`
         : `<div style="color:#facc15;font-weight:700">⏳ قيد التحضير</div>
-           <button onclick="markReady('${order.id}')" style="background:#16a34a;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:800;cursor:pointer;margin:4px 0;">${order.is_delivery ? "🛵 جاهز للتوصيل" : "✅ جاهز للاستلام"}</button>`
+           <button onclick="markReady('${order.id}')" style="${needsCustomerConfirm(order) ? "opacity:.45;" : ""}background:#16a34a;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:800;cursor:pointer;margin:4px 0;">${order.is_delivery ? "🛵 جاهز للتوصيل" : "✅ جاهز للاستلام"}</button>`
   }
 
   ${parseFloat(order.total || 0).toFixed(3)} د.ب<br>
@@ -1545,11 +1562,53 @@ div.innerHTML = `
       box.appendChild(div);
     });
   }
+  // ✅ طلب المنيو (QR) ما يتحضّر ولا ينسجّل دفعه قبل ما المطعم يتواصل مع الزبون ويأكّده
+  const needsCustomerConfirm = (o) => !!o && o.source === "qr_menu" && !o.customer_order_confirmed && !o.is_employee_order;
+  const CONFIRM_BLOCK_MSG = "⚠️ هذا الطلب من المنيو وما انأكّد من الزبون بعد.\nتواصل معه على واتساب (زر 📲) وبعدها اضغط «تأكيد طلب العميل».";
+  function waPhoneOf(phone) {
+    let d = String(phone || "").replace(/\D/g, "");
+    if (d.startsWith("00")) d = d.slice(2);
+    if (d.length === 8) d = "973" + d;
+    return d;
+  }
+  // 🔔 الكاشير ينبّه الزبون: تطلع له نافذة في صفحة المنيو تدعوه يأكد الطلب على واتساب
+  window.nudgeCustomerConfirm = async function (orderId) {
+    const order = activeOrders.find(o => o.id === orderId);
+    if (!order || !needsCustomerConfirm(order)) return;
+    const { data, error } = await supabase.rpc("shop_nudge_customer_confirm", { p_order_id: orderId });
+    if (error) {
+      console.error("shop_nudge_customer_confirm:", error);
+      const missing = /does not exist|could not find|schema cache|PGRST202/i.test(error.message || "") || error.code === "42883" || error.code === "PGRST202";
+      return alert(missing ? "❌ شغّل ملف sql_stage20_confirm_nudge.sql في Supabase أولاً" : "❌ تعذر إرسال التنبيه: " + (error.message || "خطأ"));
+    }
+    if (!data || data.ok !== true) {
+      const m = {
+        TOO_SOON: "⏳ أرسلت تنبيه قبل لحظات، انتظر شوي.",
+        ALREADY_CONFIRMED: "✅ الطلب مؤكَّد أصلاً.",
+        CLOSED: "الطلب مقفل.",
+        NOT_QR: "هذا الطلب مو من المنيو.",
+        NOT_FOUND: "الطلب غير موجود."
+      };
+      return alert(m[data && data.error] || "تعذر إرسال التنبيه");
+    }
+    alert(`🔔 انرسل التنبيه (رقم ${data.count}).\nيطلع للزبون لو صفحة المنيو مفتوحة عنده (خلال ~20 ثانية)، أو أول ما يفتحها.`);
+    await loadActiveOrders();
+  };
+  window.contactCustomerWA = function (orderId) {
+    const o = activeOrders.find(x => x.id === orderId);
+    if (!o) return;
+    const num = waPhoneOf(o.customer_phone);
+    if (num.length < 10) return alert("❌ رقم الزبون غير صالح للواتساب");
+    const kind = o.is_delivery ? "توصيل" : "استلام";
+    const msg = `هلا ${o.customer_name || ""} 👋\nوصلنا طلبك رقم #${o.invoice_no || ""} (${kind}) بقيمة ${money(o.total)} د.ب.\nنأكّد الطلب؟ رد علينا بكلمة *تأكيد* وبنبدأ التحضير ✅`;
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
   // 🛵 المطعم يضغط "جاهز" بعد ما يخلص التحضير: يتسجل الوقت (لتحليل الأداء) ويطلع إشعار للديلفري بصفحته
   // نتحمّل لو SQL مرحلة 14 ما انشغّل بعد: نحفظ kitchen_ready بس بدون ready_at
   window.markReady = async function (orderId) {
     const order = activeOrders.find(o => o.id === orderId);
     if (!order || order.kitchen_ready) return;
+    if (needsCustomerConfirm(order)) return alert(CONFIRM_BLOCK_MSG);
     let { error } = await supabase
       .from("orders")
       .update({ kitchen_ready: true, ready_at: new Date().toISOString() })
@@ -1877,6 +1936,7 @@ window.markPaid = function (orderId) {
     alert("⚠️ الفاتورة مسجلة كمدفوعة");
     return;
   }
+  if (needsCustomerConfirm(order)) return alert(CONFIRM_BLOCK_MSG);
 
   const overlay = document.createElement("div");
   overlay.className = "variant-overlay";
