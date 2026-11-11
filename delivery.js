@@ -27,6 +27,12 @@ let pollTimer;
 let locationWatchId = null;
 let lastLocationSentAt = 0;
 let currentDriverAccount = null;
+let lastLocationOkAt = 0;          // آخر مرة انرسل فيها الموقع بنجاح (للتنبيه لو وقف)
+let locationPermState = null;      // "granted" | "prompt" | "denied" | null (المتصفح ما يدعم الفحص)
+let lastLocationKey = "location_activating";
+let lastLocationParams = null;
+const LOCATION_HEARTBEAT_MS = 20000;   // نبض: يرسل الموقع حتى لو السايق واقف (watchPosition ما يتحرك وقتها)
+const LOCATION_STALE_MS = 90000;       // بعدها نطلع تنبيه "الموقع واقف"
 const LOCATION_UPDATE_INTERVAL = 15000; // ما نرسل تحديث موقع أكثر من مرة كل 15 ثانية
 
 // ✅ FIX (طلب المطعم): نحاول نخلي مشاركة الموقع تضل شغالة أطول ما يمكن.
@@ -71,7 +77,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentDriverAccountIdForWakeLock = account.id;
     startLocationSharing(account.id);
     requestWakeLock();
+    startLocationHeartbeat(account.id);
   }
+  initLocationGuide();
 });
 
 // ✅ Wake Lock: يمنع شاشة الجوال من الانطفاء تلقائياً وقت الصفحة مفتوحة
@@ -98,6 +106,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     // ✅ السايق رجع للصفحة - نرجّع الـWake Lock ونجيب موقعه فوراً
     // بدل ما ننتظر watchPosition يرجع يشتغل لحاله
+    refreshLocationPermission();
     if (currentDriverAccountIdForWakeLock) {
       requestWakeLock();
       if (navigator.geolocation) {
@@ -160,6 +169,8 @@ window.installDeliveryApp = async function () {
 // ✅ لما اللغة تتغير من الشريط، نعيد ترجمة كل شي (الثابت + المتحرك من JS)
 window.__onLangChange = function () {
   applyStaticTranslations();
+  setLocationStatus(lastLocationState, t(lastLocationKey, lastLocationParams || undefined), lastLocationKey, lastLocationParams);
+  renderLocationHelp(true);
   renderLanguageSwitcher("langSwitcher");
   updateWelcomeText();
   renderDeliveryOrders();
@@ -189,7 +200,7 @@ window.logoutDelivery = function () {
 function startLocationSharing(accountId) {
   if (!navigator.geolocation) {
     console.warn("⚠️ Location not supported");
-    setLocationStatus("denied", t("location_no_support"));
+    setLocationStatus("denied", t("location_no_support"), "location_no_support");
     return;
   }
 
@@ -202,11 +213,117 @@ function startLocationSharing(accountId) {
     },
     (err) => {
       console.warn("⚠️ LOCATION ERROR:", err);
-      setLocationStatus("denied", t("location_denied"));
+      if (err && err.code === 1) {
+        // PERMISSION_DENIED
+        locationPermState = "denied";
+        setLocationStatus("denied", t("location_denied"), "location_denied");
+        renderLocationHelp();
+      } else {
+        // POSITION_UNAVAILABLE / TIMEOUT: GPS مطفي أو إشارة ضعيفة - مو مشكلة صلاحية
+        setLocationStatus("denied", t("location_unavailable"), "location_unavailable");
+      }
     },
     { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
   );
 }
+
+// ✅ نبض: كل 20 ثانية (والصفحة ظاهرة) نجيب الموقع ونرسله حتى لو السايق واقف.
+// بدون هذا watchPosition ما يطلع حدث وقت الوقوف فيبان الموقع "قديم" غلط عند المطعم.
+// ونفس المؤقت يفحص: لو آخر إرسال ناجح أقدم من 90 ثانية نطلع تنبيه واضح للسايق.
+function startLocationHeartbeat(accountId) {
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    const now = Date.now();
+
+    if (navigator.geolocation && now - lastLocationSentAt > LOCATION_HEARTBEAT_MS - 2000) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          lastLocationSentAt = Date.now();
+          updateDriverLocation(accountId, pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      );
+    }
+
+    if (lastLocationOkAt && now - lastLocationOkAt > LOCATION_STALE_MS) {
+      const m = Math.max(1, Math.round((now - lastLocationOkAt) / 60000));
+      setLocationStatus("denied", t("location_stale", { m }), "location_stale", { m });
+    }
+  }, LOCATION_HEARTBEAT_MS);
+}
+
+/* ===============================
+   إرشاد صلاحية الموقع (أندرويد + آيفون)
+   الصفحة ما تقدر "تعطي نفسها" صلاحية دايمة - هذا قرار الجوال. اللي نسويه:
+   نفحص حالة الصلاحية، ولو مو «سماح» نعرض للسايق خطوات حسب نوع جواله.
+================================ */
+function detectPlatform() {
+  const ua = navigator.userAgent || "";
+  const isIOS = /iphone|ipad|ipod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return isIOS ? "ios" : "android";
+}
+
+async function refreshLocationPermission() {
+  try {
+    if (!navigator.permissions || !navigator.permissions.query) return;
+    const st = await navigator.permissions.query({ name: "geolocation" });
+    locationPermState = st.state;
+    if (!st.__bound) {
+      st.__bound = true;
+      st.onchange = () => { locationPermState = st.state; renderLocationHelp(); };
+    }
+  } catch (e) {
+    // iOS/متصفحات قديمة ما تدعم الفحص - نعتمد على أخطاء watchPosition
+  }
+  renderLocationHelp();
+}
+
+function initLocationGuide() {
+  refreshLocationPermission();
+}
+
+let lastHelpSig = null;
+function renderLocationHelp(force) {
+  const box = document.getElementById("locationHelp");
+  if (!box) return;
+  // ما نعيد الرسم إلا لو تغيرت الحالة - وإلا نقفل على السايق الخطوات وهو يقراها
+  const sig = String(locationPermState);
+  if (!force && sig === lastHelpSig) return;
+  lastHelpSig = sig;
+  const bad = locationPermState === "denied" || locationPermState === "prompt";
+  box.className = "loc-help" + (locationPermState === "denied" ? " bad" : "");
+  if (bad) box.setAttribute("open", ""); else box.removeAttribute("open");
+
+  const platform = detectPlatform();
+  const steps = (prefix) => [1, 2, 3, 4].map(i => `<li>${t(prefix + i)}</li>`).join("");
+  // الجوال اللي المستخدم عليه يظهر أول، والثاني تحته (احتياط لو تعرّف غلط)
+  const android = `<h4>${t("loc_help_android_t")}</h4><ol>${steps("loc_help_android_")}</ol>`;
+  const ios = `<h4>${t("loc_help_ios_t")}</h4><ol>${steps("loc_help_ios_")}</ol>`;
+
+  box.innerHTML = `
+    <summary>${t("loc_help_title")}</summary>
+    ${platform === "ios" ? ios + android : android + ios}
+    <div class="keep-open">${t("loc_help_keep_open")}</div>
+    ${locationPermState !== "granted" ? `<button type="button" class="loc-retry" onclick="retryLocationPermission()">${t("loc_help_retry")}</button>` : ""}
+  `;
+}
+
+window.retryLocationPermission = function () {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      lastLocationSentAt = Date.now();
+      if (currentDriverAccount?.id) updateDriverLocation(currentDriverAccount.id, pos.coords.latitude, pos.coords.longitude);
+      refreshLocationPermission();
+    },
+    (err) => {
+      if (err && err.code === 1) { locationPermState = "denied"; renderLocationHelp(); }
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+  );
+};
 
 async function updateDriverLocation(accountId, lat, lng) {
   const { error } = await supabase
@@ -220,16 +337,20 @@ async function updateDriverLocation(accountId, lat, lng) {
 
   if (error) {
     console.error("❌ UPDATE LOCATION ERROR:", error);
-    setLocationStatus("denied", t("location_send_fail"));
+    setLocationStatus("denied", t("location_send_fail"), "location_send_fail");
   } else {
-    setLocationStatus("active", t("location_active"));
+    lastLocationOkAt = Date.now();
+    locationPermState = "granted";   // وصلنا موقع فعلي = الصلاحية ممنوحة
+    setLocationStatus("active", t("location_active"), "location_active");
+    renderLocationHelp();
   }
 }
 
 let lastLocationState = null;
 
-function setLocationStatus(state, text) {
+function setLocationStatus(state, text, key, params) {
   lastLocationState = state;
+  if (key) { lastLocationKey = key; lastLocationParams = params || null; }
   const el = document.getElementById("locationStatus");
   if (!el) return;
   el.textContent = text;
