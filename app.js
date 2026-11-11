@@ -1547,12 +1547,20 @@ div.innerHTML = `
         }
         ${
           order.is_delivery && !order.is_delivered
-            ? `
-              <button disabled title="بانتظار تسليم الديلفري" style="opacity:0.5;cursor:not-allowed;">✅ مكتمل</button>
+            ? (order.is_paid
+              // ✅ مدفوع والسايق ما ضغط "تم التوصيل": الزر يشتغل لكن بتأكيد صريح (يحصل السايق ينسى أو يعلّق)
+              ? `
+              <button onclick="markCompleted('${order.id}')" title="السايق ما ضغط تم التوصيل - إقفال يدوي بتأكيد">✅ مكتمل</button>
               <div style="font-size:11px;color:#92400E;background:#FEF3C7;padding:4px 8px;border-radius:6px;margin-top:4px;display:inline-block;">
-                🚚 بانتظار تسليم الديلفري
+                🚚 السايق ما ضغط «تم التوصيل» - الإقفال يدوي بتأكيد
               </div>
             `
+              : `
+              <button disabled title="سجّل الدفع أول" style="opacity:0.5;cursor:not-allowed;">✅ مكتمل</button>
+              <div style="font-size:11px;color:#92400E;background:#FEF3C7;padding:4px 8px;border-radius:6px;margin-top:4px;display:inline-block;">
+                🚚 بانتظار الدفع وتسليم الديلفري
+              </div>
+            `)
             : `<button onclick="markCompleted('${order.id}')">✅ مكتمل</button>`
         }
         <button onclick="deleteOrder('${order.id}')">🗑 حذف</button>
@@ -1853,9 +1861,23 @@ window.markCompleted = async function (orderId) {
   // ✅ طلبات التوصيل تحديداً: ما نقفل الفاتورة إلا بعد ما الديلفري يضغط
   // "تم التوصيل" فعلياً من صفحته - حتى لو الكاشير سجل الدفع مسبقاً.
   // هذا يمنع إقفال طلب لسا بالطريق قبل ما يوصل فعلاً.
+  // ✅ توصيل + السايق ما ضغط "تم التوصيل": نسمح بالإقفال اليدوي بس بعد تسجيل الدفع وبتأكيد صريح.
+  // الإقفال يخفي الطلب من صفحة السايق ويكمّل الفاتورة بالكامل (نعلّمها موصّلة بدون وقت وصول).
+  let forceDeliveredOnClose = false;
   if (order.is_delivery && !order.is_delivered) {
-    alert("❌ ما تقدر تقفل هالفاتورة - الطلب لسا ما وصل للزبون. لازم الديلفري يضغط \"تم التوصيل\" من صفحته أول.");
-    return;
+    if (!order.is_paid) {
+      alert("❌ سجّل الدفع أول (💰 تم الدفع) وبعدها تقدر تقفل الطلب.");
+      return;
+    }
+    const ok = confirm(
+      "⚠️ السايق ما ضغط «تم التوصيل» لهذا الطلب.\n\n" +
+      "إذا كمّلت:\n" +
+      "• الطلب يختفي من صفحة السايق\n" +
+      "• الفاتورة تنقفل نهائياً وتتحسب مكتملة بالتقارير (وتنعلّم موصّلة)\n\n" +
+      "تأكد إن الطلب وصل فعلاً للزبون. تكمّل؟"
+    );
+    if (!ok) return;
+    forceDeliveredOnClose = true;
   }
 
   if (!order.is_paid) {
@@ -1890,13 +1912,17 @@ window.markCompleted = async function (orderId) {
       return;
     }
 
+    const closePayload = {
+      status: "completed",
+      closed_at: new Date().toISOString(),
+      kitchen_ready: true
+    };
+    // إقفال يدوي قبل ضغط السايق: نعلّمها موصّلة (delivered_at يبقى فاضي - ما نخترع وقت وصول)
+    if (forceDeliveredOnClose) closePayload.is_delivered = true;
+
     const { error: updateError } = await supabase
       .from("orders")
-      .update({
-        status: "completed",
-        closed_at: new Date().toISOString(),
-        kitchen_ready: true
-      })
+      .update(closePayload)
       .eq("id", orderId);
     
 
