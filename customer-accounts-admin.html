@@ -258,6 +258,34 @@
       cursor: not-allowed;
     }
 
+    .btn-wa {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    .btn-wa:hover {
+      background: #1EBE5A;
+    }
+
+    .wa-hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6B7280;
+      text-align: center;
+    }
+
     .empty-state {
       text-align: center;
       padding: 50px 20px;
@@ -272,7 +300,6 @@
       font-size: 14px;
     }
   </style>
-<script type="module" src="auth-guard.js"></script>
 </head>
 <body>
 
@@ -397,6 +424,39 @@
     }
   };
 
+  // ========== رسالة واتساب: "تم إعادة تعيين رمزك" ==========
+  // رقم واتساب الدولي: 8 أرقام = بحريني (نضيف 973). الأرقام السعودية محفوظة أصلاً بصيغة +9665XXXXXXXX.
+  function waPhoneOf(phone) {
+    let d = String(phone || "").replace(/\D/g, "");
+    if (d.startsWith("00")) d = d.slice(2);
+    if (d.length === 8) d = "973" + d;
+    return d;
+  }
+
+  function resetWaMessage() {
+    const menuUrl = new URL("menu.html", location.href).href;
+    return [
+      "السلام عليكم ورحمة الله وبركاته،",
+      "",
+      "عزيزنا العميل،",
+      "نفيدكم بأنه تمت إعادة تعيين رمزكم السري بنجاح بناءً على طلبكم.",
+      "",
+      "يمكنكم الآن الدخول من جديد عبر قائمة الطعام الإلكترونية بنفس رقم جوالكم، وسيُطلب منكم إدخال رمز سري جديد.",
+      menuUrl,
+      "",
+      "حرصاً على أمان حسابكم، نرجو عدم مشاركة رمزكم السري مع أي شخص.",
+      "",
+      "مع خالص التحية،",
+      "إدارة خذ لك بريك"
+    ].join("\n");
+  }
+
+  function resetWaLink(phone) {
+    const wa = waPhoneOf(phone);
+    if (!wa) return "";
+    return `https://wa.me/${wa}?text=${encodeURIComponent(resetWaMessage())}`;
+  }
+
   function renderAccountCard(data) {
     const resultArea = document.getElementById("resultArea");
     const createdDate = data.created_at
@@ -416,6 +476,10 @@
         <button class="btn-reset" ${pendingReset ? "disabled" : ""} onclick="resetCustomerPin('${data.phone}')">
           ${pendingReset ? "✅ تم الطلب - بانتظار الزبون يحط رمز جديد" : "🔄 إعادة تعيين الرمز السري"}
         </button>
+        ${pendingReset && resetWaLink(data.phone)
+          ? `<a class="btn-wa" id="waResetBtn" href="${resetWaLink(data.phone)}" target="_blank" rel="noopener">📲 أرسل للزبون رسالة «تمت إعادة تعيين رمزك» على واتساب</a>
+             <div class="wa-hint">يفتح محادثة الزبون برسالة جاهزة، وانت تضغط إرسال</div>`
+          : ""}
       </div>
     `;
   }
